@@ -12,7 +12,7 @@ if (!globalThis.Phaser) {
 }
 
 const config = {
-  type: Phaser.AUTO,
+  type: Phaser.CANVAS,
   parent: 'game',
   width: GAME_WIDTH,
   height: GAME_HEIGHT,

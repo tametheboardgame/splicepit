@@ -76,7 +76,10 @@ try {
       returnByValue: true,
       awaitPromise: true,
     });
-    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Browser evaluation failed');
+    if (result.exceptionDetails) {
+      const detail = result.exceptionDetails.exception?.description || result.exceptionDetails.text || 'Browser evaluation failed';
+      throw new Error(detail);
+    }
     return result.result?.value;
   }
 
@@ -88,7 +91,20 @@ try {
   await cdp('Runtime.enable');
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
 
-  await waitExpr(`Boolean(globalThis.Phaser && Phaser.GAMES?.[0] && Phaser.GAMES[0].scene.isActive('Title'))`, 20000);
+  try {
+    await waitExpr(`Boolean(globalThis.Phaser && Phaser.GAMES?.[0] && Phaser.GAMES[0].scene.isActive('Title'))`, 20000);
+  } catch (error) {
+    const diagnostics = await evaluate(`({
+      href: location.href,
+      title: document.title,
+      text: document.body.innerText.slice(0, 1200),
+      phaser: typeof globalThis.Phaser,
+      games: globalThis.Phaser?.GAMES?.length ?? -1,
+      scenes: globalThis.Phaser?.GAMES?.[0]?.scene?.getScenes(true)?.map(s => s.scene.key) ?? []
+    })`);
+    throw new Error(`${error.message}; startup diagnostics=${JSON.stringify(diagnostics)}`);
+  }
+
   await evaluate(`Phaser.GAMES[0].scene.start('Intro')`);
   await waitExpr(`Phaser.GAMES[0].scene.isActive('Intro')`);
   await evaluate(`Phaser.GAMES[0].scene.start('Lab')`);
