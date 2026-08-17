@@ -2,7 +2,7 @@ import { OPENING_BASE_ANIMAL_IDS } from '../content/biologyCatalog.js';
 import { CONTENT_CATALOG } from '../content/contentCatalog.js';
 import { deriveCreatureBiology } from '../domain/creatureBiology.js';
 import { ids, type CreatureId, type SourcePackageId } from '../domain/ids.js';
-import { emptyArenaCapabilities, type CreatureState, type GameDomainState } from '../domain/model.js';
+import { emptyArenaCapabilities, type CreatureState, type GameDomainState, type MaterialLot } from '../domain/model.js';
 import { PROTOTYPE_GENERAL_REAGENT_ID } from '../domain/research.js';
 import { domainState } from '../state/DomainState.js';
 import { gameState } from '../state/GameState.js';
@@ -60,13 +60,51 @@ function unlockedSources(): SourcePackageId[] {
   return [...new Set(mapped)];
 }
 
+function prototypeMaterialLot(sourcePackageId: SourcePackageId, acquiredAt: string): MaterialLot {
+  return {
+    id: ids.materialLot(`r03.lot.${sourcePackageId}.bridge`),
+    sourcePackageId,
+    quantity: R03_PLAYTEST_MATERIAL_UNITS_PER_SOURCE,
+    acquiredAt,
+    notes: 'WP0.3H PROTOTYPE playtest stock bridged from the R0.1 recovered-sample flow.',
+    quality: 0.82,
+    acquisitionChannel: 'prototype',
+  };
+}
+
+function sourceWasAlreadyIntroduced(state: GameDomainState, sourcePackageId: SourcePackageId): boolean {
+  return state.materialStock.some((lot) => lot.sourcePackageId === sourcePackageId)
+    || state.experimentHistory.some((observation) => observation.sourcePackageId === sourcePackageId)
+    || state.researchKnowledge.some((record) => record.sourcePackageId === sourcePackageId);
+}
+
+function bridgeNewlyRecoveredSources(state: GameDomainState, now: string): GameDomainState {
+  const newlyUnlocked = unlockedSources().filter((sourcePackageId) => !sourceWasAlreadyIntroduced(state, sourcePackageId));
+  if (newlyUnlocked.length === 0) return state;
+  return {
+    ...state,
+    materialStock: [
+      ...state.materialStock,
+      ...newlyUnlocked.map((sourcePackageId) => prototypeMaterialLot(sourcePackageId, now)),
+    ],
+  };
+}
+
 export function ensureR03LabPlaytestState(now = new Date().toISOString()): GameDomainState {
   const current = domainState.snapshot();
-  if (current.creatures.length > 0) return current;
+  if (current.creatures.length > 0) {
+    const bridged = bridgeNewlyRecoveredSources(current, now);
+    if (bridged !== current) {
+      domainState.hydrate(bridged);
+      saveGame();
+    }
+    return bridged;
+  }
   if (!gameState.baseAnimalId) return current;
 
   const mainId = ids.creature(`r03.main.${gameState.baseAnimalId}`);
-  const main = blankCreature(mainId, `Pit ${gameState.baseAnimalId}`, gameState.baseAnimalId, 'main', now);
+  const mainBase = CONTENT_CATALOG.baseAnimals.find((animal) => animal.id === gameState.baseAnimalId);
+  const main = blankCreature(mainId, `Pit ${mainBase?.name ?? gameState.baseAnimalId}`, gameState.baseAnimalId, 'main', now);
   const tests = OPENING_BASE_ANIMAL_IDS.map((baseAnimalId, index) => blankCreature(
     ids.creature(`r03.test.${baseAnimalId}.${index + 1}`),
     `Test ${CONTENT_CATALOG.baseAnimals.find((animal) => animal.id === baseAnimalId)?.name ?? baseAnimalId}`,
@@ -74,16 +112,7 @@ export function ensureR03LabPlaytestState(now = new Date().toISOString()): GameD
     'test',
     now,
   ));
-  const sourceIds = unlockedSources();
-  const materialStock = sourceIds.map((sourcePackageId, index) => ({
-    id: ids.materialLot(`r03.lot.${sourcePackageId}.${index + 1}`),
-    sourcePackageId,
-    quantity: R03_PLAYTEST_MATERIAL_UNITS_PER_SOURCE,
-    acquiredAt: now,
-    notes: 'WP0.3H PROTOTYPE playtest stock bridged from the R0.1 recovered-sample flow.',
-    quality: 0.82,
-    acquisitionChannel: 'prototype' as const,
-  }));
+  const materialStock = unlockedSources().map((sourcePackageId) => prototypeMaterialLot(sourcePackageId, now));
 
   const next: GameDomainState = {
     ...current,
