@@ -26,12 +26,16 @@ This directory is the implementation/design source of truth.
 - `TECHNICAL_ARCHITECTURE.md` — TypeScript/Vite/Phaser, saves, RNG, input, localisation readiness.
 - `CONTENT_AND_PRESENTATION.md` — visual/tone/audio/dialogue direction and warning boundary.
 
-## Story/design proposals awaiting approval
+## Approved opening content
 
-- `OPENING_CONTENT_PROPOSAL.md` — proposed Rabbit/Goat/Pig starters + ten source packages.
-- `PIT_UPGRADE_TREE_PROPOSAL.md` — nine-branch facility tree.
+- `OPENING_CONTENT_PROPOSAL.md` — despite the historical filename, Rabbit/Goat/Pig and the ten opening source packages in this document are now **LOCKED**. Exact implementation numbers/tutorial tuning remain planned.
+
+## Proposals awaiting approval/tuning
+
+- `PIT_UPGRADE_TREE_PROPOSAL.md` — nine-branch facility tree; high-level nine domains are locked, detailed tiers/costs remain proposed.
 - `WORLD_MAP_PROPOSAL.md` — provisional full-region layout/hubs/circuits.
 - `ACT1_STORY_FRAMEWORK.md` — detailed debt-clock Act 1 structure and Act 2 split.
+- `CREDITOR_FACTION_PROPOSAL.md` — proposed creditor faction, **The Clearing House**, and its role in the paid/unpaid debt branches.
 
 ## Canon rule
 
