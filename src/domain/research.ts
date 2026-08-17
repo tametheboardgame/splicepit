@@ -190,7 +190,11 @@ export function executeResearchExperiment(
     && recordContextKey(record) === contextKey
   ));
 
-  const researchKnowledge = state.researchKnowledge.map((record) => ({ ...record, notes: [...record.notes] }));
+  const researchKnowledge: ResearchKnowledgeRecord[] = state.researchKnowledge.map((record) => ({
+    ...record,
+    contextTags: record.contextTags ? [...record.contextTags] : undefined,
+    notes: [...record.notes],
+  }));
   const existing = existingIndex >= 0 ? researchKnowledge[existingIndex] : null;
   const knowledge: ResearchKnowledgeRecord = existing
     ? {
