@@ -91,6 +91,14 @@ try {
     await sleep(180);
   }
 
+  async function holdKey(key, code, windowsVirtualKeyCode, durationMs) {
+    const params = { key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode };
+    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
+    await sleep(durationMs);
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
+    await sleep(180);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?seed=wp03h-smoke&debug=1` });
@@ -120,18 +128,41 @@ try {
   await pressKey('Enter', 'Enter', 13);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
 
-  await pressKey('ArrowRight', 'ArrowRight', 39);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x === 3`);
-  await pressKey('e', 'KeyE', 69);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === true`);
+  // Movement must continue while a direction is held, not require one press per tile.
+  const startX = await evaluate(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x`);
+  await holdKey('ArrowRight', 'ArrowRight', 39, 390);
+  const heldX = await evaluate(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x`);
+  if (!(heldX >= startX + 3)) {
+    throw new Error(`Held movement did not repeat across tiles: start=${startX} end=${heldX}`);
+  }
+
+  // The opening base animal is a genuine Rabbit / Goat / Pig choice.
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useAnimalPen(); return true; })()`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === 'animal'`);
+  await pressKey('ArrowDown', 'ArrowDown', 40);
+  await pressKey('Enter', 'Enter', 13);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === null && __SPLICEPIT_GAME__.scene.getScene('Lab').blocked === true`);
   await pressKey('Escape', 'Escape', 27);
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === false`);
+  const selectedBase = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics().gameplay.baseAnimalId`);
+  if (selectedBase !== 'goat') throw new Error(`Opening animal choice did not persist Goat: ${selectedBase}`);
 
-  await evaluate(`(() => {
-    const lab = __SPLICEPIT_GAME__.scene.getScene('Lab');
-    lab.useGeneCabinet(); lab.closeMessage(); lab.useSpliceBench();
-    return true;
-  })()`);
+  // The source archive exposes the canonical opening ten and lets the player choose one.
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useGeneCabinet(); return true; })()`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === 'source' && __SPLICEPIT_GAME__.scene.getScene('Lab').selectionItems.length === 10`);
+  await pressKey('ArrowDown', 'ArrowDown', 40);
+  await pressKey('ArrowDown', 'ArrowDown', 40);
+  await pressKey('ArrowDown', 'ArrowDown', 40);
+  await pressKey('Enter', 'Enter', 13);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === null && __SPLICEPIT_GAME__.scene.getScene('Lab').blocked === true`);
+  await pressKey('Escape', 'Escape', 27);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === false`);
+  const recovered = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics().gameplay.collectedGenes`);
+  if (!Array.isArray(recovered) || recovered[0] !== 'gecko_regeneration') {
+    throw new Error(`Opening source choice did not persist selected canonical source: ${JSON.stringify(recovered)}`);
+  }
+
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useSpliceBench(); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Splice')`);
 
   const initialLab = await evaluate(`(() => {
@@ -142,8 +173,8 @@ try {
       forecast: splice.forecastText.text
     };
   })()`);
-  if (!String(initialLab?.subject).startsWith('r03.test.') || !initialLab?.source) {
-    throw new Error(`Experimentation lab did not start on a test subject with physical material: ${JSON.stringify(initialLab)}`);
+  if (!String(initialLab?.subject).startsWith('r03.test.') || initialLab?.source !== 'gecko_regeneration') {
+    throw new Error(`Experimentation lab did not start on a test subject with the chosen physical material: ${JSON.stringify(initialLab)}`);
   }
   if (!initialLab?.forecast?.includes('VIABLE EXPRESSION') || !initialLab?.forecast?.includes('UNKNOWN')) {
     throw new Error(`Forecast leaked or omitted the uncertainty framing: ${JSON.stringify(initialLab)}`);
@@ -156,13 +187,13 @@ try {
     throw new Error(`Test splice did not persist research evidence: ${JSON.stringify(afterTest?.domain)}`);
   }
   const mainBefore = afterTest.domain.creatures.find((creature) => creature.role === 'main');
-  if (!mainBefore || mainBefore.spliceHistory.length !== 0) {
-    throw new Error(`Test splice modified the valued main creature: ${JSON.stringify(mainBefore)}`);
+  if (!mainBefore || mainBefore.baseAnimalId !== 'goat' || mainBefore.spliceHistory.length !== 0) {
+    throw new Error(`Test splice modified or replaced the chosen valued main creature: ${JSON.stringify(mainBefore)}`);
   }
 
   await evaluate(`(() => {
     const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
-    splice.selectedSubjectId = 'r03.main.rabbit';
+    splice.selectedSubjectId = 'r03.main.goat';
     splice.confirmArmed = true;
     splice.refresh();
     __SPLICEPIT_DEBUG__.setSeed('wp03h-main-smoke');
@@ -176,7 +207,7 @@ try {
     throw new Error(`Irreversible main splice did not persist correctly: ${JSON.stringify(afterMain.domain)}`);
   }
   if (mainAfter.lifeState !== 'living') {
-    throw new Error('Smoke seed unexpectedly killed the main creature; choose a non-lethal deterministic smoke seed.');
+    throw new Error('Smoke seed unexpectedly killed the Goat main creature; choose a non-lethal deterministic smoke seed.');
   }
   if (!afterMain.gameplay.currentCreature) {
     throw new Error('R0.1 Fit Pit compatibility bridge was not populated from the living domain main creature.');
@@ -203,7 +234,7 @@ try {
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Battle').finished === true`, 5000);
   const save = await evaluate(`JSON.parse(localStorage.getItem('splicepit-save'))`);
   const gameplay = save?.payload?.gameplay;
-  if (!save || save.schemaVersion !== 2 || gameplay?.questStage !== 'slice_complete' || gameplay?.fitPitWins !== 1 || !gameplay?.currentCreature) {
+  if (!save || save.schemaVersion !== 2 || gameplay?.questStage !== 'slice_complete' || gameplay?.fitPitWins !== 1 || !gameplay?.currentCreature || gameplay?.baseAnimalId !== 'goat') {
     throw new Error(`Unexpected versioned save state: ${JSON.stringify(save)}`);
   }
   if (!Array.isArray(save.payload?.creatures?.records) || !Array.isArray(save.payload?.materials?.stock) || !Array.isArray(save.payload?.research?.knowledge) || save.payload?.research?.experiments?.length !== 2) {
@@ -224,7 +255,7 @@ try {
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: test-first research, uncertain forecast, irreversible main splice, persistence and Fit Pit bridge');
+  console.log('Browser smoke OK: held movement, Goat base choice, opening-ten source choice, test-first research, irreversible main splice, persistence and Fit Pit bridge');
   ws.close();
 } catch (error) {
   console.error(error);
