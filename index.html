@@ -33,7 +33,7 @@
         <span class="eyebrow">FIT PIT LICENCE: SUSPENDED</span>
         <h1>SplicePit</h1>
       </div>
-      <div class="build-mark">WP0.3H LAB PREVIEW</div>
+      <div class="build-mark">WP0.3H LAB PREVIEW / STARTUP FIX 2</div>
     </header>
     <section id="game-wrap" aria-label="SplicePit game">
       <div id="game"><div id="game-status" role="status" aria-live="polite">STARTING SPLICEPIT LAB PREVIEW…</div></div>
@@ -49,6 +49,7 @@
     (() => {
       const status = document.getElementById('game-status');
       let finished = false;
+      let recoveryAttempted = false;
       const showFailure = (message) => {
         if (!status || finished) return;
         status.dataset.error = 'true';
@@ -69,11 +70,31 @@
           finished = true;
           window.clearInterval(monitor);
           status?.remove();
+          return;
+        }
+
+        if (game && !recoveryAttempted) {
+          const elapsed = performance.now();
+          if (elapsed > 1800) {
+            recoveryAttempted = true;
+            try {
+              game.scene.start('Title');
+            } catch (error) {
+              showFailure(`Recovery failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          }
         }
       }, 100);
 
       window.setTimeout(() => {
-        if (!finished) showFailure('Title scene did not become active within 6 seconds. Open the newest Cloudflare deployment and report this message.');
+        if (finished) return;
+        const game = globalThis.__SPLICEPIT_GAME__;
+        const active = game?.scene?.getScenes?.(true)?.map?.((scene) => scene.scene?.key).join(',') || 'none';
+        const known = game?.scene?.getScenes?.(false)?.map?.((scene) => scene.scene?.key).join(',') || 'none';
+        const canvasCount = document.querySelectorAll('#game canvas').length;
+        const booted = Boolean(game?.isBooted);
+        const running = Boolean(game?.loop?.running);
+        showFailure(`Title did not start. game=${Boolean(game)} booted=${booted} loop=${running} active=${active} known=${known} canvas=${canvasCount} visibility=${document.visibilityState}.`);
       }, 6000);
     })();
   </script>
