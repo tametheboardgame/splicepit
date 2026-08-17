@@ -7,6 +7,24 @@
   <meta name="description" content="SplicePit - a pastoral biotech creature-splicing RPG prototype." />
   <title>SplicePit</title>
   <link rel="stylesheet" href="./styles.css" />
+  <style>
+    #game-status {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      background: #0c0c0b;
+      color: #a79d88;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .08em;
+      text-align: center;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    #game-status[data-error="true"] { color: #d98b6d; }
+  </style>
 </head>
 <body>
   <main id="shell">
@@ -15,10 +33,10 @@
         <span class="eyebrow">FIT PIT LICENCE: SUSPENDED</span>
         <h1>SplicePit</h1>
       </div>
-      <div class="build-mark">R0.1 VERTICAL SLICE</div>
+      <div class="build-mark">WP0.3H / FEEDBACK PASS 1</div>
     </header>
     <section id="game-wrap" aria-label="SplicePit game">
-      <div id="game"></div>
+      <div id="game"><div id="game-status" role="status" aria-live="polite">STARTING SPLICEPIT LAB PREVIEW…</div></div>
       <noscript>SplicePit needs JavaScript enabled.</noscript>
     </section>
     <footer>
@@ -27,6 +45,59 @@
       <span>Menu: Esc</span>
     </footer>
   </main>
+  <script>
+    (() => {
+      const status = document.getElementById('game-status');
+      let finished = false;
+      let recoveryAttempted = false;
+      const showFailure = (message) => {
+        if (!status || finished) return;
+        status.dataset.error = 'true';
+        status.textContent = `GAME STARTUP ERROR: ${message}`;
+      };
+
+      window.addEventListener('error', (event) => {
+        showFailure(event.message || 'JavaScript failed before the game could start.');
+      });
+      window.addEventListener('unhandledrejection', (event) => {
+        const reason = event.reason instanceof Error ? event.reason.message : String(event.reason ?? 'Unhandled startup rejection.');
+        showFailure(reason);
+      });
+
+      const monitor = window.setInterval(() => {
+        const game = globalThis.__SPLICEPIT_GAME__;
+        if (game?.scene?.isActive?.('Title')) {
+          finished = true;
+          window.clearInterval(monitor);
+          status?.remove();
+          return;
+        }
+
+        if (game && !recoveryAttempted) {
+          const elapsed = performance.now();
+          if (elapsed > 1800) {
+            recoveryAttempted = true;
+            try {
+              game.scene.start('Title');
+            } catch (error) {
+              showFailure(`Recovery failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          }
+        }
+      }, 100);
+
+      window.setTimeout(() => {
+        if (finished) return;
+        const game = globalThis.__SPLICEPIT_GAME__;
+        const active = game?.scene?.getScenes?.(true)?.map?.((scene) => scene.scene?.key).join(',') || 'none';
+        const known = game?.scene?.getScenes?.(false)?.map?.((scene) => scene.scene?.key).join(',') || 'none';
+        const canvasCount = document.querySelectorAll('#game canvas').length;
+        const booted = Boolean(game?.isBooted);
+        const running = Boolean(game?.loop?.running);
+        showFailure(`Title did not start. game=${Boolean(game)} booted=${booted} loop=${running} active=${active} known=${known} canvas=${canvasCount} visibility=${document.visibilityState}.`);
+      }, 6000);
+    })();
+  </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

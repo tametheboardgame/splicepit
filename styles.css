@@ -11,16 +11,34 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: var(--paper-deep); color: var(--ink); }
 body {
+  min-height: 100dvh;
+  overflow-x: hidden;
   font-family: Georgia, 'Times New Roman', serif;
   background-image:
     radial-gradient(circle at 20% 10%, rgba(113,132,92,.12), transparent 28rem),
     radial-gradient(circle at 85% 85%, rgba(115,81,111,.1), transparent 26rem),
     repeating-linear-gradient(2deg, rgba(255,255,255,.015) 0 1px, transparent 1px 5px);
 }
-#shell { width: min(1180px, 100%); margin: 0 auto; padding: 18px; }
+
+/*
+ * The Phaser canvas is 16:9, so width is also its height budget. Limiting the
+ * shell by viewport height keeps the entire game chrome visible on common
+ * 14-inch laptop viewports instead of making the player scroll to the footer.
+ */
+#shell {
+  width: min(1180px, 145dvh, 100%);
+  margin: 0 auto;
+  padding: clamp(8px, 1.7dvh, 18px);
+}
 .site-header, footer { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
-.site-header { margin-bottom: 12px; }
-h1 { margin: 0; font-size: clamp(2rem, 5vw, 4.6rem); line-height: .85; letter-spacing: -.045em; font-weight: 500; }
+.site-header { margin-bottom: clamp(6px, 1.1dvh, 12px); }
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, min(5vw, 7dvh), 4.6rem);
+  line-height: .85;
+  letter-spacing: -.045em;
+  font-weight: 500;
+}
 .eyebrow, .build-mark, footer { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; }
 .eyebrow { display: block; color: var(--rust); font-size: .72rem; margin-bottom: 7px; }
 .build-mark { color: var(--muted); font-size: .68rem; text-align: right; }
@@ -30,9 +48,18 @@ h1 { margin: 0; font-size: clamp(2rem, 5vw, 4.6rem); line-height: .85; letter-sp
 }
 #game { width: 100%; aspect-ratio: 16 / 9; }
 #game canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: auto; }
-footer { padding: 10px 2px 0; color: var(--muted); font-size: .65rem; flex-wrap: wrap; }
+footer { padding: clamp(5px, .9dvh, 10px) 2px 0; color: var(--muted); font-size: .65rem; flex-wrap: wrap; }
+
+@media (max-height: 760px) {
+  #shell { width: min(1180px, 140dvh, 100%); padding-block: 7px; }
+  .site-header { margin-bottom: 5px; }
+  h1 { font-size: clamp(2rem, 6dvh, 3.2rem); }
+  .eyebrow { margin-bottom: 4px; }
+  footer { padding-top: 4px; }
+}
+
 @media (max-width: 650px) {
-  #shell { padding: 8px; }
+  #shell { width: 100%; padding: 8px; }
   .site-header { align-items: start; }
   .build-mark { max-width: 120px; }
   footer { gap: 8px 14px; }

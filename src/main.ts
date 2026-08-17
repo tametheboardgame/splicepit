@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from './config.js';
 import { validateRuntimeContent } from './content/runtimeValidation.js';
 import { installDeveloperDiagnostics } from './diagnostics/debugState.js';
-import { BootScene } from './scenes/BootScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { IntroScene } from './scenes/IntroScene.js';
 import { LabScene } from './scenes/LabScene.js';
@@ -21,7 +20,7 @@ const config: Phaser.Types.Core.GameConfig = {
   antialias: true,
   render: { roundPixels: true },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, TitleScene, IntroScene, LabScene, SpliceScene, BattleScene],
+  scene: [TitleScene, IntroScene, LabScene, SpliceScene, BattleScene],
 };
 
 const game = new Phaser.Game(config);
