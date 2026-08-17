@@ -5,3 +5,4 @@ export * from './validation.js';
 export * from './compatibility.js';
 export * from './spliceResolution.js';
 export * from './creatureBiology.js';
+export * from './mutationResearch.js';
