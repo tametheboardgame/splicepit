@@ -7,6 +7,24 @@
   <meta name="description" content="SplicePit - a pastoral biotech creature-splicing RPG prototype." />
   <title>SplicePit</title>
   <link rel="stylesheet" href="./styles.css" />
+  <style>
+    #game-status {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      background: #0c0c0b;
+      color: #a79d88;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .08em;
+      text-align: center;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    #game-status[data-error="true"] { color: #d98b6d; }
+  </style>
 </head>
 <body>
   <main id="shell">
@@ -15,10 +33,10 @@
         <span class="eyebrow">FIT PIT LICENCE: SUSPENDED</span>
         <h1>SplicePit</h1>
       </div>
-      <div class="build-mark">R0.1 VERTICAL SLICE</div>
+      <div class="build-mark">WP0.3H LAB PREVIEW</div>
     </header>
     <section id="game-wrap" aria-label="SplicePit game">
-      <div id="game"></div>
+      <div id="game"><div id="game-status" role="status" aria-live="polite">STARTING SPLICEPIT LAB PREVIEW…</div></div>
       <noscript>SplicePit needs JavaScript enabled.</noscript>
     </section>
     <footer>
@@ -27,6 +45,38 @@
       <span>Menu: Esc</span>
     </footer>
   </main>
+  <script>
+    (() => {
+      const status = document.getElementById('game-status');
+      let finished = false;
+      const showFailure = (message) => {
+        if (!status || finished) return;
+        status.dataset.error = 'true';
+        status.textContent = `GAME STARTUP ERROR: ${message}`;
+      };
+
+      window.addEventListener('error', (event) => {
+        showFailure(event.message || 'JavaScript failed before the game could start.');
+      });
+      window.addEventListener('unhandledrejection', (event) => {
+        const reason = event.reason instanceof Error ? event.reason.message : String(event.reason ?? 'Unhandled startup rejection.');
+        showFailure(reason);
+      });
+
+      const monitor = window.setInterval(() => {
+        const game = globalThis.__SPLICEPIT_GAME__;
+        if (game?.scene?.isActive?.('Title')) {
+          finished = true;
+          window.clearInterval(monitor);
+          status?.remove();
+        }
+      }, 100);
+
+      window.setTimeout(() => {
+        if (!finished) showFailure('Title scene did not become active within 6 seconds. Open the newest Cloudflare deployment and report this message.');
+      }, 6000);
+    })();
+  </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
