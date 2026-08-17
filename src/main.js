@@ -24,4 +24,5 @@ const config = {
   scene: [BootScene, TitleScene, IntroScene, LabScene, SpliceScene, BattleScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+globalThis.__SPLICEPIT_GAME__ = game;

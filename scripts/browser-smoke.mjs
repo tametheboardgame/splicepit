@@ -92,54 +92,54 @@ try {
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
 
   try {
-    await waitExpr(`Boolean(globalThis.Phaser && Phaser.GAMES?.[0] && Phaser.GAMES[0].scene.isActive('Title'))`, 20000);
+    await waitExpr(`Boolean(globalThis.__SPLICEPIT_GAME__?.scene?.isActive('Title'))`, 20000);
   } catch (error) {
     const diagnostics = await evaluate(`({
       href: location.href,
       title: document.title,
       text: document.body.innerText.slice(0, 1200),
       phaser: typeof globalThis.Phaser,
-      games: globalThis.Phaser?.GAMES?.length ?? -1,
-      scenes: globalThis.Phaser?.GAMES?.[0]?.scene?.getScenes(true)?.map(s => s.scene.key) ?? []
+      game: Boolean(globalThis.__SPLICEPIT_GAME__),
+      scenes: globalThis.__SPLICEPIT_GAME__?.scene?.getScenes(true)?.map(s => s.scene.key) ?? []
     })`);
     throw new Error(`${error.message}; startup diagnostics=${JSON.stringify(diagnostics)}`);
   }
 
-  await evaluate(`Phaser.GAMES[0].scene.start('Intro')`);
-  await waitExpr(`Phaser.GAMES[0].scene.isActive('Intro')`);
-  await evaluate(`Phaser.GAMES[0].scene.start('Lab')`);
-  await waitExpr(`Phaser.GAMES[0].scene.isActive('Lab')`);
+  await evaluate(`__SPLICEPIT_GAME__.scene.start('Intro')`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Intro')`);
+  await evaluate(`__SPLICEPIT_GAME__.scene.start('Lab')`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
 
   await evaluate(`(() => {
-    const lab = Phaser.GAMES[0].scene.getScene('Lab');
+    const lab = __SPLICEPIT_GAME__.scene.getScene('Lab');
     lab.useAnimalPen(); lab.closeMessage();
     lab.useGeneCabinet(); lab.closeMessage();
     lab.useSpliceBench();
     return true;
   })()`);
-  await waitExpr(`Phaser.GAMES[0].scene.isActive('Splice')`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Splice')`);
 
   await evaluate(`(() => {
     const oldRandom = Math.random;
     Math.random = () => 0.01;
-    const scene = Phaser.GAMES[0].scene.getScene('Splice');
+    const scene = __SPLICEPIT_GAME__.scene.getScene('Splice');
     scene.selected = new Set(['gecko_regeneration']);
     scene.splice();
     Math.random = oldRandom;
     return true;
   })()`);
-  await waitExpr(`Phaser.GAMES[0].scene.isActive('Lab')`, 5000);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
 
-  await evaluate(`Phaser.GAMES[0].scene.getScene('Lab').useFitPit()`);
-  await waitExpr(`Phaser.GAMES[0].scene.isActive('Battle')`);
+  await evaluate(`__SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit()`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Battle')`);
   await evaluate(`(() => {
-    const battle = Phaser.GAMES[0].scene.getScene('Battle');
+    const battle = __SPLICEPIT_GAME__.scene.getScene('Battle');
     battle.enemy.hp = 1;
     battle.takeTurn('attack');
     return true;
   })()`);
 
-  await waitExpr(`Phaser.GAMES[0].scene.getScene('Battle').finished === true`, 5000);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Battle').finished === true`, 5000);
   const save = await evaluate(`JSON.parse(localStorage.getItem('splicepit-r0-save'))`);
   if (!save || save.questStage !== 'slice_complete' || save.fitPitWins !== 1 || !save.currentCreature) {
     throw new Error(`Unexpected save state: ${JSON.stringify(save)}`);
