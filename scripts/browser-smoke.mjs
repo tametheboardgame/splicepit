@@ -183,7 +183,7 @@ try {
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Battle').finished === true`, 5000);
   const save = await evaluate(`JSON.parse(localStorage.getItem('splicepit-save'))`);
   const gameplay = save?.payload?.gameplay;
-  if (!save || save.schemaVersion !== 1 || gameplay?.questStage !== 'slice_complete' || gameplay?.fitPitWins !== 1 || !gameplay?.currentCreature) {
+  if (!save || save.schemaVersion !== 2 || gameplay?.questStage !== 'slice_complete' || gameplay?.fitPitWins !== 1 || !gameplay?.currentCreature) {
     throw new Error(`Unexpected versioned save state: ${JSON.stringify(save)}`);
   }
   if (!Array.isArray(save.payload?.creatures?.records) || !Array.isArray(save.payload?.materials?.stock) || !Array.isArray(save.payload?.research?.knowledge)) {
