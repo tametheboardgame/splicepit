@@ -5,7 +5,9 @@ export const EMPTY_DOMAIN_STATE: GameDomainState = {
   mainCreatureIds: [],
   testAnimalIds: [],
   materialStock: [],
+  reagentStock: [],
   researchKnowledge: [],
+  experimentHistory: [],
   progression: { activeStateIds: [], activeQuestIds: [], completedQuestIds: [] },
 };
 
