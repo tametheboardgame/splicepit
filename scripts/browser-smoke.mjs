@@ -198,6 +198,25 @@ try {
     throw new Error(`Forecast leaked or omitted the uncertainty framing: ${JSON.stringify(initialLab)}`);
   }
 
+  // The valued main cannot be used as the first experiment for a source package.
+  const prematureMain = await evaluate(`(() => {
+    const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
+    const originalSubject = splice.selectedSubjectId;
+    splice.selectedSubjectId = 'r03.main.goat';
+    splice.confirmArmed = true;
+    splice.refresh();
+    splice.execute(true);
+    const diagnostics = __SPLICEPIT_DEBUG__.diagnostics();
+    const message = splice.outcomeText.text;
+    splice.selectedSubjectId = originalSubject;
+    splice.confirmArmed = false;
+    splice.refresh();
+    return { experiments: diagnostics.domain.experimentHistory.length, message };
+  })()`);
+  if (prematureMain?.experiments !== 0 || !prematureMain?.message?.includes('VALUED MAIN LOCKED')) {
+    throw new Error(`Untested source could be committed to the valued main: ${JSON.stringify(prematureMain)}`);
+  }
+
   await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Splice').execute(false); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').outcomeText.text.startsWith('LATEST OUTCOME')`);
   const afterTest = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
@@ -273,7 +292,7 @@ try {
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: laptop viewport fit, held movement, Goat base choice, opening-ten source choice, test-first research, irreversible main splice, persistence and Fit Pit bridge');
+  console.log('Browser smoke OK: laptop viewport fit, held movement, Goat base choice, opening-ten source choice, valued-main test-first guard, test-first research, irreversible main splice, persistence and Fit Pit bridge');
   ws.close();
 } catch (error) {
   console.error(error);
