@@ -137,22 +137,25 @@ try {
   await pressKey('ArrowDown', 'ArrowDown', 40);
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').menu.index === 1`);
   await pressKey('Enter', 'Enter', 13);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').resultText.text.startsWith('VIABLE.')`);
+  await evaluate(`(() => { Math.random = globalThis.__SPLICEPIT_OLD_RANDOM__; delete globalThis.__SPLICEPIT_OLD_RANDOM__; return true; })()`);
   try {
     await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
   } catch (error) {
     const diagnostics = await evaluate(`(() => {
       const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
+      const lab = __SPLICEPIT_GAME__.scene.getScene('Lab');
       return {
         activeScenes: __SPLICEPIT_GAME__.scene.getScenes(true).map(s => s.scene.key),
         selected: [...splice.selected],
         menuIndex: splice.menu?.index,
         resultText: splice.resultText?.text,
-        hasCreature: Boolean(__SPLICEPIT_GAME__.scene.getScene('Lab')?.sys?.settings && splice.scene.isActive() && splice.scene.key === 'Splice')
+        spliceStatus: splice.sys?.settings?.status,
+        labStatus: lab.sys?.settings?.status
       };
     })()`);
     throw new Error(`${error.message}; splice diagnostics=${JSON.stringify(diagnostics)}`);
   }
-  await evaluate(`(() => { Math.random = globalThis.__SPLICEPIT_OLD_RANDOM__; delete globalThis.__SPLICEPIT_OLD_RANDOM__; return true; })()`);
 
   await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit(); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Battle')`);
