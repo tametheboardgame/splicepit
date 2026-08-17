@@ -72,3 +72,6 @@ export function drawCreature(
   if (flip) c.scaleX *= -1;
   return c;
 }
+
+export { drawPhenotypeCreature } from './PhenotypeRenderer.js';
+export type { PhenotypeRenderOptions } from './PhenotypeRenderer.js';
