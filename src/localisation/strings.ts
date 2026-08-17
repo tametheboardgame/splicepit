@@ -73,7 +73,7 @@ const EN_GB = {
   'splice.noneEstablished': 'No expression established.',
   'splice.none': 'NONE',
   'splice.mutationDetected': 'DETECTED / UNANALYSED',
-  'splice.outcomeBody': 'OUTCOME {outcome}\nEXPRESSION {established}\nSTABILITY {before}% -> {after}% | INJURY {injury}\nMUTATION {mutation}\nHISTORY {history} attempt(s)',
+  'splice.outcomeBody': 'LATEST OUTCOME {outcome}\nEXPRESSION {established}\nSTABILITY {before}% -> {after}% | INJURY {injury}\nMUTATION {mutation}\nHISTORY {history} attempt(s)',
   'splice.irreversibleWarning': 'MAIN CREATURE COMMIT ARMED.\nThis consumes material and permanently changes this individual. Rejection, injury, mutation, permanent damage or death are possible.\nConfirm only if you accept the result.',
   'splice.outcomePrompt': 'Test first, compare the records, then decide whether the evidence is worth risking the main creature.',
   'splice.attemptError': 'ATTEMPT BLOCKED\n{message}',
