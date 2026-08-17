@@ -71,11 +71,7 @@ try {
   }
 
   async function evaluate(expression) {
-    const result = await cdp('Runtime.evaluate', {
-      expression,
-      returnByValue: true,
-      awaitPromise: true,
-    });
+    const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
     if (result.exceptionDetails) {
       const detail = result.exceptionDetails.exception?.description || result.exceptionDetails.text || 'Browser evaluation failed';
       throw new Error(detail);
@@ -97,7 +93,7 @@ try {
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
-  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?seed=wp02e-smoke&debug=1` });
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?seed=wp03h-smoke&debug=1` });
 
   try {
     await waitExpr(`Boolean(globalThis.__SPLICEPIT_GAME__?.scene?.isActive('Title'))`, 20000);
@@ -115,7 +111,7 @@ try {
   }
 
   const initialDiagnostics = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
-  if (initialDiagnostics?.rng?.seed !== 'wp02e-smoke' || !initialDiagnostics?.scene?.active?.includes('Title')) {
+  if (initialDiagnostics?.rng?.seed !== 'wp03h-smoke' || !initialDiagnostics?.scene?.active?.includes('Title')) {
     throw new Error(`Unexpected deterministic diagnostics: ${JSON.stringify(initialDiagnostics)}`);
   }
 
@@ -138,43 +134,67 @@ try {
   })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Splice')`);
 
-  await pressKey('Enter', 'Enter', 13);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').selected.has('gecko_regeneration')`);
-  await pressKey('ArrowDown', 'ArrowDown', 40);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').menu.index === 1`);
-  await pressKey('Enter', 'Enter', 13);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').resultText.text.startsWith('VIABLE.')`);
+  const initialLab = await evaluate(`(() => {
+    const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
+    return {
+      subject: splice.selectedSubjectId,
+      source: splice.selectedSourceId,
+      forecast: splice.forecastText.text
+    };
+  })()`);
+  if (!String(initialLab?.subject).startsWith('r03.test.') || !initialLab?.source) {
+    throw new Error(`Experimentation lab did not start on a test subject with physical material: ${JSON.stringify(initialLab)}`);
+  }
+  if (!initialLab?.forecast?.includes('VIABLE EXPRESSION') || !initialLab?.forecast?.includes('UNKNOWN')) {
+    throw new Error(`Forecast leaked or omitted the uncertainty framing: ${JSON.stringify(initialLab)}`);
+  }
+
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Splice').execute(false); return true; })()`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').outcomeText.text.startsWith('LATEST OUTCOME')`);
+  const afterTest = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
+  if (afterTest?.domain?.experimentHistory?.length !== 1 || afterTest?.domain?.researchKnowledge?.[0]?.observationCount !== 1) {
+    throw new Error(`Test splice did not persist research evidence: ${JSON.stringify(afterTest?.domain)}`);
+  }
+  const mainBefore = afterTest.domain.creatures.find((creature) => creature.role === 'main');
+  if (!mainBefore || mainBefore.spliceHistory.length !== 0) {
+    throw new Error(`Test splice modified the valued main creature: ${JSON.stringify(mainBefore)}`);
+  }
+
+  await evaluate(`(() => {
+    const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
+    splice.selectedSubjectId = 'r03.main.rabbit';
+    splice.confirmArmed = true;
+    splice.refresh();
+    __SPLICEPIT_DEBUG__.setSeed('wp03h-main-smoke');
+    splice.execute(true);
+    return true;
+  })()`);
+  await waitExpr(`__SPLICEPIT_DEBUG__.diagnostics().domain.creatures.some(c => c.role === 'main' && c.spliceHistory.length === 1)`);
+  const afterMain = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
+  const mainAfter = afterMain.domain.creatures.find((creature) => creature.role === 'main');
+  if (!mainAfter || mainAfter.spliceHistory.length !== 1 || afterMain.domain.experimentHistory.length !== 2) {
+    throw new Error(`Irreversible main splice did not persist correctly: ${JSON.stringify(afterMain.domain)}`);
+  }
+  if (mainAfter.lifeState !== 'living') {
+    throw new Error('Smoke seed unexpectedly killed the main creature; choose a non-lethal deterministic smoke seed.');
+  }
+  if (!afterMain.gameplay.currentCreature) {
+    throw new Error('R0.1 Fit Pit compatibility bridge was not populated from the living domain main creature.');
+  }
 
   const spliceDiagnostics = await evaluate(`(() => ({
     diagnostics: __SPLICEPIT_DEBUG__.diagnostics(),
     exported: JSON.parse(__SPLICEPIT_DEBUG__.exportState())
   }))()`);
-  if (spliceDiagnostics?.diagnostics?.rng?.calls < 3 || !spliceDiagnostics?.diagnostics?.creatureBiology?.id) {
+  if (spliceDiagnostics?.diagnostics?.rng?.calls < 1 || !spliceDiagnostics?.diagnostics?.creatureBiology?.id) {
     throw new Error(`Splice diagnostics missing RNG/biology state: ${JSON.stringify(spliceDiagnostics)}`);
   }
-  if (spliceDiagnostics?.exported?.rng?.seed !== 'wp02e-smoke' || spliceDiagnostics?.exported?.version !== 1) {
+  if (spliceDiagnostics?.exported?.rng?.seed !== 'wp03h-main-smoke' || spliceDiagnostics?.exported?.version !== 1) {
     throw new Error(`Debug export is not reproducible: ${JSON.stringify(spliceDiagnostics?.exported)}`);
   }
 
-  try {
-    await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
-  } catch (error) {
-    const diagnostics = await evaluate(`(() => {
-      const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
-      const lab = __SPLICEPIT_GAME__.scene.getScene('Lab');
-      return {
-        activeScenes: __SPLICEPIT_GAME__.scene.getScenes(true).map(s => s.scene.key),
-        rng: __SPLICEPIT_DEBUG__.diagnostics().rng,
-        selected: [...splice.selected],
-        menuIndex: splice.menu?.index,
-        resultText: splice.resultText?.text,
-        spliceStatus: splice.sys?.settings?.status,
-        labStatus: lab.sys?.settings?.status
-      };
-    })()`);
-    throw new Error(`${error.message}; splice diagnostics=${JSON.stringify(diagnostics)}`);
-  }
-
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.start('Lab'); return true; })()`);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
   await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit(); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Battle')`);
   await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Battle').enemy.hp = 1; return true; })()`);
@@ -186,8 +206,8 @@ try {
   if (!save || save.schemaVersion !== 2 || gameplay?.questStage !== 'slice_complete' || gameplay?.fitPitWins !== 1 || !gameplay?.currentCreature) {
     throw new Error(`Unexpected versioned save state: ${JSON.stringify(save)}`);
   }
-  if (!Array.isArray(save.payload?.creatures?.records) || !Array.isArray(save.payload?.materials?.stock) || !Array.isArray(save.payload?.research?.knowledge)) {
-    throw new Error(`Missing R0.2 persistence sections: ${JSON.stringify(save)}`);
+  if (!Array.isArray(save.payload?.creatures?.records) || !Array.isArray(save.payload?.materials?.stock) || !Array.isArray(save.payload?.research?.knowledge) || save.payload?.research?.experiments?.length !== 2) {
+    throw new Error(`Missing R0.3H persistence sections: ${JSON.stringify(save)}`);
   }
 
   const debugRoundTrip = await evaluate(`(() => {
@@ -204,7 +224,7 @@ try {
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: seeded semantic-control flow, diagnostics export/import and versioned saved win');
+  console.log('Browser smoke OK: test-first research, uncertain forecast, irreversible main splice, persistence and Fit Pit bridge');
   ws.close();
 } catch (error) {
   console.error(error);
