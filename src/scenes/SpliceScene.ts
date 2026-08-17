@@ -2,16 +2,22 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PALETTE, TEXT } from '../config.js';
 import { GENES } from '../data/genes.js';
 import { BASE_ANIMALS } from '../data/animals.js';
+import { SemanticInput } from '../input/SemanticInput.js';
+import { t } from '../localisation/strings.js';
 import { gameState } from '../state/GameState.js';
 import { calculateSplice, attemptSplice } from '../systems/spliceSystem.js';
 import { saveGame } from '../systems/saveSystem.js';
-import { addButton, addNoiseLines, addPaperPanel, wrappedText } from '../ui/helpers.js';
+import { addNoiseLines, wrappedText } from '../ui/helpers.js';
+import { addButton, addPanel, FocusMenu } from '../ui/primitives.js';
+import type { FocusableControl } from '../ui/primitives.js';
+import { fadeIn, transitionTo } from '../ui/transitions.js';
 import { drawCreature } from '../render/CreatureRenderer.js';
 
-interface GeneCard {
+interface GeneCard extends FocusableControl {
   id: string;
   tick: Phaser.GameObjects.Rectangle;
   bg: Phaser.GameObjects.Rectangle;
+  focused: boolean;
 }
 
 export class SpliceScene extends Phaser.Scene {
@@ -23,6 +29,8 @@ export class SpliceScene extends Phaser.Scene {
   previewRisk!: Phaser.GameObjects.Text;
   creatureContainer: Phaser.GameObjects.Container | null = null;
   resultText!: Phaser.GameObjects.Text;
+  semanticInput!: SemanticInput;
+  menu!: FocusMenu;
 
   constructor() { super('Splice'); }
 
@@ -30,21 +38,28 @@ export class SpliceScene extends Phaser.Scene {
     this.selected = new Set(gameState.currentCreature?.genes ?? []);
     this.cards = [];
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
+    fadeIn(this);
     this.drawMachine(); addNoiseLines(this, 90, 0.055);
-    this.add.text(48, 35, 'SPLICE BENCH / MANUAL MODE', { ...TEXT.mono, fontSize: '12px', color: '#a0573d' });
-    this.add.text(48, 61, 'Make something viable.', { ...TEXT.title, fontSize: '36px' });
-    wrappedText(this, 48, 108, 'Select any recovered genes. More complex combinations are less likely to hold and more likely to mutate. There is no designed combination limit; the risk curve is the constraint.', 455, { fontSize: '16px' });
+    this.add.text(48, 35, t('splice.eyebrow'), { ...TEXT.mono, fontSize: '12px', color: '#a0573d' });
+    this.add.text(48, 61, t('splice.title'), { ...TEXT.title, fontSize: '36px' });
+    wrappedText(this, 48, 108, t('splice.instructions'), 455, { fontSize: '16px' });
 
+    this.semanticInput = new SemanticInput(this);
     gameState.collectedGenes.forEach((id, index) => this.createGeneCard(id, 48, 200 + index * 66));
-    this.previewPanel = addPaperPanel(this, 560, 45, 355, 430, 0.94);
+    this.previewPanel = addPanel(this, 560, 45, 355, 430, 0.94);
     this.previewTitle = this.add.text(585, 68, '', { ...TEXT.title, fontSize: '25px' });
     this.previewStats = this.add.text(585, 122, '', { ...TEXT.mono, fontSize: '12px', lineSpacing: 7 });
     this.previewRisk = wrappedText(this, 585, 255, '', 290, { fontSize: '16px' });
     this.creatureContainer = null;
-    addButton(this, 710, 445, 260, 'ATTEMPT SPLICE', () => this.splice(), { accent: PALETTE.acid });
-    addButton(this, 170, 500, 240, 'RETURN TO PIT', () => this.scene.start('Lab'), { accent: PALETTE.rust });
+    const attemptButton = addButton(this, 710, 445, 260, t('splice.attempt'), () => this.splice(), { accent: PALETTE.acid });
+    const returnButton = addButton(this, 170, 500, 240, t('splice.return'), () => transitionTo(this, 'Lab'), { accent: PALETTE.rust });
     this.resultText = this.add.text(330, 483, '', { ...TEXT.mono, fontSize: '11px', color: '#b7c86c', wordWrap: { width: 340 } });
+    this.menu = new FocusMenu(this.semanticInput, [...this.cards, attemptButton, returnButton], 'vertical');
     this.refresh();
+  }
+
+  update(): void {
+    this.menu.update();
   }
 
   private drawMachine(): void {
@@ -58,51 +73,79 @@ export class SpliceScene extends Phaser.Scene {
 
   private createGeneCard(id: string, x: number, y: number): void {
     const gene = GENES[id];
-    const c = this.add.container(x, y);
+    const container = this.add.container(x, y);
     const bg = this.add.rectangle(0, 0, 468, 54, PALETTE.paperDeep, 0.94).setOrigin(0).setStrokeStyle(1, PALETTE.bone, 0.25);
     const tick = this.add.rectangle(18, 27, 22, 22, PALETTE.mossDark, 1).setStrokeStyle(2, PALETTE.bone, 0.6);
     const name = this.add.text(38, 10, gene.name, { ...TEXT.body, fontSize: '17px' });
-    const meta = this.add.text(38, 32, `SOURCE ${gene.source.toUpperCase()}  |  COMPLEXITY ${gene.complexity}`, { ...TEXT.mono, fontSize: '9px' });
-    c.add([bg, tick, name, meta]);
-    c.setSize(468, 54).setInteractive(new Phaser.Geom.Rectangle(0, 0, 468, 54), Phaser.Geom.Rectangle.Contains);
-    c.on('pointerdown', () => { this.selected.has(id) ? this.selected.delete(id) : this.selected.add(id); this.refresh(); });
-    this.cards.push({ id, tick, bg });
+    const meta = this.add.text(38, 32, t('splice.cardMeta', { source: gene.source.toUpperCase(), complexity: gene.complexity }), { ...TEXT.mono, fontSize: '9px' });
+    container.add([bg, tick, name, meta]);
+    container.setSize(468, 54).setInteractive(new Phaser.Geom.Rectangle(0, 0, 468, 54), Phaser.Geom.Rectangle.Contains);
+
+    let focusRequester: (() => void) | undefined;
+    let enabled = true;
+    const card: GeneCard = {
+      id,
+      tick,
+      bg,
+      focused: false,
+      setFocused: (focused: boolean): void => { card.focused = focused; this.renderCard(card); },
+      activate: (): void => { if (!enabled) return; this.selected.has(id) ? this.selected.delete(id) : this.selected.add(id); this.refresh(); },
+      setFocusRequester: (requester: (() => void) | undefined): void => { focusRequester = requester; },
+      setVisible: (visible: boolean): void => { container.setVisible(visible); },
+      setEnabled: (value: boolean): void => { enabled = value; if (value) container.setInteractive(new Phaser.Geom.Rectangle(0, 0, 468, 54), Phaser.Geom.Rectangle.Contains); else container.disableInteractive(); container.setAlpha(value ? 1 : 0.48); },
+    };
+
+    container.on('pointerover', () => focusRequester?.());
+    container.on('pointerdown', () => card.activate());
+    this.cards.push(card);
+  }
+
+  private renderCard(card: GeneCard): void {
+    const selected = this.selected.has(card.id);
+    card.tick.setFillStyle(selected ? PALETTE.acid : PALETTE.mossDark, selected ? 0.95 : 1);
+    if (card.focused) card.bg.setStrokeStyle(3, PALETTE.bone, 1);
+    else card.bg.setStrokeStyle(selected ? 2 : 1, selected ? PALETTE.acid : PALETTE.bone, selected ? 0.8 : 0.25);
   }
 
   private refresh(): void {
-    this.cards.forEach(({ id, tick, bg }) => {
-      const on = this.selected.has(id);
-      tick.setFillStyle(on ? PALETTE.acid : PALETTE.mossDark, on ? 0.95 : 1);
-      bg.setStrokeStyle(1, on ? PALETTE.acid : PALETTE.bone, on ? 0.8 : 0.25);
-    });
+    this.cards.forEach((card) => this.renderCard(card));
     const genes = [...this.selected];
     const baseAnimalId = gameState.baseAnimalId;
     if (!baseAnimalId) throw new Error('Splice scene requires a base animal.');
     const plan = calculateSplice(baseAnimalId, genes);
-    this.previewTitle.setText(`${BASE_ANIMALS[baseAnimalId].name} + ${genes.length} gene${genes.length === 1 ? '' : 's'}`);
-    this.previewStats.setText([
-      `VIABILITY       ${plan.chance}%`, `COMPLEXITY      ${plan.complexity}`, '',
-      `HP              ${plan.stats.maxHp}`, `ATTACK          ${plan.stats.attack}`, `DEFENCE         ${plan.stats.defence}`, `SPEED           ${plan.stats.speed}`, `STABILITY       ${plan.stats.stability}%`,
-    ].join('\n'));
-    this.previewRisk.setText(genes.length === 0 ? 'A rabbit remains, disappointingly, a rabbit.' : plan.chance >= 75 ? 'Reasonable chance of a clean hold. Mutation remains possible.' : 'The bench recommends fewer genes. The bench has never owned a Fit Pit.');
+    this.previewTitle.setText(t('splice.previewTitle', {
+      base: BASE_ANIMALS[baseAnimalId].name,
+      count: genes.length,
+      geneWord: t(genes.length === 1 ? 'splice.geneSingular' : 'splice.genePlural'),
+    }));
+    this.previewStats.setText(t('splice.previewStats', {
+      chance: plan.chance,
+      complexity: plan.complexity,
+      hp: plan.stats.maxHp,
+      attack: plan.stats.attack,
+      defence: plan.stats.defence,
+      speed: plan.stats.speed,
+      stability: plan.stats.stability,
+    }));
+    this.previewRisk.setText(genes.length === 0 ? t('splice.risk.none') : plan.chance >= 75 ? t('splice.risk.reasonable') : t('splice.risk.high'));
     if (this.creatureContainer) this.creatureContainer.destroy();
     this.creatureContainer = drawCreature(this, 790, 360, { genes, mutation: null }, { scale: 0.63 });
   }
 
   splice(): void {
     const genes = [...this.selected];
-    if (genes.length === 0) { this.resultText.setText('Select at least one gene.'); return; }
+    if (genes.length === 0) { this.resultText.setText(t('splice.selectGene')); return; }
     const baseAnimalId = gameState.baseAnimalId;
     if (!baseAnimalId) throw new Error('Splice scene requires a base animal.');
     const result = attemptSplice(baseAnimalId, genes);
     if (!result.success) {
-      this.resultText.setText(`FAILED (${Math.round(result.roll)} / ${result.chance}). ${result.message}`);
+      this.resultText.setText(t('splice.failed', { roll: Math.round(result.roll), chance: result.chance, message: result.message }));
       this.cameras.main.shake(180, 0.008);
       return;
     }
     gameState.setCreature(result.creature); saveGame();
-    this.resultText.setText(`VIABLE. ${result.message} Creature logged as ${result.creature.name}.`);
+    this.resultText.setText(t('splice.success', { message: result.message, name: result.creature.name }));
     this.cameras.main.flash(220, 183, 200, 108, false);
-    this.time.delayedCall(900, () => this.scene.start('Lab'));
+    this.time.delayedCall(900, () => transitionTo(this, 'Lab'));
   }
 }

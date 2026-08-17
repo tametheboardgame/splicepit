@@ -87,6 +87,14 @@ try {
     return waitFor(async () => Boolean(await evaluate(expression)), timeoutMs, 120);
   }
 
+  async function pressKey(key, code, windowsVirtualKeyCode) {
+    const params = { key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode };
+    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
+    await sleep(45);
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
+    await sleep(180);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
@@ -104,39 +112,55 @@ try {
     throw new Error(`${error.message}; startup diagnostics=${JSON.stringify(diagnostics)}`);
   }
 
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.start('Intro'); return true; })()`);
+  await pressKey('Enter', 'Enter', 13);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Intro')`);
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.start('Lab'); return true; })()`);
+  await pressKey('Enter', 'Enter', 13);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
+
+  await pressKey('ArrowRight', 'ArrowRight', 39);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x === 3`);
+  await pressKey('e', 'KeyE', 69);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === true`);
+  await pressKey('Escape', 'Escape', 27);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === false`);
 
   await evaluate(`(() => {
     const lab = __SPLICEPIT_GAME__.scene.getScene('Lab');
-    lab.useAnimalPen(); lab.closeMessage();
-    lab.useGeneCabinet(); lab.closeMessage();
-    lab.useSpliceBench();
+    lab.useGeneCabinet(); lab.closeMessage(); lab.useSpliceBench();
     return true;
   })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Splice')`);
 
-  await evaluate(`(() => {
-    const oldRandom = Math.random;
-    Math.random = () => 0.01;
-    const scene = __SPLICEPIT_GAME__.scene.getScene('Splice');
-    scene.selected = new Set(['gecko_regeneration']);
-    scene.splice();
-    Math.random = oldRandom;
-    return true;
-  })()`);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
+  await evaluate(`(() => { globalThis.__SPLICEPIT_OLD_RANDOM__ = Math.random; Math.random = () => 0.01; return true; })()`);
+  await pressKey('Enter', 'Enter', 13);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').selected.has('gecko_regeneration')`);
+  await pressKey('ArrowDown', 'ArrowDown', 40);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').menu.index === 1`);
+  await pressKey('Enter', 'Enter', 13);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').resultText.text.startsWith('VIABLE.')`);
+  await evaluate(`(() => { Math.random = globalThis.__SPLICEPIT_OLD_RANDOM__; delete globalThis.__SPLICEPIT_OLD_RANDOM__; return true; })()`);
+  try {
+    await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
+  } catch (error) {
+    const diagnostics = await evaluate(`(() => {
+      const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
+      const lab = __SPLICEPIT_GAME__.scene.getScene('Lab');
+      return {
+        activeScenes: __SPLICEPIT_GAME__.scene.getScenes(true).map(s => s.scene.key),
+        selected: [...splice.selected],
+        menuIndex: splice.menu?.index,
+        resultText: splice.resultText?.text,
+        spliceStatus: splice.sys?.settings?.status,
+        labStatus: lab.sys?.settings?.status
+      };
+    })()`);
+    throw new Error(`${error.message}; splice diagnostics=${JSON.stringify(diagnostics)}`);
+  }
 
   await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit(); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Battle')`);
-  await evaluate(`(() => {
-    const battle = __SPLICEPIT_GAME__.scene.getScene('Battle');
-    battle.enemy.hp = 1;
-    battle.takeTurn('attack');
-    return true;
-  })()`);
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Battle').enemy.hp = 1; return true; })()`);
+  await pressKey('1', 'Digit1', 49);
 
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Battle').finished === true`, 5000);
   const save = await evaluate(`JSON.parse(localStorage.getItem('splicepit-save'))`);
@@ -151,7 +175,7 @@ try {
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: dist Title -> Intro -> Lab -> Splice -> Battle -> versioned saved win');
+  console.log('Browser smoke OK: semantic keyboard Title -> Intro -> Lab interaction -> Splice -> Battle -> versioned saved win');
   ws.close();
 } catch (error) {
   console.error(error);
