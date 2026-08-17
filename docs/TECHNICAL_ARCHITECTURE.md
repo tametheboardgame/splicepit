@@ -50,8 +50,9 @@ R0.2 must support future concepts already locked:
 - main roster max three
 - separate lab/test-animal stock
 - material inventory separate from knowledge records
-- Land/Water/Air eligibility/capabilities
+- Land/Water/Air eligibility/capabilities, including multi-environment qualification
 - persistent injury/mutation fields even if later mechanics are not fully implemented yet
+- age/history fields without building a punitive ageing timer
 
 Schemas should leave room for these concepts rather than forcing later breaking rewrites.
 
@@ -159,3 +160,7 @@ Later:
 8. Creature schema supports cumulative irreversible history and persistent identity.
 9. Save schema distinguishes main roster, lab stock, material and knowledge.
 10. Browser build/deployment/tests pass.
+
+## Execution mapping
+
+The architecture is implemented by `ROADMAP.md` and the detailed contracts in `work-packages/R0_FOUNDATIONS.md`, especially WP0.2A–E. Later domain contracts are extended deliberately by the splicing/combat/world WPs rather than through ad-hoc scene changes.
