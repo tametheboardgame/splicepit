@@ -117,9 +117,9 @@ Every result records RNG snapshots immediately before and after resolution. Repl
 
 ## Save/schema impact
 
-None in WP0.3D.
+WP0.3D itself did not mutate persisted creature state. WP0.3E now consumes this result and persists resolved expression quality, attempt stability, added complexity and consequences in save schema v2.
 
-The resolver returns the detailed result but does not yet change the persisted creature schema. WP0.3E owns cumulative creature biology/history persistence and will decide how resolved expression/stability state is represented in the existing versioned save contract.
+See `CREATURE_BIOLOGY_MODEL.md` for the cumulative-history and migration contract.
 
 ## Acceptance coverage
 

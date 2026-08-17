@@ -1,4 +1,4 @@
-import { decodeSave, encodeSave, type SaveEnvelopeV1 } from './saveSchema.js';
+import { decodeSave, encodeSave, type SaveEnvelopeV2 } from './saveSchema.js';
 
 export interface StorageLike { getItem(key: string): string | null; setItem(key: string, value: string): void; removeItem(key: string): void; }
 
@@ -7,9 +7,9 @@ export const SAVE_KEYS = {
   legacyR01: 'splicepit-r0-save', legacyR01Archive: 'splicepit-r0-save-archive', settings: 'splicepit-settings',
 } as const;
 
-export type SaveReadResult = { envelope: SaveEnvelopeV1; source: 'primary' | 'backup' };
+export type SaveReadResult = { envelope: SaveEnvelopeV2; source: 'primary' | 'backup' };
 
-function tryDecode(raw: string | null): SaveEnvelopeV1 | null { if (!raw) return null; try { return decodeSave(raw); } catch { return null; } }
+function tryDecode(raw: string | null): SaveEnvelopeV2 | null { if (!raw) return null; try { return decodeSave(raw); } catch { return null; } }
 
 export function archiveLegacyR01Save(storage: StorageLike): boolean {
   const legacy = storage.getItem(SAVE_KEYS.legacyR01);
@@ -31,7 +31,7 @@ export function readSave(storage: StorageLike): SaveReadResult | null {
 
 export function hasReadableSave(storage: StorageLike): boolean { return readSave(storage) !== null; }
 
-export function writeSave(storage: StorageLike, envelope: SaveEnvelopeV1): boolean {
+export function writeSave(storage: StorageLike, envelope: SaveEnvelopeV2): boolean {
   const encoded = encodeSave(envelope);
   try {
     storage.setItem(SAVE_KEYS.staging, encoded);

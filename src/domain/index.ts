@@ -4,3 +4,4 @@ export * from './research.js';
 export * from './validation.js';
 export * from './compatibility.js';
 export * from './spliceResolution.js';
+export * from './creatureBiology.js';
