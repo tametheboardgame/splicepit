@@ -1,7 +1,7 @@
-WP0.3E diagnostic result: failure
-Commit tested: 0d9313d90faf2a28159016f2f5e3eb5dbd6485fa
+WP0.3E diagnostic result: success
+Commit tested: 186c652cc60774f37ed0bb007fee4342589de108
 npm run verify: success
-npm run smoke: failure
+npm run smoke: success
 
 ===== VERIFY =====
 
@@ -30,319 +30,319 @@ TAP version 13
 # Subtest: attack deals at least one damage
 ok 1 - attack deals at least one damage
   ---
-  duration_ms: 0.913467
+  duration_ms: 0.995685
   type: 'test'
   ...
 # Subtest: regeneration trait heals without exceeding max hp
 ok 2 - regeneration trait heals without exceeding max hp
   ---
-  duration_ms: 0.216694
+  duration_ms: 0.241732
   type: 'test'
   ...
 # Subtest: WP0.3A locks the exact six-class biological taxonomy and validates canonical biology
 ok 3 - WP0.3A locks the exact six-class biological taxonomy and validates canonical biology
   ---
-  duration_ms: 2.472392
+  duration_ms: 2.466709
   type: 'test'
   ...
 # Subtest: Rabbit, Goat and Pig are canonical biological base definitions
 ok 4 - Rabbit, Goat and Pig are canonical biological base definitions
   ---
-  duration_ms: 0.290115
+  duration_ms: 0.327673
   type: 'test'
   ...
 # Subtest: all ten opening source packages are canonical multi-expression bundles
 ok 5 - all ten opening source packages are canonical multi-expression bundles
   ---
-  duration_ms: 0.350715
+  duration_ms: 0.332403
   type: 'test'
   ...
 # Subtest: one source can describe several plausible results without a base-pairing table
 ok 6 - one source can describe several plausible results without a base-pairing table
   ---
-  duration_ms: 0.258788
+  duration_ms: 0.271989
   type: 'test'
   ...
 # Subtest: combined catalogue promotes canonical Rabbit and Gecko while retaining R0.1 compatibility content
 ok 7 - combined catalogue promotes canonical Rabbit and Gecko while retaining R0.1 compatibility content
   ---
-  duration_ms: 2.123229
+  duration_ms: 1.559801
   type: 'test'
   ...
 # Subtest: biological validation rejects invalid taxonomy coverage and duplicate expression IDs
 ok 8 - biological validation rejects invalid taxonomy coverage and duplicate expression IDs
   ---
-  duration_ms: 0.793558
+  duration_ms: 0.718676
   type: 'test'
   ...
 # Subtest: systemic structural context creates synergy and conflict across canonical base animals
 ok 9 - systemic structural context creates synergy and conflict across canonical base animals
   ---
-  duration_ms: 1.967165
+  duration_ms: 2.02976
   type: 'test'
   ...
 # Subtest: multi-source attempts detect systemic surface competition without a pair table
 ok 10 - multi-source attempts detect systemic surface competition without a pair table
   ---
-  duration_ms: 0.346349
+  duration_ms: 0.378709
   type: 'test'
   ...
 # Subtest: existing expressed biology changes later compatibility context
 ok 11 - existing expressed biology changes later compatibility context
   ---
-  duration_ms: 0.528711
+  duration_ms: 0.522518
   type: 'test'
   ...
 # Subtest: redundancy and regulatory interactions are represented separately
 ok 12 - redundancy and regulatory interactions are represented separately
   ---
-  duration_ms: 0.38774
+  duration_ms: 0.418634
   type: 'test'
   ...
 # Subtest: authored interactions can augment or override systemic rules
 ok 13 - authored interactions can augment or override systemic rules
   ---
-  duration_ms: 0.931495
+  duration_ms: 0.91894
   type: 'test'
   ...
 # Subtest: observable and diagnostic views reveal different information without changing biology
 ok 14 - observable and diagnostic views reveal different information without changing biology
   ---
-  duration_ms: 1.571723
+  duration_ms: 1.133623
   type: 'test'
   ...
 # Subtest: sequential splices accumulate irreversible history and independent functional arena capability
 ok 15 - sequential splices accumulate irreversible history and independent functional arena capability
   ---
-  duration_ms: 4.972815
+  duration_ms: 5.316966
   type: 'test'
   ...
 # Subtest: attempted or visibly expressed biology grants no capability when the resolved expression is non-functional
 ok 16 - attempted or visibly expressed biology grants no capability when the resolved expression is non-functional
   ---
-  duration_ms: 0.476123
+  duration_ms: 0.454631
   type: 'test'
   ...
 # Subtest: active injury can suppress a real capability without deleting the biological history
 ok 17 - active injury can suppress a real capability without deleting the biological history
   ---
-  duration_ms: 1.831301
+  duration_ms: 1.385124
   type: 'test'
   ...
 # Subtest: later compatibility sees prior expression, mutation and injury context rather than source labels alone
 ok 18 - later compatibility sees prior expression, mutation and injury context rather than source labels alone
   ---
-  duration_ms: 0.904294
+  duration_ms: 0.963104
   type: 'test'
   ...
 # Subtest: cumulative biology survives save/load with history and derived capability unchanged
 ok 19 - cumulative biology survives save/load with history and derived capability unchanged
   ---
-  duration_ms: 1.657141
+  duration_ms: 1.712156
   type: 'test'
   ...
 # Subtest: debug state encoding preserves gameplay, domain, scene and RNG state
 ok 20 - debug state encoding preserves gameplay, domain, scene and RNG state
   ---
-  duration_ms: 1.753004
+  duration_ms: 1.743084
   type: 'test'
   ...
 # Subtest: debug state rejects unsupported versions
 ok 21 - debug state rejects unsupported versions
   ---
-  duration_ms: 0.54057
+  duration_ms: 0.534251
   type: 'test'
   ...
 # Subtest: prototype content catalog validates with explicit statuses and references
 ok 22 - prototype content catalog validates with explicit statuses and references
   ---
-  duration_ms: 2.134236
+  duration_ms: 2.346173
   type: 'test'
   ...
 # Subtest: content validation rejects duplicate IDs, broken references and invalid revisions
 ok 23 - content validation rejects duplicate IDs, broken references and invalid revisions
   ---
-  duration_ms: 0.635742
+  duration_ms: 0.64087
   type: 'test'
   ...
 # Subtest: representative Phaser-independent state supports main roster, test stock, material, knowledge and multi-arena capability
 ok 24 - representative Phaser-independent state supports main roster, test stock, material, knowledge and multi-arena capability
   ---
-  duration_ms: 0.842942
+  duration_ms: 0.899674
   type: 'test'
   ...
 # Subtest: domain validation rejects negative stock, over-sized main roster and unordered splice history
 ok 25 - domain validation rejects negative stock, over-sized main roster and unordered splice history
   ---
-  duration_ms: 0.538185
+  duration_ms: 0.566611
   type: 'test'
   ...
 # Subtest: semantic action catalogue covers movement, interaction, menus, lab and battle
 ok 26 - semantic action catalogue covers movement, interaction, menus, lab and battle
   ---
-  duration_ms: 2.791529
+  duration_ms: 2.277356
   type: 'test'
   ...
 # Subtest: localisation catalogue supports IDs, interpolation and locale enumeration
 ok 27 - localisation catalogue supports IDs, interpolation and locale enumeration
   ---
-  duration_ms: 0.317616
+  duration_ms: 0.323796
   type: 'test'
   ...
 # Subtest: dialogue definitions resolve through string IDs and retain future audio slot
 ok 28 - dialogue definitions resolve through string IDs and retain future audio slot
   ---
-  duration_ms: 0.267471
+  duration_ms: 0.283461
   type: 'test'
   ...
 # Subtest: playable scenes do not own physical keyboard bindings or direct transitions
 ok 29 - playable scenes do not own physical keyboard bindings or direct transitions
   ---
-  duration_ms: 0.431876
+  duration_ms: 0.445685
   type: 'test'
   ...
 # Subtest: repeated test-animal experiments consume physical stock and increase contextual knowledge
 ok 30 - repeated test-animal experiments consume physical stock and increase contextual knowledge
   ---
-  duration_ms: 3.113361
+  duration_ms: 2.757104
   type: 'test'
   ...
 # Subtest: learned knowledge never creates replacement source material
 ok 31 - learned knowledge never creates replacement source material
   ---
-  duration_ms: 0.658816
+  duration_ms: 0.632955
   type: 'test'
   ...
 # Subtest: research is stored separately for relevant base and experiment context
 ok 32 - research is stored separately for relevant base and experiment context
   ---
-  duration_ms: 0.484305
+  duration_ms: 0.483526
   type: 'test'
   ...
 # Subtest: attempt costs are atomic when reagent stock is insufficient
 ok 33 - attempt costs are atomic when reagent stock is insufficient
   ---
-  duration_ms: 0.831035
+  duration_ms: 0.856023
   type: 'test'
   ...
 # Subtest: material quality threshold can make physically present stock ineligible
 ok 34 - material quality threshold can make physically present stock ineligible
   ---
-  duration_ms: 0.341892
+  duration_ms: 0.355496
   type: 'test'
   ...
 # Subtest: same seed produces the same random sequence
 ok 35 - same seed produces the same random sequence
   ---
-  duration_ms: 1.462109
+  duration_ms: 1.631857
   type: 'test'
   ...
 # Subtest: RNG snapshot restores the exact continuation point
 ok 36 - RNG snapshot restores the exact continuation point
   ---
-  duration_ms: 1.163622
+  duration_ms: 1.186753
   type: 'test'
   ...
 # Subtest: splice fixture is reproducible from inputs plus seed
 ok 37 - splice fixture is reproducible from inputs plus seed
   ---
-  duration_ms: 0.524365
+  duration_ms: 0.60311
   type: 'test'
   ...
 # Subtest: current save schema round-trips resolved cumulative biological history
 ok 38 - current save schema round-trips resolved cumulative biological history
   ---
-  duration_ms: 2.537178
+  duration_ms: 3.153457
   type: 'test'
   ...
 # Subtest: historical schema-v0 fixture migrates through the complete save pipeline
 ok 39 - historical schema-v0 fixture migrates through the complete save pipeline
   ---
-  duration_ms: 0.844734
+  duration_ms: 1.127092
   type: 'test'
   ...
 # Subtest: schema-v1 creatures migrate to v2 without losing legacy history or capabilities
 ok 40 - schema-v1 creatures migrate to v2 without losing legacy history or capabilities
   ---
-  duration_ms: 0.496914
+  duration_ms: 0.62483
   type: 'test'
   ...
 # Subtest: failed primary decode falls back to the last readable backup without destroying it
 ok 41 - failed primary decode falls back to the last readable backup without destroying it
   ---
-  duration_ms: 1.661658
+  duration_ms: 2.092961
   type: 'test'
   ...
 # Subtest: R0.1 prototype save is archived before reset rather than silently discarded or permanently migrated
 ok 42 - R0.1 prototype save is archived before reset rather than silently discarded or permanently migrated
   ---
-  duration_ms: 0.212979
+  duration_ms: 0.242554
   type: 'test'
   ...
 # Subtest: settings are stored separately and survive clearing game saves
 ok 43 - settings are stored separately and survive clearing game saves
   ---
-  duration_ms: 0.437805
+  duration_ms: 0.572863
   type: 'test'
   ...
 # Subtest: future incompatible schemas are rejected without mutating the source data
 ok 44 - future incompatible schemas are rejected without mutating the source data
   ---
-  duration_ms: 0.423684
+  duration_ms: 0.566591
   type: 'test'
   ...
 # Subtest: distribution contains all eight locked bands and only enables catastrophe at extreme risk
 ok 45 - distribution contains all eight locked bands and only enables catastrophe at extreme risk
   ---
-  duration_ms: 2.454495
+  duration_ms: 3.083646
   type: 'test'
   ...
 # Subtest: same nominal recipe across seeds produces several legitimate outcomes
 ok 46 - same nominal recipe across seeds produces several legitimate outcomes
   ---
-  duration_ms: 6.98644
+  duration_ms: 9.29409
   type: 'test'
   ...
 # Subtest: replaying the same seed reproduces band, expression and stability exactly
 ok 47 - replaying the same seed reproduces band, expression and stability exactly
   ---
-  duration_ms: 0.473439
+  duration_ms: 0.639197
   type: 'test'
   ...
 # Subtest: normal successes retain independent expression selection and material strength variance
 ok 48 - normal successes retain independent expression selection and material strength variance
   ---
-  duration_ms: 0.326078
+  duration_ms: 0.612036
   type: 'test'
   ...
 # Subtest: accumulated complexity and low stability increase danger without imposing a gene-count ceiling
 ok 49 - accumulated complexity and low stability increase danger without imposing a gene-count ceiling
   ---
-  duration_ms: 0.431155
+  duration_ms: 0.348092
   type: 'test'
   ...
 # Subtest: death can only occur inside an eligible catastrophic result
 ok 50 - death can only occur inside an eligible catastrophic result
   ---
-  duration_ms: 36.504037
+  duration_ms: 56.525029
   type: 'test'
   ...
 # Subtest: additional gene complexity reduces viability
 ok 51 - additional gene complexity reduces viability
   ---
-  duration_ms: 0.751425
+  duration_ms: 1.187043
   type: 'test'
   ...
 # Subtest: successful splice derives stats and stores genes
 ok 52 - successful splice derives stats and stores genes
   ---
-  duration_ms: 1.614588
+  duration_ms: 2.157632
   type: 'test'
   ...
 # Subtest: failed splice does not emit a creature
 ok 53 - failed splice does not emit a creature
   ---
-  duration_ms: 0.16076
+  duration_ms: 0.220753
   type: 'test'
   ...
 1..53
@@ -353,7 +353,7 @@ ok 53 - failed splice does not emit a creature
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 841.993311
+# duration_ms 808.143787
 
 > splicepit@0.2.0 build
 > vite build
@@ -371,38 +371,11 @@ computing gzip size...
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32m✓ built in 5.07s[39m
+[32m✓ built in 6.11s[39m
 
 ===== BROWSER SMOKE =====
 
 > splicepit@0.2.0 smoke
 > node scripts/browser-smoke.mjs
 
-Error: Unexpected versioned save state: {"format":"splicepit-save","schemaVersion":2,"gameVersion":"0.2.0","savedAt":"2026-08-17T14:58:02.091Z","payload":{"gameplay":{"hasBaseAnimal":true,"baseAnimalId":"rabbit","collectedGenes":["gecko_regeneration"],"currentCreature":{"id":"splice-f718a261","name":"Gecko Rabbit","baseAnimalId":"rabbit","genes":["gecko_regeneration"],"stats":{"maxHp":36,"attack":6,"defence":5,"speed":8,"stability":83},"mutation":null,"createdAt":"2026-08-17T14:58:00.640Z"},"coins":42,"debt":830,"fitPitWins":1,"questStage":"slice_complete","seenIntro":true},"creatures":{"records":[],"mainCreatureIds":[],"testAnimalIds":[]},"materials":{"stock":[],"reagents":[]},"research":{"knowledge":[],"experiments":[]},"progression":{"activeStateIds":[],"activeQuestIds":[],"completedQuestIds":[]}}}
-    at file:///home/runner/work/splicepit/splicepit/scripts/browser-smoke.mjs:187:11
-[2233:2249:0817/145757.111073:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2249:0817/145757.111463:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2249:0817/145757.307391:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2249:0817/145757.346071:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-
-DevTools listening on ws://127.0.0.1:9222/devtools/browser/c594e767-8e16-4e03-9b7d-7340c204ac1f
-[2233:2233:0817/145757.492779:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2233:0817/145757.493759:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2249:0817/145757.493838:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2249:0817/145757.493851:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2233:0817/145757.496840:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2233:0817/145757.509132:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2249:0817/145757.511140:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2233:0817/145757.558326:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2233:0817/145757.561765:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2249:0817/145757.564116:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2233:0817/145757.575437:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2233:0817/145757.609909:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2233:0817/145757.609975:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.UPower was not provided by any .service files
-[2233:2249:0817/145757.612692:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2233:0817/145757.667426:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2249:0817/145757.667521:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[2233:2233:0817/145757.706868:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[2233:2233:0817/145757.711006:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.NetworkManager.GetDevices: object_path= /org/freedesktop/NetworkManager: org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.NetworkManager was not provided by any .service files
-[2263:2263:0817/145758.482973:ERROR:gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc:1209] []Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.
-
+Browser smoke OK: seeded semantic-control flow, diagnostics export/import and versioned saved win
