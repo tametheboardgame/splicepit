@@ -1,5 +1,13 @@
 import type { CreatureId } from '../domain/ids.js';
-import type { CreatureState, DomainProgressionState, GameDomainState, MaterialLot, ResearchKnowledgeRecord } from '../domain/model.js';
+import type {
+  CreatureState,
+  DomainProgressionState,
+  ExperimentObservationRecord,
+  GameDomainState,
+  MaterialLot,
+  ReagentStockEntry,
+  ResearchKnowledgeRecord,
+} from '../domain/model.js';
 import type { GameStateSnapshot } from '../types.js';
 
 export const SAVE_FORMAT = 'splicepit-save' as const;
@@ -9,8 +17,8 @@ export const R0_2_GAME_VERSION = '0.2.0';
 export interface SavePayloadV1 {
   gameplay: GameStateSnapshot;
   creatures: { records: CreatureState[]; mainCreatureIds: CreatureId[]; testAnimalIds: CreatureId[] };
-  materials: { stock: MaterialLot[] };
-  research: { knowledge: ResearchKnowledgeRecord[] };
+  materials: { stock: MaterialLot[]; reagents?: ReagentStockEntry[] };
+  research: { knowledge: ResearchKnowledgeRecord[]; experiments?: ExperimentObservationRecord[] };
   progression: DomainProgressionState;
 }
 
@@ -53,10 +61,16 @@ function validateDomainSections(payload: Record<string, unknown>): void {
   requireArray(creatures.records, 'payload.creatures.records');
   requireArray(creatures.mainCreatureIds, 'payload.creatures.mainCreatureIds');
   requireArray(creatures.testAnimalIds, 'payload.creatures.testAnimalIds');
-  const materials = requireRecord(payload.materials, 'payload.materials'); requireArray(materials.stock, 'payload.materials.stock');
-  const research = requireRecord(payload.research, 'payload.research'); requireArray(research.knowledge, 'payload.research.knowledge');
+  const materials = requireRecord(payload.materials, 'payload.materials');
+  requireArray(materials.stock, 'payload.materials.stock');
+  if (materials.reagents !== undefined) requireArray(materials.reagents, 'payload.materials.reagents');
+  const research = requireRecord(payload.research, 'payload.research');
+  requireArray(research.knowledge, 'payload.research.knowledge');
+  if (research.experiments !== undefined) requireArray(research.experiments, 'payload.research.experiments');
   const progression = requireRecord(payload.progression, 'payload.progression');
-  requireArray(progression.activeStateIds, 'payload.progression.activeStateIds'); requireArray(progression.activeQuestIds, 'payload.progression.activeQuestIds'); requireArray(progression.completedQuestIds, 'payload.progression.completedQuestIds');
+  requireArray(progression.activeStateIds, 'payload.progression.activeStateIds');
+  requireArray(progression.activeQuestIds, 'payload.progression.activeQuestIds');
+  requireArray(progression.completedQuestIds, 'payload.progression.completedQuestIds');
 }
 
 function migrateV0ToV1(value: SaveEnvelopeV0): SaveEnvelopeV1 {
@@ -69,8 +83,14 @@ function migrateV0ToV1(value: SaveEnvelopeV0): SaveEnvelopeV1 {
     payload: {
       gameplay: structuredClone(value.payload.gameplay),
       creatures: { records: structuredClone(domain.creatures) as CreatureState[], mainCreatureIds: structuredClone(domain.mainCreatureIds) as CreatureId[], testAnimalIds: structuredClone(domain.testAnimalIds) as CreatureId[] },
-      materials: { stock: structuredClone(domain.materialStock) as MaterialLot[] },
-      research: { knowledge: structuredClone(domain.researchKnowledge) as ResearchKnowledgeRecord[] },
+      materials: {
+        stock: structuredClone(domain.materialStock) as MaterialLot[],
+        reagents: structuredClone(domain.reagentStock ?? []) as ReagentStockEntry[],
+      },
+      research: {
+        knowledge: structuredClone(domain.researchKnowledge) as ResearchKnowledgeRecord[],
+        experiments: structuredClone(domain.experimentHistory ?? []) as ExperimentObservationRecord[],
+      },
       progression: structuredClone(domain.progression),
     },
   };
@@ -88,9 +108,17 @@ function migrateV0Unknown(value: unknown): SaveEnvelopeV1 {
   const payload = requireRecord(envelope.payload, 'payload');
   validateGameplay(payload.gameplay);
   const domain = requireRecord(payload.domain, 'payload.domain');
-  requireArray(domain.creatures, 'payload.domain.creatures'); requireArray(domain.mainCreatureIds, 'payload.domain.mainCreatureIds'); requireArray(domain.testAnimalIds, 'payload.domain.testAnimalIds'); requireArray(domain.materialStock, 'payload.domain.materialStock'); requireArray(domain.researchKnowledge, 'payload.domain.researchKnowledge');
-  const progression = requireRecord(domain.progression, 'payload.domain.progression'); requireArray(progression.activeStateIds, 'payload.domain.progression.activeStateIds'); requireArray(progression.activeQuestIds, 'payload.domain.progression.activeQuestIds'); requireArray(progression.completedQuestIds, 'payload.domain.progression.completedQuestIds');
-  requireString(envelope.gameVersion, 'gameVersion'); requireString(envelope.savedAt, 'savedAt');
+  requireArray(domain.creatures, 'payload.domain.creatures');
+  requireArray(domain.mainCreatureIds, 'payload.domain.mainCreatureIds');
+  requireArray(domain.testAnimalIds, 'payload.domain.testAnimalIds');
+  requireArray(domain.materialStock, 'payload.domain.materialStock');
+  requireArray(domain.researchKnowledge, 'payload.domain.researchKnowledge');
+  const progression = requireRecord(domain.progression, 'payload.domain.progression');
+  requireArray(progression.activeStateIds, 'payload.domain.progression.activeStateIds');
+  requireArray(progression.activeQuestIds, 'payload.domain.progression.activeQuestIds');
+  requireArray(progression.completedQuestIds, 'payload.domain.progression.completedQuestIds');
+  requireString(envelope.gameVersion, 'gameVersion');
+  requireString(envelope.savedAt, 'savedAt');
   return migrateV0ToV1(value as SaveEnvelopeV0);
 }
 
@@ -118,8 +146,11 @@ export function decodeSave(raw: string): SaveEnvelopeV1 {
   const migrated = migrateUnknown(parsed);
   const envelope = requireRecord(migrated, 'save');
   if (envelope.format !== SAVE_FORMAT || envelope.schemaVersion !== SAVE_SCHEMA_VERSION) throw new SaveDecodeError('Save migration did not produce the current schema');
-  requireString(envelope.gameVersion, 'gameVersion'); requireString(envelope.savedAt, 'savedAt');
-  const payload = requireRecord(envelope.payload, 'payload'); validateGameplay(payload.gameplay); validateDomainSections(payload);
+  requireString(envelope.gameVersion, 'gameVersion');
+  requireString(envelope.savedAt, 'savedAt');
+  const payload = requireRecord(envelope.payload, 'payload');
+  validateGameplay(payload.gameplay);
+  validateDomainSections(payload);
   return structuredClone(migrated) as SaveEnvelopeV1;
 }
 
@@ -127,12 +158,21 @@ export function encodeSave(envelope: SaveEnvelopeV1): string { return JSON.strin
 
 export function createSaveEnvelope(gameplay: GameStateSnapshot, domain: GameDomainState, savedAt = new Date().toISOString(), gameVersion = R0_2_GAME_VERSION): SaveEnvelopeV1 {
   return {
-    format: SAVE_FORMAT, schemaVersion: SAVE_SCHEMA_VERSION, gameVersion, savedAt,
+    format: SAVE_FORMAT,
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    gameVersion,
+    savedAt,
     payload: {
       gameplay: structuredClone(gameplay),
       creatures: { records: structuredClone(domain.creatures) as CreatureState[], mainCreatureIds: structuredClone(domain.mainCreatureIds) as CreatureId[], testAnimalIds: structuredClone(domain.testAnimalIds) as CreatureId[] },
-      materials: { stock: structuredClone(domain.materialStock) as MaterialLot[] },
-      research: { knowledge: structuredClone(domain.researchKnowledge) as ResearchKnowledgeRecord[] },
+      materials: {
+        stock: structuredClone(domain.materialStock) as MaterialLot[],
+        reagents: structuredClone(domain.reagentStock) as ReagentStockEntry[],
+      },
+      research: {
+        knowledge: structuredClone(domain.researchKnowledge) as ResearchKnowledgeRecord[],
+        experiments: structuredClone(domain.experimentHistory) as ExperimentObservationRecord[],
+      },
       progression: structuredClone(domain.progression),
     },
   };
@@ -144,7 +184,9 @@ export function domainStateFromSave(envelope: SaveEnvelopeV1): GameDomainState {
     mainCreatureIds: structuredClone(envelope.payload.creatures.mainCreatureIds),
     testAnimalIds: structuredClone(envelope.payload.creatures.testAnimalIds),
     materialStock: structuredClone(envelope.payload.materials.stock),
+    reagentStock: structuredClone(envelope.payload.materials.reagents ?? []),
     researchKnowledge: structuredClone(envelope.payload.research.knowledge),
+    experimentHistory: structuredClone(envelope.payload.research.experiments ?? []),
     progression: structuredClone(envelope.payload.progression),
   };
 }

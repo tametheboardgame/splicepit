@@ -4,6 +4,8 @@ export type StableIdKind =
   | 'base-animal'
   | 'source-package'
   | 'material-lot'
+  | 'reagent'
+  | 'experiment-observation'
   | 'creature'
   | 'splice-attempt'
   | 'mutation-definition'
@@ -21,6 +23,8 @@ export type StableId<K extends StableIdKind> = string & { readonly [stableIdBran
 export type BaseAnimalId = StableId<'base-animal'>;
 export type SourcePackageId = StableId<'source-package'>;
 export type MaterialLotId = StableId<'material-lot'>;
+export type ReagentId = StableId<'reagent'>;
+export type ExperimentObservationId = StableId<'experiment-observation'>;
 export type CreatureId = StableId<'creature'>;
 export type SpliceAttemptId = StableId<'splice-attempt'>;
 export type MutationDefinitionId = StableId<'mutation-definition'>;
@@ -47,6 +51,8 @@ export const ids = {
   baseAnimal: (value: string): BaseAnimalId => stableId(value, 'base-animal'),
   sourcePackage: (value: string): SourcePackageId => stableId(value, 'source-package'),
   materialLot: (value: string): MaterialLotId => stableId(value, 'material-lot'),
+  reagent: (value: string): ReagentId => stableId(value, 'reagent'),
+  experimentObservation: (value: string): ExperimentObservationId => stableId(value, 'experiment-observation'),
   creature: (value: string): CreatureId => stableId(value, 'creature'),
   spliceAttempt: (value: string): SpliceAttemptId => stableId(value, 'splice-attempt'),
   mutationDefinition: (value: string): MutationDefinitionId => stableId(value, 'mutation-definition'),
