@@ -101,6 +101,12 @@ try {
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
+  await cdp('Emulation.setDeviceMetricsOverride', {
+    width: 1366,
+    height: 768,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?seed=wp03h-smoke&debug=1` });
 
   try {
@@ -127,6 +133,18 @@ try {
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Intro')`);
   await pressKey('Enter', 'Enter', 13);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
+
+  // A common 14-inch laptop viewport should show the whole shell without vertical page scrolling.
+  const laptopLayout = await evaluate(`({
+    innerWidth,
+    innerHeight,
+    scrollHeight: document.documentElement.scrollHeight,
+    shellHeight: document.getElementById('shell')?.getBoundingClientRect().height ?? 0,
+    gameHeight: document.getElementById('game-wrap')?.getBoundingClientRect().height ?? 0
+  })`);
+  if (laptopLayout.scrollHeight > laptopLayout.innerHeight + 1) {
+    throw new Error(`Laptop viewport requires vertical scrolling: ${JSON.stringify(laptopLayout)}`);
+  }
 
   // Movement must continue while a direction is held, not require one press per tile.
   const startX = await evaluate(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x`);
@@ -255,7 +273,7 @@ try {
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: held movement, Goat base choice, opening-ten source choice, test-first research, irreversible main splice, persistence and Fit Pit bridge');
+  console.log('Browser smoke OK: laptop viewport fit, held movement, Goat base choice, opening-ten source choice, test-first research, irreversible main splice, persistence and Fit Pit bridge');
   ws.close();
 } catch (error) {
   console.error(error);
