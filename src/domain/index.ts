@@ -8,3 +8,4 @@ export * from './creatureBiology.js';
 export * from './mutationResearch.js';
 export * from './phenotype.js';
 export * from './labExperimentation.js';
+export * from './combat.js';
