@@ -14,3 +14,15 @@ jobs:
         with:
           node-version: 22
       - run: npm run verify
+  browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: chrome
+        uses: browser-actions/setup-chrome@v1
+      - run: node scripts/browser-smoke.mjs
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
