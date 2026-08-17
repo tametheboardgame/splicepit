@@ -139,10 +139,17 @@ export function legacyCreatureFromDomain(creature: CreatureState): CreatureRecor
 }
 
 export function syncLegacyMainCreature(state = domainState.snapshot()): void {
-  const main = state.mainCreatureIds
+  const domainMains = state.mainCreatureIds
     .map((id) => state.creatures.find((creature) => creature.id === id))
-    .find((creature): creature is CreatureState => creature !== undefined && creature.lifeState === 'living' && creature.spliceHistory.length > 0);
-  if (!main) return;
+    .filter((creature): creature is CreatureState => creature !== undefined);
+  const main = domainMains.find((creature) => creature.lifeState === 'living' && creature.spliceHistory.length > 0);
+  if (!main) {
+    if (domainMains.some((creature) => creature.spliceHistory.length > 0)) {
+      gameState.hydrate({ ...gameState.snapshot(), currentCreature: null, questStage: 'splice' });
+      saveGame();
+    }
+    return;
+  }
   gameState.setCreature(legacyCreatureFromDomain(main));
   saveGame();
 }
