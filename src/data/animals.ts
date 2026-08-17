@@ -1,4 +1,6 @@
-export const BASE_ANIMALS = {
+import type { BaseAnimalDefinition, EnemyCreatureDefinition } from '../types.js';
+
+export const BASE_ANIMALS: Record<string, BaseAnimalDefinition> = {
   rabbit: {
     id: 'rabbit',
     name: 'Rabbit',
@@ -8,7 +10,7 @@ export const BASE_ANIMALS = {
   },
 };
 
-export const ENEMY_CREATURES = {
+export const ENEMY_CREATURES: Record<string, EnemyCreatureDefinition> = {
   pit_scrap: {
     id: 'pit_scrap',
     name: 'Pit Scrap No. 7',

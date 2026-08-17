@@ -1,6 +1,7 @@
+import Phaser from 'phaser';
 import { PALETTE, TEXT } from '../config.js';
 
-export function addPaperPanel(scene, x, y, width, height, alpha = 0.96) {
+export function addPaperPanel(scene: Phaser.Scene, x: number, y: number, width: number, height: number, alpha = 0.96): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
   g.fillStyle(PALETTE.paper, alpha);
   g.lineStyle(2, PALETTE.bone, 0.34);
@@ -11,7 +12,15 @@ export function addPaperPanel(scene, x, y, width, height, alpha = 0.96) {
   return g;
 }
 
-export function addButton(scene, x, y, width, label, onClick, { accent = PALETTE.moss } = {}) {
+export function addButton(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  width: number,
+  label: string,
+  onClick: () => void,
+  { accent = PALETTE.moss }: { accent?: number } = {},
+): Phaser.GameObjects.Container {
   const container = scene.add.container(x, y);
   const bg = scene.add.rectangle(0, 0, width, 42, PALETTE.paperDeep, 0.94).setStrokeStyle(1, accent, 0.9);
   const text = scene.add.text(0, 0, label, { ...TEXT.mono, fontSize: '14px' }).setOrigin(0.5);
@@ -23,7 +32,7 @@ export function addButton(scene, x, y, width, label, onClick, { accent = PALETTE
   return container;
 }
 
-export function addNoiseLines(scene, count = 90, alpha = 0.055) {
+export function addNoiseLines(scene: Phaser.Scene, count = 90, alpha = 0.055): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
   for (let i = 0; i < count; i += 1) {
     const y = Math.random() * scene.scale.height;
@@ -35,7 +44,14 @@ export function addNoiseLines(scene, count = 90, alpha = 0.055) {
   return g;
 }
 
-export function wrappedText(scene, x, y, text, width, style = {}) {
+export function wrappedText(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  text: string,
+  width: number,
+  style: Phaser.Types.GameObjects.Text.TextStyle = {},
+): Phaser.GameObjects.Text {
   return scene.add.text(x, y, text, {
     ...TEXT.body,
     fontSize: '18px',

@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PALETTE, TEXT } from '../config.js';
 import { addButton, addNoiseLines } from '../ui/helpers.js';
 import { clearSave, hasSave, loadGame } from '../systems/saveSystem.js';
@@ -5,7 +6,7 @@ import { clearSave, hasSave, loadGame } from '../systems/saveSystem.js';
 export class TitleScene extends Phaser.Scene {
   constructor() { super('Title'); }
 
-  create() {
+  create(): void {
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
     this.drawBackdrop();
     addNoiseLines(this, 140, 0.08);
@@ -24,7 +25,7 @@ export class TitleScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH - 24, GAME_HEIGHT - 18, 'R0.1 / PROTOTYPE CANON', { ...TEXT.mono, fontSize: '10px' }).setOrigin(1, 1);
   }
 
-  drawBackdrop() {
+  private drawBackdrop(): void {
     const g = this.add.graphics();
     g.fillStyle(PALETTE.mossDark, 0.28); g.fillCircle(780, 120, 190);
     g.lineStyle(4, PALETTE.bone, 0.26);

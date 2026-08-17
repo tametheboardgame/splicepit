@@ -1,8 +1,24 @@
+import Phaser from 'phaser';
 import { PALETTE } from '../config.js';
+import type { CreatureVisual } from '../types.js';
 
-function has(creature, id) { return (creature.genes ?? []).includes(id); }
+function has(creature: CreatureVisual, id: string): boolean {
+  return (creature.genes ?? []).includes(id);
+}
 
-export function drawCreature(scene, x, y, creature, { scale = 1, flip = false, enemy = false } = {}) {
+export interface CreatureRenderOptions {
+  scale?: number;
+  flip?: boolean;
+  enemy?: boolean;
+}
+
+export function drawCreature(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  creature: CreatureVisual,
+  { scale = 1, flip = false, enemy = false }: CreatureRenderOptions = {},
+): Phaser.GameObjects.Container {
   const c = scene.add.container(x, y);
   c.setScale(scale, scale);
   const g = scene.add.graphics();
@@ -39,7 +55,7 @@ export function drawCreature(scene, x, y, creature, { scale = 1, flip = false, e
   }
   if (has(creature, 'toad_hide')) {
     g.fillStyle(PALETTE.acid, 0.55);
-    [-31,-13,7,25].forEach((dx, i) => g.fillCircle(dx, -17 + (i % 2) * 19, 5 + (i % 3)));
+    [-31, -13, 7, 25].forEach((dx, i) => g.fillCircle(dx, -17 + (i % 2) * 19, 5 + (i % 3)));
   }
 
   if (creature.mutation?.id === 'overgrowth') {
