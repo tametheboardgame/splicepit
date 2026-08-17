@@ -11,6 +11,7 @@ import {
 import { emptyArenaCapabilities } from '../src/domain/model.js';
 import { PROTOTYPE_GENERAL_REAGENT_ID } from '../src/domain/research.js';
 import { SeededRandom } from '../src/random/RandomSource.js';
+import { restockMissingTestAnimals } from '../src/systems/labPlaytestSystem.js';
 
 const SOURCE = ids.sourcePackage('gecko_regeneration');
 const RABBIT = ids.baseAnimal('rabbit');
@@ -117,6 +118,23 @@ test('test splice consumes finite stock, records research and permanently append
   assert.equal(result.state.creatures.find((candidate) => candidate.id === mainId).spliceHistory.length, 0);
   assert.equal(result.observation.subjectRole, 'test');
   assert.equal(result.observation.resultCode, result.resolution.outcomeBand);
+});
+
+test('dead disposable subjects remain in history while fresh test stock is supplied', () => {
+  const initial = stateFixture();
+  const originalRabbitId = initial.testAnimalIds[0];
+  initial.creatures.find((candidate) => candidate.id === originalRabbitId).lifeState = 'deceased';
+
+  const restocked = restockMissingTestAnimals(initial, '2026-08-17T13:00:00.000Z');
+  const historicalRabbit = restocked.creatures.find((candidate) => candidate.id === originalRabbitId);
+  const livingRabbits = restocked.testAnimalIds
+    .map((id) => restocked.creatures.find((candidate) => candidate.id === id))
+    .filter((candidate) => candidate?.baseAnimalId === RABBIT && candidate.lifeState === 'living');
+
+  assert.equal(historicalRabbit.lifeState, 'deceased');
+  assert.equal(livingRabbits.length, 1);
+  assert.notEqual(livingRabbits[0].id, originalRabbitId);
+  assert.ok(restocked.creatures.some((candidate) => candidate.role === 'test' && candidate.baseAnimalId === 'pig' && candidate.lifeState === 'living'));
 });
 
 test('comparison records preserve different base-animal evidence for the same source package', () => {
