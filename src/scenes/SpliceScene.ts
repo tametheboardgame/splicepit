@@ -1,61 +1,123 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, PALETTE, TEXT } from '../config.js';
-import { GENES } from '../data/genes.js';
-import { BASE_ANIMALS } from '../data/animals.js';
+import { GAME_HEIGHT, GAME_WIDTH, PALETTE, TEXT } from '../config.js';
+import { CONTENT_CATALOG } from '../content/contentCatalog.js';
+import {
+  buildLabSplicePlan,
+  compareExperimentRecords,
+  executeLabSplice,
+  type LabExperimentResult,
+  type LabSplicePlan,
+} from '../domain/labExperimentation.js';
+import type { CreatureId, SourcePackageId } from '../domain/ids.js';
+import type { CreatureState, GameDomainState } from '../domain/model.js';
+import { composePhenotype } from '../domain/phenotype.js';
 import { SemanticInput } from '../input/SemanticInput.js';
 import { t } from '../localisation/strings.js';
-import { runtimeRandomFn } from '../runtime/runtimeRandom.js';
-import { gameState } from '../state/GameState.js';
-import { calculateSplice, attemptSplice } from '../systems/spliceSystem.js';
-import { saveGame } from '../systems/saveSystem.js';
+import { drawPhenotypeCreature } from '../render/PhenotypeRenderer.js';
+import { runtimeRandom } from '../runtime/runtimeRandom.js';
+import { domainState } from '../state/DomainState.js';
+import {
+  ensureR03LabPlaytestState,
+  nextLabOperationIds,
+  persistLabDomainState,
+  syncLegacyMainCreature,
+} from '../systems/labPlaytestSystem.js';
 import { addNoiseLines, wrappedText } from '../ui/helpers.js';
-import { addButton, addPanel, FocusMenu } from '../ui/primitives.js';
-import type { FocusableControl } from '../ui/primitives.js';
+import { addButton, addPanel, FocusMenu, type ButtonControl, type FocusableControl } from '../ui/primitives.js';
 import { fadeIn, transitionTo } from '../ui/transitions.js';
-import { drawCreature } from '../render/CreatureRenderer.js';
 
-interface GeneCard extends FocusableControl {
-  id: string;
-  tick: Phaser.GameObjects.Rectangle;
-  bg: Phaser.GameObjects.Rectangle;
-  focused: boolean;
+function humanise(value: string): string {
+  return value.replaceAll('_', ' ').toUpperCase();
+}
+
+function sourceIdsFor(state: GameDomainState): SourcePackageId[] {
+  return [...new Set([
+    ...state.materialStock.map((lot) => lot.sourcePackageId),
+    ...state.experimentHistory.map((observation) => observation.sourcePackageId),
+  ])];
 }
 
 export class SpliceScene extends Phaser.Scene {
-  selected = new Set<string>();
-  cards: GeneCard[] = [];
-  previewPanel!: Phaser.GameObjects.Graphics;
-  previewTitle!: Phaser.GameObjects.Text;
-  previewStats!: Phaser.GameObjects.Text;
-  previewRisk!: Phaser.GameObjects.Text;
-  creatureContainer: Phaser.GameObjects.Container | null = null;
-  resultText!: Phaser.GameObjects.Text;
   semanticInput!: SemanticInput;
   menu!: FocusMenu;
+  selectedSubjectId: CreatureId | null = null;
+  selectedSourceId: SourcePackageId | null = null;
+  confirmArmed = false;
+  lastResult: LabExperimentResult | null = null;
+  subjectText!: Phaser.GameObjects.Text;
+  sourceText!: Phaser.GameObjects.Text;
+  forecastText!: Phaser.GameObjects.Text;
+  historyText!: Phaser.GameObjects.Text;
+  outcomeText!: Phaser.GameObjects.Text;
+  testButton!: ButtonControl;
+  prepareButton!: ButtonControl;
+  confirmButton!: ButtonControl;
+  phenotype: Phaser.GameObjects.Container | null = null;
 
   constructor() { super('Splice'); }
 
   create(): void {
-    this.selected = new Set(gameState.currentCreature?.genes ?? []);
-    this.cards = [];
+    const state = ensureR03LabPlaytestState();
+    this.confirmArmed = false;
+    this.lastResult = null;
+    this.selectedSubjectId = state.testAnimalIds[0] ?? state.mainCreatureIds[0] ?? null;
+    this.selectedSourceId = sourceIdsFor(state)[0] ?? null;
+
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
     fadeIn(this);
-    this.drawMachine(); addNoiseLines(this, 90, 0.055);
-    this.add.text(48, 35, t('splice.eyebrow'), { ...TEXT.mono, fontSize: '12px', color: '#a0573d' });
-    this.add.text(48, 61, t('splice.title'), { ...TEXT.title, fontSize: '36px' });
-    wrappedText(this, 48, 108, t('splice.instructions'), 455, { fontSize: '16px' });
+    this.drawMachine();
+    addNoiseLines(this, 90, 0.045);
+    this.add.text(35, 24, t('splice.eyebrow'), { ...TEXT.mono, fontSize: '11px', color: '#a0573d' });
+    this.add.text(35, 46, t('splice.title'), { ...TEXT.title, fontSize: '32px' });
+    wrappedText(this, 35, 86, t('splice.instructions'), 875, { fontSize: '14px' });
+
+    addPanel(this, 28, 126, 255, 340, 0.95);
+    addPanel(this, 296, 126, 278, 340, 0.95);
+    addPanel(this, 588, 126, 344, 340, 0.95);
+    this.add.text(47, 143, t('splice.subjectHeading'), { ...TEXT.mono, fontSize: '10px', color: '#b7c86c' });
+    this.add.text(316, 143, t('splice.sourceHeading'), { ...TEXT.mono, fontSize: '10px', color: '#b7c86c' });
+    this.add.text(608, 143, t('splice.forecastHeading'), { ...TEXT.mono, fontSize: '10px', color: '#b7c86c' });
+
+    this.subjectText = this.add.text(47, 164, '', { ...TEXT.body, fontSize: '14px', wordWrap: { width: 215 } });
+    this.sourceText = this.add.text(316, 164, '', { ...TEXT.body, fontSize: '14px', wordWrap: { width: 235 } });
+    this.forecastText = this.add.text(608, 171, '', { ...TEXT.mono, fontSize: '10px', lineSpacing: 4, wordWrap: { width: 300 } });
+    this.historyText = this.add.text(316, 329, '', { ...TEXT.mono, fontSize: '9px', lineSpacing: 3, wordWrap: { width: 235 } });
+    this.outcomeText = this.add.text(608, 322, '', { ...TEXT.mono, fontSize: '9px', lineSpacing: 3, color: '#b7c86c', wordWrap: { width: 300 } });
 
     this.semanticInput = new SemanticInput(this);
-    gameState.collectedGenes.forEach((id, index) => this.createGeneCard(id, 48, 200 + index * 66));
-    this.previewPanel = addPanel(this, 560, 45, 355, 430, 0.94);
-    this.previewTitle = this.add.text(585, 68, '', { ...TEXT.title, fontSize: '25px' });
-    this.previewStats = this.add.text(585, 122, '', { ...TEXT.mono, fontSize: '12px', lineSpacing: 7 });
-    this.previewRisk = wrappedText(this, 585, 255, '', 290, { fontSize: '16px' });
-    this.creatureContainer = null;
-    const attemptButton = addButton(this, 710, 445, 260, t('splice.attempt'), () => this.splice(), { accent: PALETTE.acid });
-    const returnButton = addButton(this, 170, 500, 240, t('splice.return'), () => transitionTo(this, 'Lab'), { accent: PALETTE.rust });
-    this.resultText = this.add.text(330, 483, '', { ...TEXT.mono, fontSize: '11px', color: '#b7c86c', wordWrap: { width: 340 } });
-    this.menu = new FocusMenu(this.semanticInput, [...this.cards, attemptButton, returnButton], 'vertical');
+    const controls: FocusableControl[] = [];
+    const subjects = state.creatures.filter((creature) => state.mainCreatureIds.includes(creature.id) || state.testAnimalIds.includes(creature.id));
+    subjects.forEach((subject, index) => {
+      const label = `${subject.role === 'main' ? t('splice.mainTag') : t('splice.testTag')} ${subject.name}`;
+      controls.push(addButton(this, 155, 215 + index * 42, 215, label, () => {
+        this.selectedSubjectId = subject.id;
+        this.confirmArmed = false;
+        this.lastResult = null;
+        this.refresh();
+      }, { accent: subject.role === 'main' ? PALETTE.rust : PALETTE.moss }));
+    });
+
+    const sourceIds = sourceIdsFor(state);
+    sourceIds.forEach((sourceId, index) => {
+      const source = CONTENT_CATALOG.sourcePackages.find((candidate) => candidate.id === sourceId);
+      if (!source) return;
+      controls.push(addButton(this, 435, 215 + index * 46, 235, source.name, () => {
+        this.selectedSourceId = source.id;
+        this.confirmArmed = false;
+        this.lastResult = null;
+        this.refresh();
+      }, { accent: PALETTE.bruise }));
+    });
+
+    this.testButton = addButton(this, 760, 421, 290, t('splice.runTest'), () => this.execute(false), { accent: PALETTE.acid });
+    this.prepareButton = addButton(this, 760, 421, 290, t('splice.prepareMain'), () => {
+      this.confirmArmed = true;
+      this.refresh();
+    }, { accent: PALETTE.rust });
+    this.confirmButton = addButton(this, 760, 421, 290, t('splice.confirmMain'), () => this.execute(true), { accent: PALETTE.blood });
+    const returnButton = addButton(this, 160, 500, 240, t('splice.return'), () => transitionTo(this, 'Lab'), { accent: PALETTE.rust });
+    controls.push(this.testButton, this.prepareButton, this.confirmButton, returnButton);
+    this.menu = new FocusMenu(this.semanticInput, controls, 'vertical');
     this.refresh();
   }
 
@@ -65,88 +127,132 @@ export class SpliceScene extends Phaser.Scene {
 
   private drawMachine(): void {
     const g = this.add.graphics();
-    g.fillStyle(PALETTE.paper, 0.7); g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    g.fillStyle(PALETTE.paperDeep, 0.82); g.fillRect(25, 185, 490, 275);
-    g.lineStyle(2, PALETTE.bone, 0.22); g.strokeRect(25, 185, 490, 275);
-    g.lineStyle(6, PALETTE.bruise, 0.22); g.lineBetween(500, 0, 575, 540); g.lineBetween(530, 0, 605, 540);
-    for (let i = 0; i < 8; i += 1) { g.fillStyle(i % 2 ? PALETTE.rustDark : PALETTE.mossDark, 0.25); g.fillCircle(755 + Math.sin(i) * 90, 220 + i * 30, 45 + i * 2); }
+    g.fillStyle(PALETTE.paper, 0.72); g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    g.lineStyle(7, PALETTE.bruise, 0.16); g.lineBetween(540, 0, 610, GAME_HEIGHT);
+    g.lineStyle(3, PALETTE.rustDark, 0.18); g.lineBetween(250, 0, 320, GAME_HEIGHT);
   }
 
-  private createGeneCard(id: string, x: number, y: number): void {
-    const gene = GENES[id];
-    const container = this.add.container(x, y);
-    const bg = this.add.rectangle(0, 0, 468, 54, PALETTE.paperDeep, 0.94).setOrigin(0).setStrokeStyle(1, PALETTE.bone, 0.25);
-    const tick = this.add.rectangle(18, 27, 22, 22, PALETTE.mossDark, 1).setStrokeStyle(2, PALETTE.bone, 0.6);
-    const name = this.add.text(38, 10, gene.name, { ...TEXT.body, fontSize: '17px' });
-    const meta = this.add.text(38, 32, t('splice.cardMeta', { source: gene.source.toUpperCase(), complexity: gene.complexity }), { ...TEXT.mono, fontSize: '9px' });
-    container.add([bg, tick, name, meta]);
-    container.setSize(468, 54).setInteractive(new Phaser.Geom.Rectangle(0, 0, 468, 54), Phaser.Geom.Rectangle.Contains);
-
-    let focusRequester: (() => void) | undefined;
-    let enabled = true;
-    const card: GeneCard = {
-      id,
-      tick,
-      bg,
-      focused: false,
-      setFocused: (focused: boolean): void => { card.focused = focused; this.renderCard(card); },
-      activate: (): void => { if (!enabled) return; this.selected.has(id) ? this.selected.delete(id) : this.selected.add(id); this.refresh(); },
-      setFocusRequester: (requester: (() => void) | undefined): void => { focusRequester = requester; },
-      setVisible: (visible: boolean): void => { container.setVisible(visible); },
-      setEnabled: (value: boolean): void => { enabled = value; if (value) container.setInteractive(new Phaser.Geom.Rectangle(0, 0, 468, 54), Phaser.Geom.Rectangle.Contains); else container.disableInteractive(); container.setAlpha(value ? 1 : 0.48); },
-    };
-
-    container.on('pointerover', () => focusRequester?.());
-    container.on('pointerdown', () => card.activate());
-    this.cards.push(card);
+  private subject(state: GameDomainState): CreatureState | null {
+    return state.creatures.find((creature) => creature.id === this.selectedSubjectId) ?? null;
   }
 
-  private renderCard(card: GeneCard): void {
-    const selected = this.selected.has(card.id);
-    card.tick.setFillStyle(selected ? PALETTE.acid : PALETTE.mossDark, selected ? 0.95 : 1);
-    if (card.focused) card.bg.setStrokeStyle(3, PALETTE.bone, 1);
-    else card.bg.setStrokeStyle(selected ? 2 : 1, selected ? PALETTE.acid : PALETTE.bone, selected ? 0.8 : 0.25);
+  private plan(state: GameDomainState, subject: CreatureState | null): LabSplicePlan | null {
+    if (!subject || !this.selectedSourceId || subject.lifeState === 'deceased') return null;
+    return buildLabSplicePlan(state, CONTENT_CATALOG, subject.id, this.selectedSourceId);
   }
 
   private refresh(): void {
-    this.cards.forEach((card) => this.renderCard(card));
-    const genes = [...this.selected];
-    const baseAnimalId = gameState.baseAnimalId;
-    if (!baseAnimalId) throw new Error('Splice scene requires a base animal.');
-    const plan = calculateSplice(baseAnimalId, genes);
-    this.previewTitle.setText(t('splice.previewTitle', {
-      base: BASE_ANIMALS[baseAnimalId].name,
-      count: genes.length,
-      geneWord: t(genes.length === 1 ? 'splice.geneSingular' : 'splice.genePlural'),
-    }));
-    this.previewStats.setText(t('splice.previewStats', {
-      chance: plan.chance,
-      complexity: plan.complexity,
-      hp: plan.stats.maxHp,
-      attack: plan.stats.attack,
-      defence: plan.stats.defence,
-      speed: plan.stats.speed,
-      stability: plan.stats.stability,
-    }));
-    this.previewRisk.setText(genes.length === 0 ? t('splice.risk.none') : plan.chance >= 75 ? t('splice.risk.reasonable') : t('splice.risk.high'));
-    if (this.creatureContainer) this.creatureContainer.destroy();
-    this.creatureContainer = drawCreature(this, 790, 360, { genes, mutation: null }, { scale: 0.63 });
+    const state = domainState.snapshot();
+    const subject = this.subject(state);
+    const source = CONTENT_CATALOG.sourcePackages.find((candidate) => candidate.id === this.selectedSourceId) ?? null;
+    const plan = this.plan(state, subject);
+    const base = subject ? CONTENT_CATALOG.baseAnimals.find((animal) => animal.id === subject.baseAnimalId) : null;
+    const biology = subject ? (() => {
+      try { return composePhenotype(subject, CONTENT_CATALOG); } catch { return null; }
+    })() : null;
+
+    this.subjectText.setText(subject
+      ? t('splice.selectedSubject', {
+        name: subject.name,
+        role: humanise(subject.role),
+        base: base?.name ?? subject.baseAnimalId,
+        life: humanise(subject.lifeState),
+        attempts: subject.spliceHistory.length,
+      })
+      : t('splice.noSubject'));
+    this.sourceText.setText(source
+      ? t('splice.selectedSource', { name: source.name, stock: plan?.availableMaterial ?? 0 })
+      : t('splice.noSource'));
+
+    if (plan) {
+      const warnings = plan.knownWarnings.length > 0
+        ? plan.knownWarnings.slice(0, 2).map((warning) => `- ${warning}`).join('\n')
+        : t('splice.noKnownWarnings');
+      this.forecastText.setText(t('splice.forecastBody', {
+        confidence: humanise(plan.researchConfidence),
+        observations: plan.observationCount,
+        viableLow: plan.viableExpressionRange.lower,
+        viableHigh: plan.viableExpressionRange.upper,
+        adverseLow: plan.adversityRange.lower,
+        adverseHigh: plan.adversityRange.upper,
+        compatibility: humanise(plan.compatibilityProfile),
+        unknown: plan.unknownFactorsRemain ? t('splice.unknownRemain') : t('splice.unknownReduced'),
+        warnings,
+        reagent: plan.availableReagent,
+      }));
+    } else {
+      this.forecastText.setText(subject?.lifeState === 'deceased' ? t('splice.subjectDeceased') : t('splice.forecastUnavailable'));
+    }
+
+    const comparisons = this.selectedSourceId ? compareExperimentRecords(state, this.selectedSourceId, 5) : [];
+    const comparisonBody = comparisons.length === 0
+      ? t('splice.noExperiments')
+      : comparisons.map((row) => `${humanise(row.baseAnimalId)} / ${humanise(row.subjectRole)} / ${humanise(row.resultCode)}`).join('\n');
+    this.historyText.setText(`${t('splice.historyHeading')}\n${comparisonBody}`);
+
+    if (this.lastResult) {
+      const attempt = this.lastResult.creature.spliceHistory[this.lastResult.creature.spliceHistory.length - 1];
+      const established = attempt?.expressions
+        .filter((expression) => expression.expressed)
+        .map((expression) => {
+          const definition = source?.expressions.find((candidate) => candidate.id === expression.expressionId);
+          return `${definition?.name ?? expression.expressionId}${expression.functional ? ' [FUNCTIONAL]' : ' [NON-FUNCTIONAL]'}`;
+        })
+        .join(', ') || t('splice.noneEstablished');
+      this.outcomeText.setText(t('splice.outcomeBody', {
+        outcome: humanise(this.lastResult.resolution.outcomeBand),
+        established,
+        before: Math.round(this.lastResult.resolution.stabilityBefore * 100),
+        after: Math.round(this.lastResult.resolution.stabilityAfter * 100),
+        injury: humanise(this.lastResult.resolution.consequences.injurySeverity),
+        mutation: this.lastResult.resolution.consequences.mutationTriggered ? t('splice.mutationDetected') : t('splice.none'),
+        history: this.lastResult.creature.spliceHistory.length,
+      }));
+    } else if (this.confirmArmed) {
+      this.outcomeText.setText(t('splice.irreversibleWarning'));
+    } else {
+      this.outcomeText.setText(t('splice.outcomePrompt'));
+    }
+
+    if (this.phenotype) this.phenotype.destroy();
+    this.phenotype = biology ? drawPhenotypeCreature(this, 155, 407, biology, { scale: 0.42 }) : null;
+
+    const isMain = subject?.role === 'main';
+    const canAttempt = Boolean(plan?.canAttempt);
+    this.testButton.setVisible(Boolean(subject && !isMain));
+    this.testButton.setEnabled(Boolean(subject && !isMain && canAttempt));
+    this.prepareButton.setVisible(Boolean(subject && isMain && !this.confirmArmed));
+    this.prepareButton.setEnabled(Boolean(subject && isMain && !this.confirmArmed && canAttempt));
+    this.confirmButton.setVisible(Boolean(subject && isMain && this.confirmArmed));
+    this.confirmButton.setEnabled(Boolean(subject && isMain && this.confirmArmed && canAttempt));
   }
 
-  splice(): void {
-    const genes = [...this.selected];
-    if (genes.length === 0) { this.resultText.setText(t('splice.selectGene')); return; }
-    const baseAnimalId = gameState.baseAnimalId;
-    if (!baseAnimalId) throw new Error('Splice scene requires a base animal.');
-    const result = attemptSplice(baseAnimalId, genes, runtimeRandomFn);
-    if (!result.success) {
-      this.resultText.setText(t('splice.failed', { roll: Math.round(result.roll), chance: result.chance, message: result.message }));
-      this.cameras.main.shake(180, 0.008);
-      return;
+  private execute(requireMainConfirmation: boolean): void {
+    const state = domainState.snapshot();
+    const subject = this.subject(state);
+    if (!subject || !this.selectedSourceId) return;
+    if (subject.role === 'main' && (!requireMainConfirmation || !this.confirmArmed)) return;
+    const operationIds = nextLabOperationIds(state);
+    try {
+      const result = executeLabSplice(state, CONTENT_CATALOG, {
+        subjectCreatureId: subject.id,
+        sourcePackageId: this.selectedSourceId,
+        attemptId: operationIds.attemptId,
+        observationId: operationIds.observationId,
+        mutationInstanceId: operationIds.mutationInstanceId,
+        attemptedAt: new Date().toISOString(),
+      }, runtimeRandom);
+      persistLabDomainState(result.state);
+      if (subject.role === 'main') syncLegacyMainCreature(result.state);
+      this.lastResult = result;
+      this.confirmArmed = false;
+      this.cameras.main.flash(180, 183, 200, 108, false);
+      if (result.resolution.consequences.injurySeverity !== 'none') this.cameras.main.shake(180, 0.006);
+      this.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.outcomeText.setText(t('splice.attemptError', { message }));
+      this.cameras.main.shake(140, 0.004);
     }
-    gameState.setCreature(result.creature); saveGame();
-    this.resultText.setText(t('splice.success', { message: result.message, name: result.creature.name }));
-    this.cameras.main.flash(220, 183, 200, 108, false);
-    this.time.delayedCall(900, () => transitionTo(this, 'Lab'));
   }
 }
