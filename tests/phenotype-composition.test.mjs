@@ -4,6 +4,7 @@ import test from 'node:test';
 import { BIOLOGY_CONTENT_CATALOG } from '../src/content/biologyCatalog.js';
 import { ids } from '../src/domain/ids.js';
 import { composePhenotype, OPENING_AUTHORED_BASE_BODIES } from '../src/domain/phenotype.js';
+import { createSaveEnvelope, decodeSave, domainStateFromSave } from '../src/persistence/saveSchema.js';
 
 function expression(source, id, hooks, strength = 0.85) {
   return {
@@ -83,6 +84,33 @@ function creature(base, seed = 'phenotype-seed-alpha', extraAttempts = []) {
   };
 }
 
+function domainState(subject) {
+  return {
+    creatures: [subject],
+    mainCreatureIds: [subject.id],
+    testAnimalIds: [],
+    materialStock: [],
+    reagentStock: [],
+    researchKnowledge: [],
+    experimentHistory: [],
+    progression: { activeStateIds: [], activeQuestIds: [], completedQuestIds: [] },
+  };
+}
+
+function gameplayState(subject) {
+  return {
+    hasBaseAnimal: true,
+    baseAnimalId: subject.baseAnimalId,
+    collectedGenes: [],
+    currentCreature: null,
+    coins: 0,
+    debt: 0,
+    fitPitWins: 0,
+    questStage: 'phenotype_fixture',
+    seenIntro: true,
+  };
+}
+
 test('opening phenotype bodies author distinct Rabbit, Goat and Pig skeletons', () => {
   assert.deepEqual(
     OPENING_AUTHORED_BASE_BODIES.map((body) => body.baseAnimalId),
@@ -105,12 +133,15 @@ test('representative Rabbit/Goat/Pig multi-splice matrix stays visually distinct
   }
 });
 
-test('phenotype is reproduced exactly after save/load JSON round-trip', () => {
+test('phenotype is reproduced exactly through the supported save/load pipeline', () => {
   const beforeCreature = creature('goat', 'stable-save-seed');
   const before = composePhenotype(beforeCreature, BIOLOGY_CONTENT_CATALOG);
-  const loadedCreature = JSON.parse(JSON.stringify(beforeCreature));
-  const after = composePhenotype(loadedCreature, BIOLOGY_CONTENT_CATALOG);
+  const envelope = createSaveEnvelope(gameplayState(beforeCreature), domainState(beforeCreature), '2026-08-17T15:30:00.000Z');
+  const loadedDomain = domainStateFromSave(decodeSave(JSON.stringify(envelope)));
+  const loadedCreature = loadedDomain.creatures.find((entry) => entry.id === beforeCreature.id);
 
+  assert.ok(loadedCreature);
+  const after = composePhenotype(loadedCreature, BIOLOGY_CONTENT_CATALOG);
   assert.deepEqual(after, before);
   assert.equal(after.signature, before.signature);
 });
