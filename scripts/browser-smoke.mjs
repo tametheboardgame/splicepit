@@ -105,9 +105,9 @@ try {
     throw new Error(`${error.message}; startup diagnostics=${JSON.stringify(diagnostics)}`);
   }
 
-  await evaluate(`__SPLICEPIT_GAME__.scene.start('Intro')`);
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.start('Intro'); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Intro')`);
-  await evaluate(`__SPLICEPIT_GAME__.scene.start('Lab')`);
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.start('Lab'); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
 
   await evaluate(`(() => {
@@ -130,7 +130,7 @@ try {
   })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
 
-  await evaluate(`__SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit()`);
+  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit(); return true; })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Battle')`);
   await evaluate(`(() => {
     const battle = __SPLICEPIT_GAME__.scene.getScene('Battle');
