@@ -6,6 +6,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  statuses: write
 concurrency:
   group: wp0.3e-diagnostic-${{ github.ref }}
   cancel-in-progress: true
@@ -23,6 +24,29 @@ jobs:
       - id: verify
         continue-on-error: true
         run: npm run verify > verify.log 2>&1
+      - name: Publish readable diagnostic statuses
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.verify.outcome }}
+        run: |
+          STATE=failure
+          [ "$RESULT" = "success" ] && STATE=success
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="$STATE" -f context='wp0.3e/verify' -f description="npm run verify: ${RESULT}"
+          if [ "$STATE" = failure ]; then
+            mapfile -t ERRORS < <(grep -E 'error TS[0-9]+:|not ok|AssertionError|ERR!|Error:' verify.log | head -5)
+            if [ ${#ERRORS[@]} -eq 0 ]; then
+              ERRORS=("$(tail -n 1 verify.log)")
+            fi
+            INDEX=1
+            for LINE in "${ERRORS[@]}"; do
+              DESC=$(printf '%s' "$LINE" | tr '\n' ' ' | cut -c1-135)
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+                -f state=failure -f context="wp0.3e/error-${INDEX}" -f description="$DESC"
+              INDEX=$((INDEX + 1))
+            done
+          fi
       - name: Report diagnostic result to PR
         if: always()
         env:
@@ -39,7 +63,7 @@ jobs:
             echo '```'
             echo '</details>'
           } > diagnostic-comment.md
-          gh pr comment 12 --body-file diagnostic-comment.md
+          gh pr comment 12 --body-file diagnostic-comment.md || true
       - name: Preserve failure state
         if: steps.verify.outcome != 'success'
         run: exit 1
