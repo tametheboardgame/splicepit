@@ -1,28 +1,42 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PALETTE, TEXT } from '../config.js';
-import { addButton, addNoiseLines, wrappedText } from '../ui/helpers.js';
+import { dialogueText } from '../dialogue/catalogue.js';
+import { SemanticInput } from '../input/SemanticInput.js';
+import { t } from '../localisation/strings.js';
 import { gameState } from '../state/GameState.js';
+import { addNoiseLines, wrappedText } from '../ui/helpers.js';
+import { addButton, FocusMenu } from '../ui/primitives.js';
+import { fadeIn, transitionTo } from '../ui/transitions.js';
 
 export class IntroScene extends Phaser.Scene {
+  private semanticInput!: SemanticInput;
+  private menu!: FocusMenu;
+
   constructor() { super('Intro'); }
 
   create(): void {
     this.cameras.main.setBackgroundColor(0x12110f);
+    fadeIn(this);
     this.drawAftermath();
     addNoiseLines(this, 100, 0.07);
 
-    this.add.text(60, 56, 'AFTER THE GAS', { ...TEXT.mono, fontSize: '13px', color: '#a0573d' });
-    this.add.text(60, 84, 'Morning finds the pit quiet.', { ...TEXT.title, fontSize: '40px' });
-    wrappedText(this, 60, 151,
-      'The rampaging splice is dead. So is your SpliceMaster. So are the other apprentices. The emergency gas did exactly what it was meant to do, eventually.\n\nYou are still alive. Which leaves the damaged pit, its remaining equipment and every unpaid bill in your hands.',
-      525, { fontSize: '20px', lineSpacing: 8 });
+    this.add.text(60, 56, t('intro.eyebrow'), { ...TEXT.mono, fontSize: '13px', color: '#a0573d' });
+    this.add.text(60, 84, t('intro.title'), { ...TEXT.title, fontSize: '40px' });
+    wrappedText(this, 60, 151, dialogueText('intro_aftermath'), 525, { fontSize: '20px', lineSpacing: 8 });
 
-    this.add.text(60, 400, 'FIRST JOB', { ...TEXT.mono, fontSize: '11px', color: '#b7c86c' });
-    this.add.text(60, 422, 'Obtain a clean base animal.', { ...TEXT.title, fontSize: '26px' });
-    addButton(this, GAME_WIDTH - 176, GAME_HEIGHT - 62, 260, 'OPEN THE DOOR', () => {
+    this.add.text(60, 400, t('intro.firstJob'), { ...TEXT.mono, fontSize: '11px', color: '#b7c86c' });
+    this.add.text(60, 422, t('intro.objective'), { ...TEXT.title, fontSize: '26px' });
+
+    this.semanticInput = new SemanticInput(this);
+    const openDoor = addButton(this, GAME_WIDTH - 176, GAME_HEIGHT - 62, 260, t('intro.openDoor'), () => {
       gameState.seenIntro = true;
-      this.scene.start('Lab');
+      transitionTo(this, 'Lab');
     }, { accent: PALETTE.rust });
+    this.menu = new FocusMenu(this.semanticInput, [openDoor], 'vertical');
+  }
+
+  update(): void {
+    this.menu.update();
   }
 
   private drawAftermath(): void {
