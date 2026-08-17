@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ids } from '../src/domain/ids.js';
 import { emptyArenaCapabilities } from '../src/domain/model.js';
+import { PROTOTYPE_GENERAL_REAGENT_ID } from '../src/domain/research.js';
 import { createSaveEnvelope, decodeSave, domainStateFromSave, SAVE_SCHEMA_VERSION } from '../src/persistence/saveSchema.js';
 import {
   SAVE_KEYS,
@@ -38,6 +39,8 @@ function gameplayFixture(overrides = {}) {
 function domainFixture() {
   const creatureId = ids.creature('creature_mabel');
   const landCapabilityId = ids.capability('arena_land_function');
+  const sourcePackageId = ids.sourcePackage('gecko_regeneration');
+  const materialLotId = ids.materialLot('material_gecko_001');
   const arenaCapabilities = emptyArenaCapabilities();
   arenaCapabilities.land = { functional: true, supportingCapabilityIds: [landCapabilityId] };
 
@@ -54,8 +57,8 @@ function domainFixture() {
         id: ids.spliceAttempt('splice_001'),
         sequence: 1,
         attemptedAt: '2026-08-17T10:05:00.000Z',
-        sourcePackageIds: [ids.sourcePackage('gecko_regeneration')],
-        consumedMaterialLotIds: [ids.materialLot('material_gecko_001')],
+        sourcePackageIds: [sourcePackageId],
+        consumedMaterialLotIds: [materialLotId],
         outcomeBand: 'normal_success',
         expressions: [],
       }],
@@ -68,17 +71,36 @@ function domainFixture() {
     mainCreatureIds: [creatureId],
     testAnimalIds: [],
     materialStock: [{
-      id: ids.materialLot('material_gecko_001'),
-      sourcePackageId: ids.sourcePackage('gecko_regeneration'),
+      id: materialLotId,
+      sourcePackageId,
       quantity: 2,
+      quality: 0.8,
+      acquisitionChannel: 'prototype',
       acquiredAt: '2026-08-17T09:30:00.000Z',
       notes: 'Physical stock persists independently from knowledge.',
     }],
+    reagentStock: [{ reagentId: PROTOTYPE_GENERAL_REAGENT_ID, quantity: 4, notes: 'Prototype laboratory reagent stock.' }],
     researchKnowledge: [{
-      sourcePackageId: ids.sourcePackage('gecko_regeneration'),
+      sourcePackageId,
       baseAnimalId: ids.baseAnimal('rabbit'),
+      contextKey: 'base:rabbit|context:default',
+      contextTags: [],
       observationCount: 3,
       notes: ['Knowledge persists without creating physical stock.'],
+    }],
+    experimentHistory: [{
+      id: ids.experimentObservation('observation_001'),
+      subjectCreatureId: creatureId,
+      sourcePackageId,
+      baseAnimalId: ids.baseAnimal('rabbit'),
+      subjectRole: 'main',
+      contextKey: 'base:rabbit|context:default',
+      contextTags: [],
+      observedAt: '2026-08-17T09:55:00.000Z',
+      consumedMaterials: [{ materialLotId, sourcePackageId, quantity: 1, quality: 0.8 }],
+      consumedReagents: [{ reagentId: PROTOTYPE_GENERAL_REAGENT_ID, quantity: 1 }],
+      resultCode: 'fixture_observation',
+      notes: 'Representative persisted experiment.',
     }],
     progression: {
       activeStateIds: [ids.progressionState('fight')],
@@ -100,7 +122,9 @@ test('current R0.2 save schema round-trips gameplay and persistent biological st
   assert.equal(decoded.payload.creatures.records[0].phenotypeSeed, 'phenotype-seed-mabel');
   assert.equal(decoded.payload.creatures.records[0].spliceHistory[0].sequence, 1);
   assert.equal(decoded.payload.materials.stock[0].quantity, 2);
+  assert.equal(decoded.payload.materials.reagents[0].quantity, 4);
   assert.equal(decoded.payload.research.knowledge[0].observationCount, 3);
+  assert.equal(decoded.payload.research.experiments.length, 1);
 });
 
 test('historical versioned fixture migrates through the save pipeline', () => {
@@ -118,6 +142,19 @@ test('historical versioned fixture migrates through the save pipeline', () => {
   assert.equal(migrated.schemaVersion, 1);
   assert.deepEqual(migrated.payload.gameplay, gameplay);
   assert.deepEqual(domainStateFromSave(migrated), domain);
+});
+
+test('pre-WP0.3B schema-v1 saves remain readable with empty additive lab collections', () => {
+  const domain = domainFixture();
+  const envelope = createSaveEnvelope(gameplayFixture(), domain, '2026-08-17T11:30:00.000Z');
+  delete envelope.payload.materials.reagents;
+  delete envelope.payload.research.experiments;
+
+  const loaded = domainStateFromSave(decodeSave(JSON.stringify(envelope)));
+  assert.deepEqual(loaded.reagentStock, []);
+  assert.deepEqual(loaded.experimentHistory, []);
+  assert.equal(loaded.materialStock[0].quantity, 2);
+  assert.equal(loaded.researchKnowledge[0].observationCount, 3);
 });
 
 test('failed primary decode falls back to the last readable backup without destroying it', () => {
