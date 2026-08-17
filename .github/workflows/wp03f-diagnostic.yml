@@ -1,0 +1,67 @@
+name: WP0.3F Diagnostic
+on:
+  push:
+    branches: ['agent/wp0.3f-mutation-research']
+permissions:
+  contents: write
+jobs:
+  report:
+    if: ${{ !contains(github.event.head_commit.message, '[ci-report]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - id: chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Run verification and write report
+        shell: bash
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          set +e
+          REPORT=.wp0.3f-ci-report.txt
+          : > "$REPORT"
+          echo "WP0.3F diagnostic for $GITHUB_SHA" >> "$REPORT"
+          echo >> "$REPORT"
+          npm ci >> "$REPORT" 2>&1
+          INSTALL=$?
+          echo >> "$REPORT"
+          echo "=== typecheck ===" >> "$REPORT"
+          npm run typecheck >> "$REPORT" 2>&1
+          TYPECHECK=$?
+          echo >> "$REPORT"
+          echo "=== content validation ===" >> "$REPORT"
+          npm run validate:content >> "$REPORT" 2>&1
+          CONTENT=$?
+          echo >> "$REPORT"
+          echo "=== rng boundary ===" >> "$REPORT"
+          npm run validate:rng >> "$REPORT" 2>&1
+          RNG=$?
+          echo >> "$REPORT"
+          echo "=== tests ===" >> "$REPORT"
+          npm test >> "$REPORT" 2>&1
+          TESTS=$?
+          echo >> "$REPORT"
+          echo "=== build ===" >> "$REPORT"
+          npm run build >> "$REPORT" 2>&1
+          BUILD=$?
+          echo >> "$REPORT"
+          echo "=== browser smoke ===" >> "$REPORT"
+          npm run smoke >> "$REPORT" 2>&1
+          SMOKE=$?
+          echo >> "$REPORT"
+          echo "=== result ===" >> "$REPORT"
+          echo "install=$INSTALL typecheck=$TYPECHECK content=$CONTENT rng=$RNG tests=$TESTS build=$BUILD smoke=$SMOKE" >> "$REPORT"
+          exit 0
+      - name: Commit diagnostic report
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .wp0.3f-ci-report.txt
+          git commit -m "[ci-report] WP0.3F verification result"
+          git push
