@@ -1,30 +1,56 @@
 # SplicePit Planning Index
 
-This directory is the implementation planning source of truth for SplicePit.
+This directory is the implementation/design source of truth.
 
 ## Status language
 
-Every design statement should be read using one of these states:
+- **LOCKED** — explicitly agreed.
+- **PLANNED** — agreed direction, details still being proved.
+- **PROVISIONAL** — concrete proposal for discussion, not canon.
+- **OPEN** — explicit decision still required.
+- **PROTOTYPE** — implementation used only to prove behaviour.
 
-- **LOCKED** — already established and should not be changed accidentally during implementation.
-- **PLANNED** — agreed development direction, but details may change during testing.
-- **PROVISIONAL** — useful working assumption required to build/test something; not canon or a final mechanic.
-- **OPEN** — requires an explicit design decision before the dependent work is considered complete.
-- **PROTOTYPE** — exists only to prove a system and must not silently become canon.
+## Core control documents
 
-## Documents
+- `DECISION_LOG.md` — **authoritative locked/open decisions**. If another planning document conflicts with it, this wins.
+- `ROADMAP.md` — **master execution sequence/index**: 74 implementation WPs from R0.2 to R4.
+- `MASTER_PLAN.md` — product pillars and development rules.
+- `DESIGN_BASELINE.md` — original concept/opening baseline; retained for history and established opening decisions.
+- `TEST_STRATEGY.md` — automated/simulation/manual quality philosophy.
 
-- `DESIGN_BASELINE.md` — locked concept and opening decisions already established.
-- `MASTER_PLAN.md` — product vision, design pillars, dependency order and development rules.
-- `ROADMAP.md` — release/work-package sequence from the current R0.1 slice through production readiness.
-- `DECISION_LOG.md` — locked, planned, provisional and open decisions in one place.
-- `SPLICING_SYSTEM.md` — gene acquisition, genotype, splice resolution, mutation and phenotype planning.
-- `COMBAT_SYSTEM.md` — Fit Pit combat goals, architecture, balance requirements and unresolved combat decisions.
-- `WORLD_PROGRESSION.md` — exploration, quests, pit/base progression, economy boundaries and story integration.
-- `TECHNICAL_ARCHITECTURE.md` — browser stack, data model, save/versioning, rendering, testing and deployment.
-- `CONTENT_AND_PRESENTATION.md` — content schemas, visual language, UI, audio, accessibility and production asset pipeline.
-- `TEST_STRATEGY.md` — automated, browser, content, balance and save-compatibility testing.
+## Work-package execution contracts
 
-## Canon boundary
+These contain dependencies, purpose, deliverables, scope boundaries and completion gates for each WP.
 
-The planning documents are not a licence to write the full story. Story beyond the established opening remains intentionally reserved for separate authorship. Systems should provide hooks for authored story content rather than inventing it.
+- `work-packages/R0_FOUNDATIONS.md` — WP0.2A–WP0.7H: architecture, splicing, combat, world systems, presentation and integrated pre-alpha.
+- `work-packages/R1_ACT1.md` — WP1A–WP1I: complete Act 1 / Alpha 1.
+- `work-packages/R2_ACT2.md` — WP2A–WP2H: Act 2 expansion / Alpha 2.
+- `work-packages/R3_BETA.md` — WP3A–WP3G: content-complete Beta and feature-freeze gate.
+- `work-packages/R4_RELEASE.md` — WP4A–WP4F: release-candidate certification.
+
+A future development chat can start with e.g. `Start WP0.2A`; the assistant should load the decision log, the relevant WP contract and only the necessary specialist design docs before implementation.
+
+## System documents
+
+- `SPLICING_SYSTEM.md` — irreversible cumulative splicing, expression variance, knowledge/testing, mutations.
+- `COMBAT_SYSTEM.md` — turn-based capability combat, training, Land/Water/Air pits and danger progression.
+- `WORLD_PROGRESSION.md` — hubs, quests, acquisition, debt branch, main creatures versus lab stock.
+- `TECHNICAL_ARCHITECTURE.md` — TypeScript/Vite/Phaser, saves, RNG, input, localisation readiness.
+- `CONTENT_AND_PRESENTATION.md` — visual/tone/audio/dialogue direction and warning boundary.
+
+## Approved opening content
+
+- `OPENING_CONTENT_PROPOSAL.md` — despite the historical filename, Rabbit/Goat/Pig and the ten opening source packages in this document are now **LOCKED**. Exact implementation numbers/tutorial tuning remain planned.
+
+## Proposals awaiting approval/tuning
+
+- `PIT_UPGRADE_TREE_PROPOSAL.md` — nine upgrade domains are locked; detailed tiers/costs/dependencies remain proposed/tunable.
+- `WORLD_MAP_PROPOSAL.md` — provisional full-region layout/hubs/circuits.
+- `ACT1_STORY_FRAMEWORK.md` — authorised overall debt-clock Act 1 structure; detailed authored beats/names/values still require production lock.
+- `CREDITOR_FACTION_PROPOSAL.md` — proposed creditor faction, **The Clearing House**, and its role in the paid/unpaid debt branches.
+
+The exact point at which each proposal must be approved is recorded as a decision gate in `ROADMAP.md` and the relevant WP contract. They do not block WP0.2A.
+
+## Canon rule
+
+A proposal does not become canon because it is detailed or already implemented. Promote it to LOCKED only after explicit approval or deliberate acceptance of a prototype.

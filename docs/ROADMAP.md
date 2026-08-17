@@ -1,432 +1,317 @@
-# SplicePit Development Roadmap
+# SplicePit Master Execution Roadmap
 
-## Current state
+## Purpose
 
-**R0.1 — First playable vertical slice: COMPLETE / ACCEPTED FOR PLANNING**
+This is the master build sequence for SplicePit. It answers **what gets built, in what order, and what constitutes completion**.
 
-The deployed browser slice proves the minimum end-to-end loop:
+Detailed WP contracts live under `docs/work-packages/`. Game-system intent lives in the specialist design documents. `DECISION_LOG.md` is authoritative when any document disagrees about what is locked versus open.
 
-- title/opening aftermath
-- top-down movement and interaction
-- acquire a prototype base animal
-- recover prototype genes
-- select and attempt a splice
-- stochastic success/failure/mutation
-- derived creature stats and visible phenotype markers
-- Fit Pit combat
-- reward/debt feedback
-- local persistence
-- automated logic tests and a headless browser end-to-end test
-
-R0.1 is a behavioural reference, not the architectural foundation for the full game.
+R0.1 is complete and merged. The forward plan contains **74 implementation work packages** from R0.2 through release candidate.
 
 ---
 
-# Phase R0 — Build the real foundations
+# How to use this roadmap
 
-## R0.2 — Architecture hardening
+A future development conversation can start with a command such as:
 
-### Goal
+> Start WP0.2A
 
-Turn the current proof-of-concept into a maintainable browser game foundation without expanding content scope.
+The execution process should then:
 
-### WP0.2A — Toolchain migration
+1. read `DECISION_LOG.md`;
+2. read the WP contract in the relevant `docs/work-packages/*.md` file;
+3. read only the specialist design documents referenced by that WP;
+4. re-check current repository/CI state;
+5. create a dedicated branch/PR unless the WP explicitly belongs to an existing one;
+6. implement only the defined scope;
+7. run the required tests/acceptance flow;
+8. update documentation/decision log for any deliberately resolved design gate;
+9. merge only when the WP gate passes and approval/merge policy permits.
 
-**Work**
-- Move project to Vite + TypeScript.
-- Pin Phaser as a package dependency.
-- Remove runtime dependence on the Phaser CDN/global.
-- Enable strict TypeScript checks.
-- Establish consistent module aliases/import boundaries.
-- Generate production `dist/` output for Cloudflare Pages.
-
-**Exit criteria**
-- Current R0.1 flow behaves equivalently after migration.
-- `npm run build`, typecheck, unit tests and browser smoke all pass.
-- Cloudflare preview deploys the bundled build successfully.
-
-### WP0.2B — Domain/data boundaries
-
-**Work**
-- Define typed IDs and schemas for animals, genes, mutations, creatures, stats, moves, items and progression state.
-- Split pure domain logic from Phaser scenes.
-- Add content status metadata (`prototype`, `draft`, `canon`).
-- Add content validation at test/build time.
-- Replace ad-hoc mutable state with explicit domain operations.
-
-**Exit criteria**
-- Invalid content definitions fail tests/build.
-- Core splice/combat calculations run without Phaser.
-- Prototype content is visibly labelled in data.
-
-### WP0.2C — Save/versioning foundation
-
-**Work**
-- Introduce save schema version.
-- Add migration pipeline.
-- Separate settings from gameplay save data.
-- Define autosave checkpoints and manual/new-game reset behaviour.
-- Record RNG seeds/important generated creature data required for reproducibility.
-
-**Exit criteria**
-- R0.1-style save can be migrated or intentionally reset through a documented migration.
-- Save/load round-trip tests pass.
-- Corrupt/incompatible save handling fails safely.
-
-### WP0.2D — Input, UI and scene framework
-
-**Work**
-- Centralise keyboard input actions rather than scene-specific raw keys.
-- Define action names (`move`, `interact`, `cancel`, `menu`, battle actions).
-- Add remapping-ready input abstraction.
-- Create reusable modal/dialogue/menu components.
-- Add scene transition/fade framework.
-- Establish controller/touch compatibility path without implementing full mobile UI yet.
-
-**Exit criteria**
-- Existing vertical slice uses the shared input/UI layer.
-- No core interaction is hard-wired to one physical key.
-
-### WP0.2E — Deterministic simulation and diagnostics
-
-**Work**
-- Add seeded RNG service.
-- Inject RNG into splicing/combat/procedural rendering decisions.
-- Add developer diagnostics for creature IDs, genotype, phenotype seed and stats.
-- Improve browser smoke to run from public player-facing controls where practical.
-
-**Exit criteria**
-- A reported splice/battle can be reproduced from saved inputs/seed.
-- Unit tests do not depend on global `Math.random()`.
-
-### R0.2 release gate
-
-R0.2 is complete only when the current game loop is functionally preserved, all automated checks are green, deployment works, and later content can be defined without editing scene-specific logic.
+A WP must not convert a PROVISIONAL proposal into canon just because implementation needs placeholder content. Temporary content remains labelled.
 
 ---
 
-## R0.3 — Splicing System Prototype 2
+# Planning hierarchy
 
-### Goal
+## Authoritative design
 
-Prove the actual SplicePit differentiator before investing heavily in world content.
+- `DECISION_LOG.md` — locked/open decisions.
+- `MASTER_PLAN.md` — product pillars/development rules.
+- `SPLICING_SYSTEM.md` — splicing intent.
+- `COMBAT_SYSTEM.md` — Fit Pit combat intent.
+- `WORLD_PROGRESSION.md` — world/progression intent.
+- `TECHNICAL_ARCHITECTURE.md` — architecture intent.
+- `CONTENT_AND_PRESENTATION.md` — visual/audio/UI/content intent.
+- `TEST_STRATEGY.md` — quality strategy.
 
-### WP0.3A — Gene model and taxonomy
+## Execution contracts
 
-- Resolve `S-OPEN-01` gene classification.
-- Define gene data: source, category, expression tags, complexity, compatibility tags, phenotype instructions, combat/world effects and rarity/acquisition metadata.
-- Decide whether genes can exist in multiple quality/variant forms.
+- `work-packages/R0_FOUNDATIONS.md` — WP0.2A through WP0.7H.
+- `work-packages/R1_ACT1.md` — WP1A through WP1I.
+- `work-packages/R2_ACT2.md` — WP2A through WP2H.
+- `work-packages/R3_BETA.md` — WP3A through WP3G.
+- `work-packages/R4_RELEASE.md` — WP4A through WP4F.
 
-### WP0.3B — Compatibility and epistasis
+## Approved/provisional content references
 
-- Build compatibility rules between genes/base animals.
-- Support positive, negative and conditional interactions.
-- Avoid pairwise hard-coding that grows O(n²) without structure.
-- Produce human-readable explanations for major conflicts/synergies.
-
-### WP0.3C — Splice resolution model
-
-- Resolve outcome bands and retry economy.
-- Model complexity, compatibility, operator/lab modifiers and randomness separately.
-- Ensure no hard gene-count cap.
-- Ensure risk escalates naturally with ambitious combinations.
-- Add deterministic seeded resolution.
-
-### WP0.3D — Mutation system
-
-- Define mutation categories and persistence.
-- Separate random mutation from intended gene expression.
-- Decide stabilisation/extraction/inheritance rules.
-- Ensure mutations can create interesting trade-offs rather than only penalties/bonuses.
-
-### WP0.3E — Phenotype composition prototype
-
-- Build a scalable visible-composition system driven by genotype/mutations.
-- Verify at least several base-animal × multi-gene combinations without bespoke creature art per combination.
-- Ensure phenotype seed preserves a creature’s appearance across saves.
-
-### WP0.3F — Lab UX
-
-- Replace simple checkbox screen with a proper experimental workflow.
-- Show known information, uncertainty and compatibility warnings without revealing every hidden outcome.
-- Add before/after inspection and a permanent creature record.
-
-### R0.3 release gate
-
-A tester should be able to make materially different creatures from the same base animal, understand why their builds differ, experience non-identical outcomes from repeated attempts, and see those differences reflected visually and mechanically.
+- `OPENING_CONTENT_PROPOSAL.md` — historical filename; Rabbit/Goat/Pig and the ten opening source packages are now LOCKED.
+- `PIT_UPGRADE_TREE_PROPOSAL.md` — nine domains locked; detailed tiers/costs/dependencies still subject to approval/tuning.
+- `WORLD_MAP_PROPOSAL.md` — structural world proposal, still PROVISIONAL.
+- `ACT1_STORY_FRAMEWORK.md` — authorised Act 1 structure with exact story details still subject to locking.
+- `CREDITOR_FACTION_PROPOSAL.md` — The Clearing House proposal, still PROVISIONAL until explicitly approved.
 
 ---
 
-## R0.4 — Combat System Prototype 2
+# Status key
 
-### Goal
-
-Determine the final Fit Pit battle model and make genetic choices meaningfully testable.
-
-### WP0.4A — Combat decision prototype
-
-- Resolve `C-OPEN-01` final cadence/model through targeted prototypes.
-- Compare strict turn-based prototype against any competing model before locking.
-- Define desired battle length, decision density and readability.
-
-### WP0.4B — Combat expression model
-
-- Map genes/anatomy to combat properties.
-- Define moves/actions, initiative/order, defence, accuracy/evasion if used, resource/cooldown model and trait triggers.
-- Avoid a design where raw stat stacking dominates interesting gene expression.
-
-### WP0.4C — Status/injury system
-
-- Define temporary status effects.
-- Resolve injury/knockout/death rules.
-- Establish how regeneration, armour, senses, toxins, anatomy and behavioural genes interact with statuses.
-
-### WP0.4D — Opponent AI
-
-- Build readable AI archetypes rather than random move selection.
-- Add deterministic test mode.
-- Support opponent builds using the same creature model as player creatures where possible.
-
-### WP0.4E — Balance harness
-
-- Add simulation tooling to run large numbers of battles headlessly.
-- Detect dominant stats/genes, unwinnable matchups and degenerate strategies.
-- Keep simulation outputs as development diagnostics, not player-facing balance automation.
-
-### R0.4 release gate
-
-Combat is locked only when different splice builds demand different decisions and no obvious single build strategy invalidates the purpose of gene experimentation.
+- **COMPLETE** — gate passed and merged.
+- **READY** — dependencies/decisions sufficient to begin.
+- **PLANNED** — sequenced but dependencies remain.
+- **DECISION GATE** — cannot ship dependent authored content until an explicit decision is made.
 
 ---
 
-## R0.5 — World, quests and acquisition loop
+# R0.1 — First Playable Vertical Slice — COMPLETE
 
-### Goal
-
-Turn laboratory + arena systems back into an RPG.
-
-### WP0.5A — Authored map framework
-
-- Define map data/prefab approach.
-- Support collision, exits, interactables, layered decoration, triggers and persistence.
-- Add camera/transition conventions.
-
-### WP0.5B — Dialogue and NPC state
-
-- Data-driven dialogue nodes/choices/conditions.
-- Persistent NPC state.
-- Story-variable hooks without embedding story text in engine code.
-
-### WP0.5C — Quest system
-
-- Objective types: talk, reach, acquire, sample, deliver, fight, inspect, etc.
-- Conditional branching/rewards.
-- Quest journal/status UI.
-- Explicit authored content boundary.
-
-### WP0.5D — Gene/base-animal acquisition
-
-- Resolve actual acquisition mechanics.
-- Integrate inventory/sample storage with quests and exploration.
-- Make acquisition interesting enough that genes feel discovered/earned rather than simply unlocked.
-
-### WP0.5E — Inventory/economy
-
-- Define consumables, samples, equipment/resources and money/debt model.
-- Resolve how failed splices cost the player.
-- Prevent unrestricted save-scumming/retry loops from trivialising risk.
-
-### WP0.5F — Pit/base progression
-
-- Define mechanically meaningful facilities/upgrades.
-- Separate cosmetic restoration from system unlocks.
-- Ensure pit development feeds the exploration/splicing/combat loop.
-
-### R0.5 release gate
-
-A tester can leave the pit, complete an authored quest, obtain biological material through world play, return, splice, fight and receive progression that opens another meaningful option.
+Purpose achieved: prove browser viability and the minimum loop. R0.1-specific combat, economy, visual styling and stat formulas remain prototype-only unless separately promoted.
 
 ---
 
-## R0.6 — Production presentation pipeline
+# R0.2 — Architecture Hardening — READY
 
-### Goal
+**Goal:** replace the quick proof architecture with the production foundation while preserving behaviour.
 
-Replace prototype appearance with a scalable SplicePit visual/audio identity before large-scale content production.
+1. **WP0.2A — Toolchain Migration** — Vite + strict TypeScript + pinned Phaser + `dist` deployment.
+2. **WP0.2B — Domain, IDs and Content Boundaries** — stable schemas/IDs, validation, Phaser-independent domain model.
+3. **WP0.2C — State, Save Versioning and Persistence Contract** — R0.2 becomes first supported save schema.
+4. **WP0.2D — Semantic Input, UI Shell and Localisable Dialogue Framework** — keyboard-first, controller/touch-ready, localisation-ready.
+5. **WP0.2E — Deterministic RNG, Diagnostics and CI Hardening** — seeded simulation and reproducible testing.
 
-### WP0.6A — Art direction specification
-
-- Formalise palette, line/shape language, environment materials, UI motifs, lighting/contrast and grotesque-vs-charming balance.
-- Define examples of what is specifically *not* SplicePit.
-
-### WP0.6B — Environment/character asset pipeline
-
-- Lock tile/sprite scale and export conventions.
-- Build reusable environment kit.
-- Establish animation conventions.
-
-### WP0.6C — Creature phenotype production pipeline
-
-- Convert R0.3 phenotype prototype into production method.
-- Define layer/component naming, anchoring, deformation and animation rules.
-- Establish fallback handling for incompatible visible parts.
-
-### WP0.6D — UI production pass
-
-- Production HUD, dialogue, inventory, lab and battle UI.
-- Consistent controller/keyboard focus states.
-- Readable typography and responsive scaling.
-
-### WP0.6E — Audio
-
-- Music direction and scene/state transitions.
-- SFX taxonomy: world, UI, lab, biological, arena.
-- Volume controls/mute/settings persistence.
-
-### WP0.6F — Accessibility/settings
-
-- Key remapping architecture completion.
-- Text scale/contrast options where practical.
-- Flash/shake reduction.
-- Audio controls.
-- Controller support baseline.
-
-### R0.6 release gate
-
-The game has a reusable production presentation system rather than prototype graphics attached directly to individual scenes.
+**Release gate:** typed/versioned/validated/deterministic foundation; R0.1 behaviour still playable; browser deployment green.
 
 ---
 
-## R0.7 — Integrated pre-alpha slice
+# R0.3 — Real Splicing Prototype — PLANNED
 
-### Goal
+**Goal:** prove the defining uncertain, irreversible, cumulative experimentation system.
 
-Combine all foundational systems into one substantial, internally coherent slice before authoring the full game.
+6. **WP0.3A — Source Package Taxonomy and Biological Data Model**
+7. **WP0.3B — Physical Material, Reagents and Research-Knowledge Model**
+8. **WP0.3C — Compatibility and Epistasis Engine**
+9. **WP0.3D — Splice Resolution, Outcome Bands, Variance and Stability**
+10. **WP0.3E — Cumulative Creature Biology and Capability Derivation**
+11. **WP0.3F — Mutation Research Prototype**
+12. **WP0.3G — Hybrid Phenotype Composition Prototype**
+13. **WP0.3H — Lab Experimentation UX and Splicing Playtest Gate**
 
-### Scope
-
-- established opening implementation
-- damaged pit as a real persistent location
-- first authored exterior area(s)
-- real first base animal and gene set
-- quest-driven acquisition
-- production splicing flow
-- production combat prototype
-- pit progression
-- save migration/versioning
-- production presentation/audio baseline
-
-### Gate
-
-R0.7 must be playable from new game through the end of the chosen slice without developer intervention, with automated regression coverage and a structured playtest questionnaire.
+**Release gate:** player can test on common animals, improve knowledge, consume real material and then risk a valued creature with a non-guaranteed individual outcome.
 
 ---
 
-# Phase R1 — First real game chapter / Alpha 1
+# R0.4 — Fit Pit Combat Prototype — PLANNED
 
-## Goal
+**Goal:** prove turn-based capability combat where preparation and tactical play both matter.
 
-Build the first genuine authored chapter on top of systems proven during R0.
+14. **WP0.4A — Combat Metrics and Capability Action Model**
+15. **WP0.4B — Turn Structure and Action Economy** — resolves final internal turn cadence.
+16. **WP0.4C — Training and Individual Skill Expression**
+17. **WP0.4D — Status, Injury, Recovery and Pit Danger**
+18. **WP0.4E — Land, Water and Air Functional Eligibility** — functional flight/swimming required; multi-environment qualification allowed.
+19. **WP0.4F — Multi-Creature and Special-Bout Architecture**
+20. **WP0.4G — Opponent Construction and AI**
+21. **WP0.4H — Balance Harness and Combat Playtest Lock**
 
-### Workstreams
-
-- authored story supplied separately
-- locations/maps
-- NPCs/dialogue/quests
-- real animal roster
-- real gene roster
-- first Fit Pit ladder/opponents
-- meaningful pit upgrades
-- economy tuning
-- creature management/naming/history
-- tutorialisation integrated into play rather than debug text
-
-### Gate
-
-A new player can understand the game, complete the chapter without external instructions and finish with multiple meaningfully different viable creatures.
+**Release gate:** biology determines available actions; environment eligibility is functional; combat is tactically readable; no obvious universal build/action dominates.
 
 ---
 
-# Phase R2 — Systems/content expansion / Alpha 2
+# R0.5 — World, Quests, Acquisition and Pit Progression — PLANNED
 
-## Goal
+**Goal:** connect lab + arena into the complete RPG loop.
 
-Prove the game scales beyond the first chapter.
+22. **WP0.5A — Authored World/Map Runtime**
+23. **WP0.5B — Dialogue, NPC and Relationship State**
+24. **WP0.5C — Quest, Story Clock and Branch-State Framework**
+25. **WP0.5D — Acquisition, Inventory and Economy Framework** — Buy / Harvest / Win / Trade.
+26. **WP0.5E — Test Stock, Housing and Physical Creature Handling**
+27. **WP0.5F — Pit Upgrade Framework** — nine locked domains, data-driven dependencies.
+28. **WP0.5G — Fit Pit Ladder, Circuits and Reward Progression Framework**
+29. **WP0.5H — Integrated World Loop Prototype**
 
-### Priorities
-
-- additional regions/biomes
-- broader animal/gene interaction matrix
-- more Fit Pit formats/opponents
-- additional progression systems only where they reinforce the core loop
-- balance simulation at larger content scale
-- performance profiling with larger saves/content sets
-- save migrations across multiple releases
-- expanded controller/touch support if still desired
-
-### Gate
-
-New content can be added predominantly through data/assets, not engine rewrites. No major core system remains dependent on one chapter’s assumptions.
+**Release gate:** leave pit → acquire/test material → splice/train/fight → earn/upgrade → advance quest/debt state works end-to-end without bespoke scene hacks.
 
 ---
 
-# Phase R3 — Content-complete Beta
+# R0.6 — Production Presentation Pipeline — PLANNED
 
-## Goal
+**Goal:** establish production art/UI/audio/accessibility before large content volume.
 
-All intended major systems and authored content are present; development emphasis moves from invention to quality.
+30. **WP0.6A — Art Direction, Tone and Content-Warning Specification**
+31. **WP0.6B — Environment and Character Asset Pipeline** — locks tile/sprite/camera metrics.
+32. **WP0.6C — Production Creature Phenotype Renderer**
+33. **WP0.6D — UI Design System and World/Dialogue Production Pass**
+34. **WP0.6E — Lab and Combat Production UI**
+35. **WP0.6F — Audio, Settings, Accessibility and Localisation Runtime**
+36. **WP0.6G — Asset Performance and Presentation Integration Gate**
 
-### Priorities
-
-- complete intended story/content set
-- balance pass
-- progression/economy pass
-- exploit/save-scum analysis
-- accessibility review
-- performance optimisation
-- browser/device compatibility matrix
-- UX/onboarding refinement
-- audio/art consistency pass
-
-### Gate
-
-No known blocker prevents a player completing the intended game from a fresh save.
+**Release gate:** scalable production presentation replaces prototype scene art/UI without blocking final user-supplied music.
 
 ---
 
-# Phase R4 — Release candidate
+# R0.7 — Integrated Pre-Alpha Slice — PLANNED
 
-## Goal
+**Goal:** prove all foundations together in one intentionally authored production-quality slice.
 
-Stabilise rather than expand.
+37. **WP0.7A — Pre-Alpha Content Lock and Slice Manifest**
+38. **WP0.7B — Opening Disaster and Emergency Starter**
+39. **WP0.7C — Inherited Pit Production Location**
+40. **WP0.7D — Starting Hub and Routes**
+41. **WP0.7E — Authored Acquisition and Experimentation Loop**
+42. **WP0.7F — First Fit Pit, Debt Pressure and Early Upgrades**
+43. **WP0.7G — Save, Onboarding and End-to-End Integration**
+44. **WP0.7H — Structured Pre-Alpha Playtest and Hardening**
 
-### Priorities
+**Decision gates before/inside WP0.7A:** approve the subset of provisional world-map, pit-upgrade and Act 1 details used by the slice. Final whole-game debt balance is not required yet.
 
-- regression-only feature policy unless a blocker requires change
-- save migration/failure recovery testing
-- final browser compatibility
-- deployment/rollback procedures
-- telemetry/error-reporting decision if desired
-- legal/licensing/credits checks for all third-party assets and libraries
-- final performance budgets
-
-### Gate
-
-Release candidate survives repeated full-game playthroughs and automated suites without save corruption, progression blockers or high-severity defects.
+**R0 gate:** a new player understands the real core game from play, not explanation, and no high-severity foundational blocker remains.
 
 ---
 
-# Backlog after core release
+# R1 — Alpha 1 / Complete Act 1 — PLANNED
 
-These are explicitly not dependencies for the initial full game unless later promoted:
+**Goal:** turn the pre-alpha systems into the first genuine complete authored chapter.
 
-- native/mobile wrapper
-- online accounts/cloud saves
-- multiplayer/PvP
-- creature sharing/trading
-- modding/content tools
-- procedural world generation
-- runtime generative-AI creature art
-- large backend/service architecture
+45. **WP1A — Act 1 Canon and Production Content Lock**
+46. **WP1B — Act 1 Geography and Environmental Content**
+47. **WP1C — Act 1 NPCs, Dialogue, Relationships and Suspicion Arc**
+48. **WP1D — Act 1 Base Animals, Source Packages and Biological Content Roster**
+49. **WP1E — Act 1 Quests, Acquisition Economy and Optional Work**
+50. **WP1F — Act 1 Fit Pit Circuit and Water/Air Introduction**
+51. **WP1G — Act 1 Pit Upgrades, Training, Recovery and Creature Management**
+52. **WP1H — Debt Deadline and Paid/Unpaid Act 1 Resolution**
+53. **WP1I — Alpha 1 Integration, Balance, Onboarding and QA**
 
-The browser game should not carry architectural complexity for these speculative features before they are actually required.
+**Decision gates resolved by WP1A:**
+- final Act 1 geography/names;
+- creditor identity/culture/terms, including approval/replacement of The Clearing House;
+- debt currency/amount/deadline/default terms;
+- exact reason first booked bout must be honoured;
+- Act 1 cast/opponents/suspicion beats;
+- approved early pit-upgrade tiers.
+
+**Release gate:** fresh player can complete Act 1 through either paid or unpaid debt outcome with no external instructions or high-severity progression/save blocker.
+
+---
+
+# R2 — Alpha 2 / Act 2 Expansion — PLANNED
+
+**Goal:** prove scale, specialisation and genuinely different post-debt routes.
+
+54. **WP2A — Act 2 Branch Architecture and Content Lock**
+55. **WP2B — Independent/Free Act 2 Route**
+56. **WP2C — Creditor-Controlled Act 2 Route**
+57. **WP2D — Water, Air and Specialist Circuit Expansion**
+58. **WP2E — Advanced Biology, Rare Bases and Mutation Research Content**
+59. **WP2F — Advanced Pit, Training, Recovery and High-Risk Competition**
+60. **WP2G — Act 2 Progression, Economy and Branch Convergence Tuning**
+61. **WP2H — Alpha 2 Integration, Scale, Save and Performance QA**
+
+**Release gate:** both major Act 2 routes are completable, meaningfully different and primarily expanded through content/data rather than core-engine rewrites.
+
+---
+
+# R3 — Content-Complete Beta — PLANNED
+
+**Goal:** stop inventing and make the intended full game complete, balanced and repeatedly finishable.
+
+62. **WP3A — Content Completion and Canon Audit**
+63. **WP3B — Splicing, Knowledge and Biological Balance Pass**
+64. **WP3C — Combat, Arena and Pit Balance Pass**
+65. **WP3D — Economy, Progression and Branch-Coherence Pass**
+66. **WP3E — UX, Accessibility, Controller and Localisation Beta Pass**
+67. **WP3F — Browser Performance, Asset and Compatibility Beta Pass**
+68. **WP3G — Full-Game Beta Regression and Feature Freeze Gate**
+
+**Release gate:** intended content is present and major routes repeatedly complete; development enters feature freeze except blocker-driven change.
+
+---
+
+# R4 — Release Candidate — PLANNED
+
+**Goal:** certify the exact release artifact; do not expand scope.
+
+69. **WP4A — Release Feature Freeze, Defect Triage and RC Branch Discipline**
+70. **WP4B — Save Compatibility, Migration and Failure Recovery Certification**
+71. **WP4C — Deployment, Rollback and Browser Compatibility Certification**
+72. **WP4D — Legal, Licensing, Credits, Warning and Attribution Closure**
+73. **WP4E — Final Performance, Presentation and Localisation Polish**
+74. **WP4F — Release Candidate Full-Game Certification**
+
+**Release gate:** exact deployed artifact has no unresolved release-blocking defect, save corruption, progression blocker or supported-platform failure.
+
+---
+
+# Cross-cutting decision gates
+
+These are intentionally **not** required before WP0.2A. They are resolved at the latest safe point:
+
+- **DG-SPLICE-TAXONOMY:** exact six-class schema — resolved/prototyped in WP0.3A.
+- **DG-MATERIAL-ECONOMY:** quantities/reagents/storage — prototype in WP0.3B, production balance later.
+- **DG-SPLICE-DISTRIBUTION:** exact compatibility/outcome/stability formulas — WP0.3C–D then tune R3.
+- **DG-TURN-STRUCTURE:** alternating/initiative/action-speed cadence — lock in WP0.4B.
+- **DG-ARENA-THRESHOLDS:** functional qualification rules — lock prototype in WP0.4E.
+- **DG-INJURY-RISK:** exact Pit danger/injury/death rules — prototype WP0.4D; production tuning R1/R2/R3.
+- **DG-WORLD:** final geography/hub names — must be locked for Act 1 in WP1A; subset approved earlier for R0.7.
+- **DG-CREDITOR:** creditor faction identity/terms — must be locked in WP1A; The Clearing House is current proposal.
+- **DG-DEBT:** currency, amount and deadline — must be locked in WP1A before WP1H; temporary values allowed in R0.7.
+- **DG-UPGRADES:** detailed tree/tier/costs — framework in WP0.5F; early production tiers locked in WP1A.
+- **DG-ART-METRICS:** tile/sprite/camera metrics — lock in WP0.6B.
+- **DG-WARNING:** final warning/disclaimer wording — production treatment in WP0.6A; legal closure in WP4D.
+- **DG-MUSIC:** final music content — supplied separately when ready; integration architecture exists from WP0.6F.
+
+---
+
+# Parallelism rules
+
+The roadmap is ordered, but not every WP must be serial.
+
+Safe examples once dependencies are satisfied:
+
+- content-schema work and save work can overlap after WP0.2B interfaces stabilise;
+- phenotype work can proceed alongside later splicing UX after its data contract is stable;
+- map/dialogue/quest framework WPs can overlap once shared state contracts are agreed;
+- environment/character pipeline and production phenotype pipeline can run in parallel after art direction locks;
+- authored content WPs in R1/R2 can be divided by region/system once canon manifests are locked.
+
+Do **not** parallelise work that is still deciding the contract another WP consumes. In particular, do not build large content volumes while the source schema, combat action model, save contract or map/quest data format is still moving.
+
+---
+
+# Change-control rule
+
+Playtesting will create new work. When it does:
+
+- a defect/small hardening task can become a patch WP under the relevant release (for example `WP0.3H1`);
+- a material design change must first update `DECISION_LOG.md` and affected system docs;
+- a new major feature should be placed in the earliest dependency-correct release rather than bolted onto the current WP;
+- R3/R4 scope expansion requires explicit reopening of feature freeze.
+
+The roadmap is a control structure, not a promise that learning will stop.
+
+---
+
+# Deferred / Post-Release Backlog
+
+Not dependencies for the initial release unless explicitly promoted:
+
+- native/mobile wrapper;
+- cloud accounts/saves;
+- multiplayer/PvP;
+- player-to-player creature trading/sharing;
+- modding/editor tooling;
+- procedural world generation;
+- runtime generative-AI creature art;
+- large backend/service architecture.
+
+Do not carry architectural complexity for these features until a real requirement exists.

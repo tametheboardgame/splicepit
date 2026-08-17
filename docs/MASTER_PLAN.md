@@ -1,188 +1,141 @@
 # SplicePit Master Plan
 
-## 1. Purpose
+## Product promise
 
-SplicePit is moving from proof-of-concept to deliberate production. R0.1 proved that the core loop can exist in a browser: move through a top-down space, obtain a base animal and genes, splice a creature, fight it in a Fit Pit, receive progression feedback and persist state.
+SplicePit is a darkly comic adult creature RPG about running an irresponsible gene-splicing pit in a fragmented post-apocalyptic world.
 
-The next objective is not to make that prototype larger. The objective is to establish systems that can support a large game without every new animal, gene, quest or arena multiplying technical debt.
+The player does not collect hundreds of interchangeable monsters. They experiment on ordinary/rare animals, learn uncertain biological behaviour through testing, and gradually build a very small number of deeply individual creatures whose irreversible histories matter.
 
-## 2. Product promise — LOCKED
-
-SplicePit is a dark, adult creature-collection RPG built around experimental gene splicing rather than collecting fixed species variants.
-
-The player fantasy is:
-
-1. Explore a strange world and discover animals, people, places and opportunities.
-2. Acquire useful genetic material and base animals through exploration and quests.
-3. Experiment with combinations in a gene lab where there is no arbitrary gene-count ceiling and outcomes are not perfectly deterministic.
-4. Produce creatures whose mechanics and appearance reflect what was actually spliced into them.
-5. Test those creatures in Fit Pits where design decisions have consequences.
-6. Use rewards, access and pit development to reach new genes, animals, opponents and authored story content.
-
-The intended feeling is less “complete a collection” and more “run an increasingly alarming biological workshop that happens to fund itself through creature fighting”.
-
-## 3. Design pillars — LOCKED
-
-### 3.1 Exploration is the source of possibility
-
-Genes and base animals should be connected to the world rather than primarily purchased from menus. Exploration, quests, encounters and relationships create new options in the lab.
-
-### 3.2 Splicing is the centre of the game
-
-The lab is not a cosmetic upgrade screen. It is the system that differentiates SplicePit. Interesting decisions should arise from compatibility, complexity, risk, scarce material, desired traits and unintended outcomes.
-
-### 3.3 Creatures are compositions, not predefined evolutions
-
-A creature is represented by its base animal, gene set, mutations, derived properties and a persistent identity/seed. The architecture must not require hand-authoring every possible combination.
-
-### 3.4 Failure should create stories, not only reloads
-
-The same splice attempt can produce different results. Failure, instability and mutation should be meaningful. The long-term system should avoid making “reload until perfect” the obviously correct way to play.
-
-### 3.5 Fit Pits make laboratory choices legible
-
-Combat exists to expose the practical effects of splicing. A gene that changes speed, armour, senses, regeneration, behaviour or anatomy should matter in the arena in a way the player can understand.
-
-### 3.6 The world is an RPG, not a laboratory menu
-
-Most play remains top-down 2D exploration with tile-based spatial logic. The lab and arena are major systems inside an RPG structure, not replacements for it.
-
-### 3.7 The presentation should be recognisably SplicePit
-
-The visual target is “storybook wrongness” / “pastoral biotech”: natural, handmade, clinical and grotesque elements occupying the same world. It should not settle into generic SNES fantasy or generic sci-fi laboratory styling.
-
-## 4. Narrative boundary — LOCKED
-
-The following opening elements are established and may be implemented:
-
-- The player begins as a SpliceApprentice under a SpliceMaster.
-- There were multiple apprentices.
-- A rampaging splice animal kills the SpliceMaster.
-- The player releases emergency gas to stop the escaped mutants.
-- The other apprentices die; the player survives.
-- The player inherits the damaged pit and remaining resources.
-- The first practical objective is obtaining a new base animal.
-- The disaster creates distrust/suspicion around the survivor.
-- Crime/syndicate pressure is part of the inherited situation.
-
-The complete storyline beyond this opening is intentionally not authored by these planning documents. Systems must be able to host later authored plot, dialogue and characters without embedding invented story beats into engine code.
-
-## 5. Development principles
-
-### 5.1 Architecture before content volume
-
-Do not add dozens of genes, animals, maps or opponents until their schemas and runtime systems are stable enough that content is data rather than bespoke code.
-
-### 5.2 Separate genotype, phenotype and combat expression
-
-A gene has at least three concerns:
-
-- **Genotype:** what genetic modification the creature contains.
-- **Phenotype:** how that modification changes visible anatomy/appearance.
-- **Expression:** how the modification affects stats, traits, moves, behaviour or other gameplay systems.
-
-These layers may share data but should not be collapsed into one renderer or one combat script.
-
-### 5.3 Determinism where testing needs it; randomness where design needs it
-
-Splice outcomes can be stochastic, but random generation must accept explicit seeds/RNG sources so tests and bug reports are reproducible.
-
-### 5.4 Prototype content is labelled
-
-Temporary Rabbits, genes, opponents, currency values, dialogue and debt figures remain `prototype` until explicitly promoted. Implementation convenience must not create canon by accident.
-
-### 5.5 Save data is a product contract
-
-As soon as external playtesting starts, save versions and migrations matter. New releases should not casually invalidate existing saves.
-
-### 5.6 Browser-first remains the delivery target
-
-The game should continue to deploy as a static/browser application through the existing GitHub → Cloudflare Pages workflow. Native/mobile packaging can be considered later without making the core game dependent on it.
-
-### 5.7 Every release has an exit gate
-
-A release is complete when its acceptance criteria pass, not when its task list merely appears implemented.
-
-## 6. System dependency order
-
-The broad dependency graph is:
+## Core loop
 
 ```text
-Technical foundation
-      │
-      ├── Content schemas ───────────────┐
-      │                                  │
-      ├── Save/state/versioning          │
-      │                                  │
-      ├── Input/UI framework             │
-      │                                  │
-      └── Deterministic RNG/testing      │
-                                         ▼
-Base animals ──► Genes ──► Splice resolution ──► Creature model
-                                         │             │
-                                         │             ├── Phenotype/rendering
-                                         │             └── Combat expression
-                                         │
-                                         ▼
-Inventory/acquisition ◄── Quests/world ◄── Progression/economy
-                                         │
-                                         ▼
-                             Fit Pit progression/opponents
-                                         │
-                                         ▼
-                             Integrated authored chapter
+Explore / quest / trade / fight
+            ↓
+Acquire base animals + physical genetic material
+            ↓
+Experiment on test animals
+            ↓
+Improve knowledge / prediction
+            ↓
+Risk irreversible splice on a main creature
+            ↓
+Train and fight in Land / Water / Air Fit Pits
+            ↓
+Earn money, material, access and facility upgrades
+            ↓
+Explore further / attempt more ambitious biology
 ```
 
-This ordering is why R0.2 is primarily foundation work rather than new content.
+## Locked design pillars
 
-## 7. Product layers
+### 1. Splicing is uncertain even when understood
 
-### Layer A — Domain model
+Repeated experimentation improves prediction but never turns biology into a deterministic recipe. Same source + same base can still produce different valid expression.
 
-Pure data and logic: animals, genes, creatures, mutations, stats, moves, combatants, inventory, quests, progression and save state. This layer should be testable without Phaser.
+### 2. Creatures are histories, not loadouts
 
-### Layer B — Game systems
+A creature can be spliced again and again. Nothing is “unequipped”. Its current body is the accumulated result of irreversible experiments, mutations, injuries and training.
 
-Splicing, combat, quest evaluation, inventory transactions, rewards, dialogue state, map transitions and persistence.
+### 3. Small main roster, large experimental space
 
-### Layer C — Presentation
+The player develops at most three serious main combat creatures. Test animals/lab stock exist separately. This focuses attachment and makes risking a valuable creature meaningful.
 
-Phaser scenes, maps, sprite/phenotype composition, UI panels, animation, audio and input.
+### 4. Common animals remain strategically useful
 
-### Layer D — Content
+Rabbits/other common animals can be excellent test subjects because equivalent replacements are abundant. Rare animals create risk partly because equivalent controlled tests are hard to reproduce.
 
-Actual animals, genes, quests, locations, opponents, dialogue, items and authored story assets.
+### 5. Full mad science, not molecular simulation
 
-The target is to let content expand mainly by editing validated data, not by adding new engine branches.
+The system borrows intuitive ideas from real animals but follows playful logic: “put a rhino horn on this fish” is a valid design goal. Internal rules should be coherent without being biologically realistic.
 
-## 8. Core quality bars
+### 6. Capability-driven combat
 
-A major system is not production-ready until it satisfies all relevant bars:
+Turn-based Fit Pit actions come from what a creature physically/biologically can do plus training. No arbitrary four-move limit.
 
-- **Readable:** the player can understand cause and effect.
-- **Composable:** new content does not require modifying unrelated code.
-- **Testable:** deterministic unit/system tests can verify important rules.
-- **Persistent:** the state survives save/load correctly.
-- **Performant:** combinations do not produce uncontrolled runtime or asset growth.
-- **Accessible:** core interactions have keyboard support and a path to controller/touch support.
-- **Debuggable:** important generated outcomes can be reconstructed from IDs/seeds/logged inputs.
-- **Content-safe:** prototype content cannot silently become canon.
+### 7. Environment matters through function
 
-## 9. Work-package discipline
+Land, Water and Air pits require actual functional biological capability. Attempting wings/fins/gills is not enough if they do not work. Multi-environment creatures are possible, including theoretical all-three generalists, but the biological burden should naturally trade against peak specialisation.
 
-Each work package should contain:
+### 8. Failure creates consequence and stories
 
-1. Purpose and dependencies.
-2. Explicit in-scope/out-of-scope boundaries.
-3. Files/systems expected to change.
-4. Automated tests required.
-5. Browser acceptance flow where relevant.
-6. Migration impact on saves/content.
-7. Exit criteria.
-8. Follow-on risks or open decisions.
+Most failure costs material/stability and may injure. Extreme work can permanently damage or rarely kill. Mutations can become desirable research opportunities.
 
-Large releases should be composed of mergeable work packages rather than one long-lived feature branch.
+### 9. The world supplies the lab
 
-## 10. Immediate objective
+Genes/material are bought, harvested, won and traded. The laboratory should constantly send the player back into authored regions/quests rather than becoming a self-contained crafting menu.
 
-R0.2 should make the current vertical slice structurally trustworthy without materially expanding the game. When R0.2 is complete, subsequent work can focus on game design and content rather than repeatedly rebuilding foundations.
+### 10. Tone is black comedy, not torture spectacle
+
+The concepts are ethically horrific; the presentation is stylised and comic. The game explicitly warns/acknowledges fictional animal harm rather than pretending otherwise.
+
+## Story frame currently locked
+
+- Player is a SpliceApprentice.
+- SpliceMaster's creature kills the SpliceMaster during containment failure.
+- Emergency gas kills the escaped splice(s) and other apprentices; player survives.
+- Player inherits damaged pit/lab, resources and suspicion.
+- SpliceMaster had an imminent Fit Pit commitment, forcing an emergency first creature/splice.
+- Opening base choices are Rabbit / Goat / Pig and the ten initial source packages are locked in `DECISION_LOG.md`.
+- Player inherits real timed debt/obligation.
+- Pay by Act 1 deadline → enter Act 2 independent/free to choose direction.
+- Fail to pay → no game over; creditors control the player's work/fights until obligation is worked down, opening a different Act 2 route.
+
+Detailed story beyond this structure remains authored separately. Exact creditor identity, geography, debt values and detailed upgrade tiers remain decision-gated rather than silently locked.
+
+## Technical rules
+
+- browser-first;
+- TypeScript + Vite + Phaser from R0.2;
+- Cloudflare Pages deployment;
+- domain logic independent of Phaser where practical;
+- seeded RNG;
+- validated stable-ID content;
+- R0.2 begins versioned-save compatibility contract;
+- keyboard first, controller/touch-ready architecture;
+- localisation-ready text/data architecture;
+- no initial full voice acting.
+
+## Development ordering
+
+```text
+R0.2 architecture
+  ↓
+R0.3 irreversible uncertain splicing + knowledge/testing
+  ↓
+R0.4 capability-driven turn combat + functional Land/Water/Air
+  ↓
+R0.5 world/quests/acquisition/debt/upgrades
+  ↓
+R0.6 production presentation/audio/accessibility
+  ↓
+R0.7 integrated pre-alpha
+  ↓
+R1 complete Act 1 / Alpha 1
+  ↓
+R2 Act 2 expansion / Alpha 2
+  ↓
+R3 content-complete Beta / feature-freeze gate
+  ↓
+R4 release candidate / certification
+```
+
+Architecture comes before content volume. Prototype content must not become canon through inertia.
+
+The definitive sequence is `ROADMAP.md`, with detailed contracts under `work-packages/`.
+
+## Work-package rule
+
+Every implementation WP defines:
+
+1. dependencies;
+2. scope/out-of-scope;
+3. concrete deliverables;
+4. schema/save impact where relevant;
+5. required automated tests;
+6. browser/human acceptance path where relevant;
+7. explicit exit criteria;
+8. open decisions revealed/resolved by the work.
+
+A WP is complete when its gate passes, not when code merely exists.
+
+The current master execution roadmap contains **74 WPs**. Later playtests may create narrowly numbered patch/hardening WPs, but material new features must enter at the earliest dependency-correct point rather than being bolted onto unrelated work.
