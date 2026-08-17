@@ -1,301 +1,126 @@
 # SplicePit Technical Architecture Plan
 
-## 1. Current R0.1 architecture
+## Locked R0.2 stack
 
-R0.1 intentionally optimised for getting a working browser loop quickly:
+- TypeScript in strict mode
+- Vite
+- Phaser as a pinned package dependency
+- browser-first static deployment
+- GitHub + Cloudflare Pages
+- pure domain/system logic separated from Phaser presentation where practical
+- validated content definitions with stable IDs
+- versioned save schema from R0.2 onward
+- seeded deterministic RNG for stochastic systems/tests
+- CI with typecheck, tests, content validation, production build and browser smoke
 
-- static HTML/CSS/JavaScript
-- Phaser loaded as a browser CDN global
-- Phaser scenes for title, intro, world, splice and battle
-- pure-ish JavaScript modules for splice/battle logic
-- localStorage persistence
-- GitHub Actions syntax/unit/browser smoke tests
-- Cloudflare Pages static deployment
+## R0.1 save policy
 
-This was appropriate for proving viability. It should not be allowed to become the permanent architecture by inertia.
+R0.1 saves are disposable prototype data.
 
-## 2. R0.2 target stack — PLANNED
+R0.2 establishes the compatibility contract. Migration code does **not** need to carry the R0.1 prototype schema forever. On first R0.2 launch we may explicitly reset/replace old prototype save data with a clear message.
 
-```text
-TypeScript (strict)
-    +
-Vite build/dev server
-    +
-Phaser (pinned package dependency)
-    +
-Validated data/content definitions
-    +
-Pure domain/system modules
-    +
-Versioned save data
-    +
-Automated unit/system/browser tests
-    +
-Cloudflare Pages static `dist/`
-```
+From R0.2 onward, save migrations are required where practical.
 
-The game remains browser-first and should not require a backend for the core single-player game.
+## Input policy
 
-## 3. Proposed source layout
+Keyboard is the supported foundation input.
 
-```text
-src/
-  app/
-    main.ts
-    config.ts
-  domain/
-    ids.ts
-    animals/
-    genes/
-    creatures/
-    mutations/
-    combat/
-    inventory/
-    quests/
-    progression/
-  systems/
-    splicing/
-    combat/
-    saves/
-    quests/
-    inventory/
-    rng/
-  content/
-    animals/
-    genes/
-    mutations/
-    moves/
-    items/
-    quests/
-    dialogue/
-    opponents/
-    locations/
-  game/
-    scenes/
-    world/
-    input/
-    rendering/
-    audio/
-  ui/
-    components/
-    screens/
-    theme/
-  dev/
-    diagnostics/
-    simulation/
-    fixtures/
-```
-
-Exact folder names can change. The architectural boundary is more important than the spelling.
-
-## 4. Domain purity
-
-Core rules should not require Phaser objects.
-
-Examples that should be callable from Node tests:
-
-- calculate splice compatibility
-- resolve seeded splice outcome
-- derive creature biology/stats
-- resolve a combat action/turn
-- evaluate quest objectives
-- apply inventory transaction
-- migrate save data
-
-Phaser should present and orchestrate these systems rather than *be* the systems.
-
-## 5. IDs and references
-
-Every content entity should have a stable string ID independent of display name.
+Core game code maps physical controls to semantic actions so later controller/touch support can be added without rewriting gameplay systems.
 
 Examples:
 
 ```text
-animal.rabbit_common
- gene.gecko.regeneration
-mutation.calcification
-move.charge
-quest.chapter1.obtain_base
-location.pit.main
-npc.example
+MOVE_UP / MOVE_DOWN / MOVE_LEFT / MOVE_RIGHT
+INTERACT
+CONFIRM
+CANCEL
+MENU
+BATTLE_PRIMARY...
 ```
 
-These examples do not canonise content; they illustrate ID structure.
+No core system should depend directly on a specific key code after R0.2.
 
-Benefits:
+## Domain model priorities
 
-- saves reference stable IDs
-- display names can change
-- content validation can detect missing references
-- authored data can cross-reference systems safely
+R0.2 must support future concepts already locked:
 
-## 6. Content status metadata
+- persistent named creatures
+- chronological irreversible splice history
+- variable expression outcome data
+- main roster max three
+- separate lab/test-animal stock
+- material inventory separate from knowledge records
+- Land/Water/Air eligibility/capabilities
+- persistent injury/mutation fields even if later mechanics are not fully implemented yet
 
-Definitions should include a status or live in status-aware collections:
+Schemas should leave room for these concepts rather than forcing later breaking rewrites.
 
-```text
-prototype
- draft
- canon
- deprecated
-```
+## RNG
 
-Build/test tooling can warn if production chapter manifests reference prototype content accidentally.
+All important stochastic systems accept a `RandomSource`/seeded generator.
 
-## 7. Content validation
+Do not use global `Math.random()` in core splice/combat/procedural domain rules after migration.
 
-Before runtime, validate at least:
+A stored splice event should be reproducible from:
 
-- unique IDs
-- referenced IDs exist
-- numeric ranges are sane
-- required tags/fields exist
-- mutually exclusive fields are not both set
-- dialogue/quest graphs have valid targets
-- save-visible content uses stable/versioned definitions
+- creature prior state
+- material/source IDs
+- lab modifiers
+- knowledge state if relevant
+- seed
+- resulting outcome/expression data
 
-Validation can use TypeScript plus lightweight runtime assertions/schema tooling. Avoid adding a large dependency solely for fashion; choose what materially improves reliability.
+## Save envelope
 
-## 8. RNG architecture
-
-Introduce an RNG interface/service:
-
-```text
-RandomSource
-- nextFloat()
-- nextInt(min, max)
-- pick(list)
-- fork(label)       optional
-- seed metadata
-```
-
-Production can use seeded PRNG state. Tests can use fixed sequences/seeds.
-
-Do not call `Math.random()` directly inside core domain logic after R0.2.
-
-## 9. Save architecture
-
-### Save envelope
-
-Indicative structure:
+Indicative R0.2 shape:
 
 ```text
 SaveFile
 - schemaVersion
 - gameVersion
 - savedAt
-- player/progression state
-- inventory/sample state
-- creature roster
+- player/progression
+- money/debt/story clocks
+- inventory/material stock
+- knowledge/research records
+- main creature roster (max 3)
+- lab/test animal stock
 - world/quest state
-- pit state
-- generated creature seeds/history
+- pit facility state
+- settings reference/separate settings store
 ```
 
-Settings should be separable from gameplay save so resetting a run does not necessarily reset volume/key settings.
+Generated creature state stores biological history and phenotype seed/parameters rather than relying only on recomputation from latest visible stats.
 
-### Migrations
+## Content status
 
-Use sequential migrations:
+Every scalable content entity is labelled:
 
-```text
-v1 -> v2 -> v3
-```
+- prototype
+- draft
+- canon
+- deprecated
 
-Tests should load representative old fixtures and assert the latest valid shape.
+Production chapter manifests should fail/warn when they accidentally depend on prototype content.
 
-### Failure handling
+## Localisation / future voice readiness
 
-Never overwrite the only readable copy with a failed migration. In-browser implementation can maintain a backup key/version before destructive writes.
+Dialogue is data-driven and identified by stable dialogue/node IDs.
 
-## 10. State management
+Text should not be embedded in scene logic.
 
-Avoid one global mutable object accumulating every subsystem.
+Architecture should support:
 
-Use explicit stores/services or a root game state composed of typed domains. Mutations should pass through methods/commands where invariants matter.
+- language packs/string tables later
+- locale selection
+- text expansion/layout variation
+- optional audio/voice reference on a dialogue line/node in the future
 
-The project does not need a heavy frontend state framework unless complexity proves it useful.
+No initial voice acting is required.
 
-## 11. Scene architecture
+## Deployment
 
-Scenes should own presentation lifecycle, not business rules.
-
-Potential scenes/screens:
-
-- boot/preload
-- title/save selection
-- world/exploration
-- lab/splicing
-- Fit Pit combat
-- transitions/overlays as appropriate
-
-World maps should preferably reuse one world scene with data-driven map loading rather than create a new Phaser Scene class per location.
-
-## 12. Input architecture
-
-Map physical inputs to semantic actions:
-
-```text
-MOVE_UP
-MOVE_DOWN
-MOVE_LEFT
-MOVE_RIGHT
-INTERACT
-CANCEL
-MENU
-CONFIRM
-BATTLE_ACTION_1...
-```
-
-This supports keyboard remapping and later controller/touch bindings without changing game logic.
-
-## 13. UI architecture
-
-Build reusable components for:
-
-- panels/modals
-- dialogue
-- choices
-- lists/inventory
-- tooltips/inspection
-- tabs
-- confirmation prompts
-- progress/health/resource displays
-
-Avoid screen-specific hard-coded positioning becoming the only UI mechanism. The game still uses Phaser, but layout utilities should be reusable and responsive to the fixed logical canvas/window scale.
-
-## 14. Rendering architecture
-
-Separate:
-
-- world tile/environment rendering
-- character rendering
-- creature phenotype rendering
-- UI
-
-Creature rendering should consume phenotype instructions/data, not directly inspect every gene ID with `if (gene === ...)` in one giant renderer.
-
-A registry/renderer component approach is preferable:
-
-```text
-phenotype instruction -> renderer implementation
-```
-
-## 15. Audio architecture
-
-Add an audio manager rather than scene-specific direct sound calls.
-
-Needs:
-
-- master/music/SFX levels
-- mute
-- settings persistence
-- scene/state music transitions
-- graceful handling if audio assets fail
-
-## 16. Build and deployment
-
-R0.2 target:
+R0.2 target commands:
 
 ```text
 npm ci
@@ -304,79 +129,33 @@ npm test
 npm run build
 ```
 
-Cloudflare Pages:
+Cloudflare Pages deploys Vite `dist/` output.
 
-- production/preview builds from GitHub
-- build output: `dist`
-- no server-side dependency required for core game
+## CI gates
 
-Deployment should remain replaceable/rollback-friendly through Git history.
+- typecheck
+- content/schema validation
+- unit/domain tests
+- save tests (R0.2+ formats)
+- production build
+- browser smoke
 
-## 17. CI gates
+Later:
 
-Every PR should eventually run:
+- combat/splice simulations
+- performance/bundle budgets
+- quest/content graph checks
+- asset/licensing checks
 
-1. TypeScript typecheck.
-2. Content/schema validation.
-3. Unit/system tests.
-4. Save migration tests.
-5. Production build.
-6. Headless browser smoke.
+## R0.2 acceptance criteria
 
-Later phases add:
-
-- combat simulation checks
-- bundle/performance budgets
-- broken content graph checks
-- asset/licensing checks where automatable
-
-## 18. Debug/developer tooling
-
-Development builds should expose useful diagnostics without shipping intrusive debug UI by default.
-
-Useful tools:
-
-- current location/quest state
-- save export/import
-- grant sample/item
-- spawn/load creature fixture
-- show creature genotype/phenotype seed
-- force RNG seed/outcome
-- launch Fit Pit fixture
-- content search/ID display
-
-Developer tooling should speed testing and not be implemented as permanent cheats in production saves.
-
-## 19. Performance principles
-
-Primary risks are likely to be asset/content growth and creature phenotype composition rather than raw 2D simulation.
-
-Plan for:
-
-- asset atlases/lazy loading by region where useful
-- reuse/caching of generated phenotype textures
-- deterministic cache keys
-- avoiding enormous DOM overlays
-- limiting active world entities
-- profiling before speculative optimisation
-
-## 20. Security/privacy scope
-
-Core game remains local/static, so avoid collecting user data or introducing authentication/backend services without a real feature need.
-
-If cloud saves/accounts/telemetry are later proposed, treat them as separate architecture decisions with privacy/security implications.
-
-## 21. R0.2 technical acceptance criteria
-
-R0.2 completes when:
-
-- TypeScript strict build is green.
-- Phaser is bundled/pinned locally.
-- Cloudflare deploys `dist` successfully.
-- Current R0.1 behaviour is preserved.
-- Core domain tests run without Phaser/browser globals.
-- Direct core `Math.random()` use is eliminated.
-- Content references are validated.
-- Save data is versioned and migration-tested.
-- Input is semantic/remapping-ready.
-- Browser end-to-end test remains green.
+1. Current R0.1 behavioural loop survives migration.
+2. R0.1 save may reset cleanly; R0.2 save is versioned.
+3. Phaser is bundled/pinned.
+4. Core splice/combat calculations are browser-independent.
+5. Content definitions validate.
+6. RNG is injectable/seeded.
+7. Input is semantic and remapping-ready.
+8. Creature schema supports cumulative irreversible history and persistent identity.
+9. Save schema distinguishes main roster, lab stock, material and knowledge.
+10. Browser build/deployment/tests pass.

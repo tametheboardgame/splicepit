@@ -1,322 +1,278 @@
 # SplicePit Splicing System Plan
 
-## 1. Role of the system
+## 1. Role
 
-Splicing is the defining mechanic of SplicePit. It must support experimentation for an entire game, not merely function as an upgrade menu with a success percentage.
+Splicing is the defining mechanic. The player is not selecting deterministic upgrades; they are performing irreversible biological experiments whose likely outcomes become more understandable through repeated testing, better records and improved equipment.
 
-The system must satisfy four locked requirements:
+The target fantasy is closer to an irresponsible five-year-old with a genetics laboratory — “put a rhino horn on this fish” — than to realistic molecular genetics.
 
-1. No arbitrary maximum number of combined genes.
-2. The same nominal splice can produce different outcomes.
-3. Genes materially change both creature behaviour/mechanics and visible phenotype where appropriate.
-4. The number of possible creatures must scale through composition rather than requiring a hand-authored asset for every combination.
+## 2. Locked principles
 
-## 2. Conceptual model
+1. No arbitrary gene-count ceiling.
+2. Splicing is irreversible.
+3. A living creature can be spliced repeatedly through its life.
+4. Identical nominal recipes do not guarantee identical results.
+5. Even two attempts in the same success band can express at different strength/stat levels.
+6. Players learn by experimentation; knowledge improves prediction but never creates total certainty.
+7. Valuable animals create tension because equivalent test subjects may be difficult to obtain.
+8. Physical genetic material/resources are consumed even when the underlying gene/source has already been studied.
+9. Extreme experimentation can permanently damage or rarely kill a creature.
+10. Mutations may become valuable discoveries and can be investigated/stabilised/preserved through further uncertain work.
 
-A creature should be represented approximately as:
+## 3. Gene/material taxonomy
 
-```text
-Creature
-├── identity
-│   ├── stable creature ID
-│   ├── optional player name
-│   ├── creation/history metadata
-│   └── phenotype seed
-├── base animal
-├── genotype
-│   ├── expressed genes
-│   ├── latent/suppressed genes (if later used)
-│   └── gene variants/quality (OPEN)
-├── mutations
-├── derived biology
-│   ├── body capabilities
-│   ├── physiological capabilities
-│   ├── behavioural/sensory capabilities
-│   └── stability/health properties
-├── combat expression
-│   ├── stats
-│   ├── traits
-│   ├── actions/moves
-│   └── resistances/vulnerabilities
-└── phenotype instructions
-    ├── body layers/components
-    ├── material/skin changes
-    ├── appendages/features
-    └── deformation/variation parameters
-```
+Initial locked direction uses broad classes rather than treating every “gene” as one clean superpower:
 
-The important architectural decision is that a creature is not stored as only a final set of stats. Its biological construction remains available so other systems can reason about it.
+- **Anatomical** — horns, claws, teeth, scales, limbs, body structures.
+- **Physiological** — regeneration, metabolism, muscle performance, temperature control, oxygen use.
+- **Sensory** — vision, smell, hearing, echolocation, electroreception and related perception.
+- **Biochemical** — venom, toxins, secretions, bioelectricity, pigments and chemical defences.
+- **Behavioural / neurological** — predator drive, reflex patterns, aggression, social instincts, battle cognition.
+- **Regulatory** — growth, expression amplification/suppression, size, developmental timing and other genes that alter how other material expresses.
 
-## 3. Gene data model — PLANNED
+These are implementation classes, not hard realism. A harvested “lion package” may contain tendencies across several classes, with each attempt expressing a different subset or strength.
 
-Each gene definition should have a stable ID and data fields that can evolve without scene-specific logic.
+## 4. Creature model
 
-Indicative schema:
+A persistent creature records:
 
 ```text
-GeneDefinition
-- id
-- contentStatus
-- displayName
-- sourceAnimalTags
-- taxonomy/category                OPEN
-- rarity/tier                      OPEN
-- description
-- complexity
-- compatibilityTags
-- incompatibilityTags
-- requirements/conditions
-- expressionTags
-- stat/derived-property effects
-- trait/action grants
-- phenotype instructions
-- mutation affinities              optional
-- world-use effects                optional
-- acquisition metadata
-- version
+identity
+- creatureId
+- name
+- age/history
+- creation/base animal
+- phenotypeSeed
+
+biological history
+- splice attempts in order
+- source material used
+- expression outcomes
+- mutations
+- permanent injuries/instability
+
+current genotype/expression
+- intended inserted material
+- expressed traits
+- partial/suppressed expressions
+- mutations
+
+capabilities
+- anatomy
+- physiology
+- senses
+- biochemical systems
+- behaviours/instincts
+- regulatory effects
+
+combat expression
+- derived metrics
+- capability actions
+- training modifiers
+
+presentation
+- phenotype component instructions
 ```
 
-The exact taxonomy is intentionally OPEN. The schema should support categories without requiring the engine to know every category in advance.
+The order/history matters because later splices operate on an already modified creature rather than a clean base template.
 
-## 4. Complexity — LOCKED PRINCIPLE, OPEN FORMULA
+## 5. Testing and knowledge loop
 
-Complexity is one mechanism that makes ambitious splices risky without imposing a hard gene-count cap.
-
-Complexity should not simply equal `number of genes × constant`. It can eventually account for:
-
-- number of inserted modifications
-- how radical each modification is
-- distance from base-animal biology
-- conflicting regulatory requirements
-- body-plan changes
-- number of simultaneous new systems
-- existing mutations/instability
-- laboratory capability/upgrades
-
-A three-gene splice with naturally compatible systems may be easier than a two-gene splice that asks incompatible anatomy to coexist.
-
-The formula remains OPEN until R0.3 prototypes establish useful behaviour.
-
-## 5. Compatibility and epistasis
-
-### Design objective
-
-Gene combinations should create interactions that make experimentation interesting without requiring every gene pair to be manually coded.
-
-### Planned approach
-
-Use tags/rules rather than exhaustive pairwise tables as the default.
-
-Example conceptual tags:
+This is now a core gameplay loop:
 
 ```text
-body:quadruped
-structure:heavy
-structure:light
-system:regeneration
-system:venom
-requirement:external_gland
-requirement:high_metabolism
-conflict:low_metabolism
-sense:chemical
-surface:armoured
+Acquire material
+      ↓
+Acquire common/cheap test animal(s)
+      ↓
+Attempt splice
+      ↓
+Observe outcome / update records
+      ↓
+Repeat with more material/subjects
+      ↓
+Build confidence about likely expression and risks
+      ↓
+Commit to a valuable main creature
 ```
 
-Rules can then reason about classes of interactions:
+A player can choose to skip testing and take the risk.
 
-- requirements satisfied / unsatisfied
-- mutually hostile expressions
-- positive synergy
-- redundant expressions
-- scaling penalties
-- base-animal suitability
+Testing should improve information such as:
 
-Specific handcrafted interactions can still exist for notable combinations, but should be exceptions layered over a general system.
+- likely expression families
+- observed strength range
+- known side effects
+- compatibility conflicts
+- mutation tendencies
+- base-animal-specific behaviour
 
-### Player-facing requirement
+It should never produce a guarantee.
 
-The engine should be able to explain major known interactions in human terms. “Compatibility -18” is less useful than “Dense armour restricts the external gland structures this splice is trying to grow.”
+## 6. Knowledge versus material
 
-How much of this is visible before the attempt remains OPEN.
+The system separates:
 
-## 6. Splice attempt pipeline — PLANNED
+### Knowledge
+Persistent records about a source/gene/context. Knowledge is not consumed.
 
-A splice attempt should eventually resolve through explicit stages rather than one opaque roll:
+### Physical material
+Actual harvested/bought/won/traded genetic stock and required laboratory reagents. These are consumed by attempts.
+
+This creates a reason to return to the world even after a gene is well understood.
+
+Exact sample quantities, storage/decay and reagent rules remain to be designed.
+
+## 7. Compatibility / epistasis
+
+Compatibility uses systemic tags/rules with occasional special authored interactions.
+
+The engine should reason about concepts such as:
+
+- body-plan requirements
+- metabolic demands
+- structural support
+- competing developmental pathways
+- incompatible surfaces/organs
+- synergistic systems
+- regulatory amplification/suppression
+- accumulated instability
+
+`X + Y` must not deterministically equal `Z`.
+
+A combination can alter the probability distribution and expression range, while randomness and the individual animal still matter.
+
+## 8. Splice resolution pipeline
+
+Planned staged resolution:
 
 ```text
-1. Validate recipe
-2. Calculate biological complexity
-3. Evaluate compatibility / unmet requirements
-4. Apply lab/operator/facility modifiers
-5. Determine viability distribution
-6. Resolve seeded stochastic outcome
-7. Resolve intended gene expression
-8. Resolve suppression/partial expression if used
-9. Resolve mutations/side effects
-10. Build derived biology
-11. Build combat expression
-12. Build phenotype instructions/seed
-13. Persist result and attempt history
+1. Validate animal + physical material + lab capability
+2. Read creature's existing biological history
+3. Calculate added complexity
+4. Evaluate compatibility, requirements and existing conflicts
+5. Apply knowledge/diagnostic information available to UI
+6. Apply lab/facility modifiers
+7. Determine distribution across outcome bands
+8. Resolve seeded outcome band
+9. Resolve which intended expressions take hold
+10. Resolve expression strength/quality independently within valid ranges
+11. Resolve mutation/side effects/permanent injury
+12. Recompute capabilities and combat metrics
+13. Generate/update stable phenotype instructions
+14. Consume material/reagents
+15. Persist attempt and outcome to creature/lab records
 ```
 
-This staged model makes balancing, explanations and debugging possible.
+## 9. Initial outcome spectrum
 
-## 7. Outcome model — OPEN DESIGN GATE
+The initial model to prototype is:
 
-R0.1 has binary success/failure plus optional mutation. That is sufficient for a prototype but probably too shallow for the full game.
+1. **Clean rejection** — intended material fails to establish; limited/no lasting biological change, resources lost.
+2. **Damaging failure** — rejection plus injury/stability damage.
+3. **Partial expression** — some traits take hold, or intended trait expresses weakly/incompletely.
+4. **Unstable viable creature** — intended result broadly works but with significant instability/ongoing cost.
+5. **Normal success** — useful intended expression with ordinary variance.
+6. **Mutated success** — intended expression plus unintended mutation(s).
+7. **Exceptional synergy** — unusually beneficial interaction/expression, still potentially carrying quirks.
+8. **Catastrophic result** — severe permanent damage, unusable outcome or rare death.
 
-R0.3 should test a richer outcome space. Candidate bands include:
+The bands are not deterministic stat templates. Two normal successes can be substantially different.
 
-- clean rejection — attempt fails without lasting expression
-- damaging rejection — failure has meaningful cost
-- partial expression — some intended genes hold, others do not
-- unstable expression — viable creature with increased ongoing instability/trade-offs
-- clean success — intended expression without major side effects
-- mutated success — intended expression plus one or more unintended changes
-- exceptional synergy — rare unusually coherent result
+## 10. Expression variance
 
-These are candidates, not locked outcomes. The chosen model must be understandable enough that players can learn from attempts.
+For every applicable expression, resolve dimensions such as:
 
-## 8. Randomness and reproducibility — PLANNED
+- magnitude
+- completeness
+- anatomical placement/form
+- efficiency
+- reliability
+- stability
+- side effects
 
-Randomness is design, not implementation noise.
+Example:
 
-Every attempt should record or derive a seed from stable state so a bug report can reconstruct:
+A gecko-derived regeneration package inserted into two comparable pandas may produce:
 
-- base animal
-- genes selected
-- lab modifiers
-- compatibility state
-- RNG seed
-- outcome
-- mutation rolls
-- phenotype seed
+- Panda A: rapid limb/tissue regeneration with very high metabolic demand.
+- Panda B: slow wound repair and limited regrowth but low metabolic burden.
 
-Automated tests should be able to provide a deterministic RNG and assert exact outcomes.
+Both can be classified as successful.
 
-## 9. Retry economy — OPEN DESIGN GATE
+## 11. Repeated splicing
 
-Free retries would undermine the intended risk because players could repeatedly reload until a high-risk splice succeeds perfectly.
+Later attempts are made against the creature's current state.
 
-Potential constraints to prototype include:
-
-- gene samples consumed on attempt
-- base animal recovery time/injury
-- monetary/material cost
-- lab resource cost
-- irreversible mutation/instability accumulation
-- autosave on commitment
-- rare samples that cannot be trivially replaced
-
-No specific model is locked yet. The eventual design should make failure consequential without making experimentation so punitive that the player avoids the central mechanic.
-
-## 10. Mutation design
-
-Mutations should not be a generic random `+3/-2` table.
-
-Long-term mutation categories may include:
-
-- anatomical overgrowth/reduction
-- regulatory instability
-- metabolic changes
-- sensory changes
-- pigmentation/material changes
-- behavioural changes
-- expression amplification/suppression
-- structural side effects
-
-A useful mutation can still create a cost; a harmful mutation can sometimes enable an unusual strategy. This supports creatures feeling discovered rather than optimised from a spreadsheet.
-
-Open questions:
-
-- Can mutations be stabilised?
-- Can mutated material be harvested as a new gene source?
-- Can a desirable mutation become part of future planned work?
-- Are some mutations transient/injury-like rather than permanent?
-
-## 11. Creature phenotype
-
-### Requirement
-
-Visible results must scale combinatorially.
-
-### Planned architecture
-
-The phenotype renderer should consume structured instructions generated from base animal + genes + mutations + seed.
-
-Possible instruction types:
+Example:
 
 ```text
-add_appendage(type, anchor, parameters)
-replace_surface(material, region)
-modify_proportion(region, parameters)
-add_pattern(type, palette, seed)
-add_growth(type, anchor, parameters)
-modify_head(feature)
-modify_limb(feature)
-modify_eye(feature)
+Rabbit
+  → lion-derived material
+     = larger claws/teeth + stronger predatory drive
+  → elephant-derived material
+     = increased mass/growth, altered metabolic and structural requirements
+  → later sensory/armour/etc.
 ```
 
-The production implementation may use layered sprites, modular rendered components, canvas/vector drawing or a hybrid. The underlying phenotype instructions should avoid depending on one rendering technology.
+The creature becomes a history of experiments, not a current “loadout”.
 
-### Stable identity
+Repeated modification may increase complexity/instability but the exact curve is still open.
 
-A creature should not visibly change every time a scene loads. Procedural variation belongs to creation time and should be persisted through a phenotype seed/parameters.
+## 12. Mutation research
 
-## 12. Base animals
+Mutations are persistent biological events rather than generic random stat bonuses.
 
-Base animals provide more than initial stats. They can define:
+The player can later gain systems allowing attempts to:
 
-- body plan
-- default anatomical anchors
-- natural compatibility tags
-- baseline capabilities
-- size class
-- movement type
-- baseline temperament/behaviour tags if used
-- phenotype renderer skeleton
+- analyse the mutation
+- preserve biological material from it
+- stabilise its expression
+- reproduce it in test animals
+- extract/cultivate a useful derived sample
 
-This lets the same gene behave differently on different base animals without requiring separate gene definitions.
+None of those attempts are guaranteed.
 
-## 13. Gene acquisition integration
+A mutation can be beneficial, harmful, mixed or simply strange.
 
-The splicing system should not determine story-specific acquisition methods. It only needs a clean contract:
+## 13. Failure and death
 
-```text
-Player inventory/lab has N usable samples or access rights for Gene X.
-```
+Normal experimentation should not make the central mechanic prohibitively punitive.
 
-World/quest systems determine how those samples arrive.
+Locked direction:
 
-Open questions include whether a sample is consumed, whether extracted genes have quality, whether samples can be copied, and whether living creatures can become future sources.
+- common failure → material/reagent loss and perhaps temporary/permanent stability cost
+- damaging failure → injury or lasting defect
+- extreme/catastrophic attempt → potential permanent destruction of useful traits or animal viability
+- death → rare, foreseeable as part of an extreme-risk distribution rather than arbitrary routine punishment
 
-## 14. Lab progression
+The UI should communicate that a valuable creature is entering extreme danger even if exact odds are uncertain.
 
-Pit/lab upgrades should modify *how* the player can experiment rather than merely increasing one percentage.
+## 14. Phenotype
 
-Potential upgrade dimensions for later design:
+Appearance is persistent and derived from biological history.
 
-- diagnostic information quality
-- complexity tolerance
-- recovery/safety
-- sample storage
-- mutation analysis
-- phenotype prediction
-- ability to stabilise/harvest unusual outcomes
+Production direction is hybrid:
 
-Specific upgrades remain OPEN.
+- authored base-animal body/skeleton
+- modular anatomical components
+- layered sprite/material changes
+- procedural/composited variation
+- persistent phenotype seed/parameters
 
-## 15. Splicing acceptance tests for R0.3
+The same genotype class can look different between individuals without changing every scene load.
 
-At minimum R0.3 should prove:
+## 15. Acceptance targets for R0.3
 
-1. Two different base animals can respond differently to the same gene set.
-2. A multi-gene recipe can be accepted without an engine-level count cap.
-3. Adding a gene can improve one biological goal while worsening compatibility/risk.
-4. Identical nominal recipes can produce different legitimate outcomes under different seeds.
-5. The same result is reproducible when its seed is replayed.
-6. At least one gene has a visible phenotype effect and a meaningful combat effect.
-7. At least one gene interaction creates a synergy or conflict the player can understand.
-8. Creature appearance persists exactly across save/load.
-9. Invalid gene definitions fail content validation.
-10. The player receives enough information to form a hypothesis for the next experiment.
+R0.3 should prove all of the following:
+
+1. Same base + same material can yield different successful expressions under different seeds.
+2. Repeat testing measurably improves pre-splice information.
+3. Physical material is consumed while knowledge persists.
+4. A creature can receive multiple irreversible sequential splices.
+5. Existing biology changes the risk/distribution of later work.
+6. At least one systemic compatibility conflict and one synergy exist.
+7. Eight outcome bands can be represented even if some are rare.
+8. Mutation research can attempt at least one follow-up operation.
+9. Phenotype remains stable across save/load.
+10. Valuable-creature risk feels meaningfully different from disposable test-animal experimentation.

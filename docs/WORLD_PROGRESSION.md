@@ -1,244 +1,198 @@
 # SplicePit World and Progression Plan
 
-## 1. Role of the world
+## 1. World structure
 
-SplicePit is not a sequence of laboratory and arena menus. The world exists to give biological experimentation context, scarcity, discovery and consequences.
+The world is an interconnected set of authored regions/hubs rather than a giant open world. Initial content target is roughly the exploration/content scale of a compact classic monster RPG: enough settlements, routes, side areas and repeat travel to feel like a real journey without sacrificing handcrafted density.
 
-The world loop should make the player ask:
+Names/geography remain provisional until approved.
 
-- What animal or trait might exist here?
-- Who can help me obtain it?
-- What do I need to risk, trade or accomplish?
-- What new splice becomes possible if I succeed?
-- What can that splice then let me do in the world or Fit Pits?
+## 2. Opening / Act 1 framework
 
-## 2. Locked RPG structure
+Locked opening structure:
 
-- Most exploration is top-down 2D.
-- Movement is spatial/tile-based in the Pokémon / classic Final Fantasy sense, without copying their visual identity.
-- NPCs, quests, locations and interactable environments are major parts of play.
-- The pit/lab acts as a persistent home base.
-- The established opening leaves that pit damaged and the player under external pressure.
+1. Player is a SpliceApprentice under a SpliceMaster.
+2. A rampaging splice kills the SpliceMaster.
+3. Lab fail-safe gas is released, killing the escaped creature(s) and the other apprentices; player survives.
+4. Player inherits the damaged lab/pit, remaining cages/material, debts and suspicion.
+5. The dead SpliceMaster already had an imminent Fit Pit match booked/owed.
+6. Player must rapidly construct something viable from the remaining caged base animals and stored gene material.
+7. That emergency first build introduces irreversible splicing and Fit Pit combat.
+8. The inherited debt becomes Act 1's timed pressure.
 
-## 3. Narrative boundary
+Debt failure is **not** a game-over.
 
-World systems may expose variables, quest hooks, dialogue conditions and progression gates. They must not invent the full storyline.
+### Act 1 success branch
 
-The engine should support authored story supplied later:
+If the player pays the required debt by the deadline:
 
-```text
-story flags
-quest states
-NPC relationship/state
-location state
-pit state
-Fit Pit rank/access
-inventory/sample state
-creature roster/history
-```
+- creditors lose their immediate leverage
+- player begins Act 2 free to choose circuits/regions/opportunities
+- specialisation becomes a genuine strategic choice
+- future creditor relationship can still exist narratively but is not ownership/control
 
-Actual names, dialogue, chapter beats and story outcomes beyond the established opening remain separate authored content.
+### Act 1 failure branch
 
-## 4. World structure — OPEN
+If the deadline is missed:
 
-The exact geography/region model has not been locked.
+- player survives/progresses
+- creditors exercise leverage over the pit/player
+- player fights for them to work down the obligation
+- some Act 2 choices/routes become constrained or differently available
+- this is an alternate narrative path, not the “bad ending”
 
-Possible structures include interconnected routes/settlements, larger regional maps, chapter hubs, or another authored arrangement. R0.5 should support the chosen structure without assuming an enormous seamless world.
+Exact creditor, debt amount, deadline and branch consequences remain to be authored.
 
-Technical requirements regardless of final structure:
+## 3. Main creatures versus lab stock
 
-- stable location IDs
-- map transitions
-- persistent per-location state
-- conditional interactables
-- spawn/trigger control
-- quest-aware NPC state
-- return visits after progression changes
+The world/economy distinguishes:
 
-## 5. Location model — PLANNED
+### Main creatures
+- maximum three serious combat animals
+- individually named/history-bearing
+- heavily invested in
+- physically housed/transported
+- potentially rare base species
 
-A location should be data-driven enough to define:
+### Test animals / lab stock
+- used for experimentation and prediction
+- commonly sourced where possible
+- housed in the pit subject to capacity
+- not part of the three-main-creature cap
+- may be sold/traded/retired/disposed of through world-appropriate systems later
 
-- map/visual asset reference
-- collision/navigation
-- entrances/exits
-- interactables
-- NPC placement/state rules
-- encounter/sample opportunities
-- ambience/music
-- conditional changes
-- quest triggers
-- environmental tags relevant to biology if later used
+This creates a meaningful reason for common animals to remain useful throughout the game.
 
-Avoid putting quest logic directly into map-rendering code.
+## 4. Genetic material acquisition
 
-## 6. Dialogue system — PLANNED
+Four primary channels are locked:
 
-Dialogue needs:
+### Buy
+Markets, specialists, black-market sellers and other traders.
 
-- stable dialogue/node IDs
-- speaker metadata
-- branching choices
-- conditions based on quest/story/player state
-- actions that set flags, start/advance quests, give/remove items, etc.
-- localisation-ready text separation if practical
-- skip/advance controls
-- history/backlog only if later useful
+### Harvest
+- common material available locally/through routine exploration
+- rare material requires travel, quests or dangerous/special locations
 
-The content format should remain human-editable because narrative text will be authored iteratively.
+### Win
+Certain Fit Pits, challenges or wagers award material/sample access.
 
-## 7. Quest system — PLANNED
+### Trade
+NPCs/other splicers exchange material based on money, goods, favours, quests or other samples.
 
-Quests should be composable from objective types rather than custom code per quest.
+The system can combine methods, but these four are the main acquisition language.
 
-Candidate objective types:
+## 5. Knowledge acquisition
 
-- speak to NPC
-- visit location/trigger
-- acquire item/sample
-- obtain base animal
-- inspect/sample animal
-- deliver item/sample
-- complete splice meeting conditions
-- win/participate in Fit Pit bout
-- interact with facility/object
-- choose dialogue/state outcome
+Material acquisition and knowledge are separate.
 
-Quests may chain or branch. A quest should be able to reward world state changes, items, samples, money, access, pit upgrades or story flags.
+Knowledge comes from:
 
-## 8. Biological acquisition — OPEN DESIGN GATE
-
-How the player obtains genes/base animals is central and must not collapse into “pick up glowing gene token”.
-
-R0.5 should prototype acquisition modes such as:
-
-- quest reward/access
-- non-lethal sampling/collection
-- buying/trading biological material
-- scavenging/salvage
-- arena rewards
-- extraction from owned/defeated creatures if consistent with chosen tone
-- specialist NPC services
-
-The final mix should make different world activities valuable while keeping exploration and quests important.
-
-## 9. Inventory model — PLANNED
-
-Inventory should distinguish categories rather than use one generic item bag if the systems need different rules.
-
-Potential domains:
-
-- gene samples/biological material
-- base animals / creature roster
-- lab materials
-- consumables
-- quest items
-- money/resources
-- keys/access credentials
-
-Actual categories remain adjustable. Stable item IDs and transaction APIs are required.
-
-## 10. Creature roster/management — PLANNED FOR R1
-
-The player will need a persistent way to manage created creatures.
-
-Minimum likely information:
-
-- creature identity/name
-- base animal
-- genes
-- mutations
-- phenotype preview
-- stats/capabilities
-- battle status/injury if used
-- creation history
-- Fit Pit history
-
-Open questions include roster size limits, storage fiction, retirement/release, creature death and whether creatures can become gene sources.
-
-## 11. Pit/base progression
-
-The inherited pit should become more than a menu backdrop.
-
-Potential facility domains:
-
-- splice bench/lab capability
+- actually attempting splices
+- comparing repeated test results
 - diagnostics
-- sample storage
-- animal holding/recovery
-- creature management
-- Fit Pit administration/access
-- repair/restoration
-
-The actual upgrade tree is OPEN. The design rule is that major upgrades should change options, information or risk management rather than only add flat percentages.
-
-## 12. Economy and pressure — OPEN
-
-Crime/syndicate pressure is established as part of the setup, but the actual numbers and payment mechanics are not canon.
-
-The economy must eventually account for:
-
-- earning from Fit Pits/quests/other work
-- spending on pit operation/upgrades
-- cost of experimentation
-- biological sample scarcity
-- failure consequences
-- external obligations/debt/pressure if used mechanically
-
-The system should create meaningful trade-offs without turning the RPG into repetitive money grinding.
-
-## 13. Progression philosophy
-
-Progression should primarily broaden the player’s design space.
-
-Good progression examples:
-
-- access to a new base animal body plan
-- access to a gene category
-- better diagnostics revealing compatibility information
-- ability to manage higher-complexity work
-- new Fit Pit rules/opponents
-- a facility enabling mutation analysis
-- world access unlocked through authored quest progression
-
-Less desirable as the main progression model:
-
-- endless +5% damage upgrades
-- linear replacement of old genes by strictly stronger coloured tiers
-- raw level inflation that makes biological construction secondary
-
-## 14. Player knowledge progression
-
-The player should get better at SplicePit partly because they learn the system.
-
-Potential mechanisms:
-
-- lab records of prior attempts
-- discovered compatibility notes
+- existing SpliceMaster records
 - NPC expertise
-- diagnostics upgrades
-- creature histories
-- observed opponent traits
+- found research/notes
+- examining unusual mutations
 
-The game should support genuine experimentation while avoiding the need for external spreadsheets/wikis to understand basic cause and effect.
+The player can own material they barely understand, or know a source very well but temporarily lack physical stock.
 
-## 15. World consequences of creatures — FUTURE DESIGN
+## 6. Fit Pit social structure
 
-A valuable long-term direction is allowing creature biology to matter outside the arena where feasible.
+Fit Pits are semi-legal rather than governed by one functioning national authority.
 
-Examples could include traversal, senses, environmental tolerance or quest interactions. This is not required for R0.5 and should not create uncontrolled scope before core systems are proven.
+World premise:
 
-## 16. World/progression acceptance tests for R0.5
+- civilisation/governance is fragmented after an unspecified post-apocalyptic collapse/history
+- local authorities and communities vary widely
+- many people object to Fit Pits
+- no central power can consistently prohibit them
+- some settlements tolerate/regulate pits
+- some embrace them economically/culturally
+- some drive them underground
+- powerful organisers/criminal groups can exert more practical authority than distant governments
 
-R0.5 should prove:
+This supports different Pit rules/danger levels without one universal league law.
 
-1. Player can travel between at least two authored locations.
-2. NPC state persists across visits/save/load.
-3. A data-defined quest can advance through multiple objective types.
-4. Quest/world play produces a biological acquisition used by the lab.
-5. Inventory transactions are persistent and validated.
-6. A completed splice can be taken into a Fit Pit.
-7. Fit Pit/world rewards can change pit/player progression.
-8. At least one pit upgrade changes player options rather than only a stat number.
-9. No authored quest requires custom scene code solely to function.
-10. Story content can be replaced/expanded without rewriting the quest engine.
+## 7. Land / Water / Air circuits
+
+The world supports three top-level combat environments:
+
+- Land
+- Water
+- Air
+
+Different regions naturally specialise in different circuits based on geography and culture.
+
+The player does **not** need one creature of each type. They can specialise, diversify or largely ignore a circuit where the story allows.
+
+## 8. Quest system role
+
+Quests should feed the biological loop rather than mostly reward generic XP.
+
+Useful rewards include:
+
+- access to an animal species
+- harvest access/location information
+- sample stock
+- trade relationship
+- lab knowledge
+- facility parts/upgrades
+- money/debt relief
+- Pit access/rank
+- story choices
+
+Objective types remain data-driven: talk, reach, acquire, harvest, deliver, inspect, splice-to-condition, fight, repair, escort/transport, etc.
+
+## 9. Pit upgrade domains
+
+Locked branches:
+
+1. diagnostics
+2. splice safety/precision
+3. animal recovery
+4. sample storage
+5. mutation analysis
+6. creature housing
+7. Fit Pit/training facilities
+8. workshop/fabrication
+9. cosmetic restoration
+
+A detailed proposal exists in `PIT_UPGRADE_TREE_PROPOSAL.md`.
+
+## 10. Economy philosophy
+
+Money should create pressure and trade-offs, not grind for its own sake.
+
+Major sinks/sources:
+
+- debt/obligations
+- genetic material
+- reagents
+- test animals
+- transport/housing
+- recovery/treatment
+- facility upgrades
+- Fit Pit rewards
+- quests/trades
+
+Rare base animals are valuable partly because reproducing comparable test conditions is difficult, not merely because they have higher base stats.
+
+## 11. Progression philosophy
+
+Progression broadens possibility:
+
+- better diagnostics
+- safer/more ambitious work
+- access to new source species/material
+- larger/specialised housing
+- new regions
+- new Pit circuits/rules
+- mutation research
+- improved training
+
+Avoid making progression primarily linear +damage/+HP inflation.
+
+## 12. World draft
+
+A provisional world-scale/hub layout is maintained separately in `WORLD_MAP_PROPOSAL.md` so geography can be discussed without accidentally becoming canon.
