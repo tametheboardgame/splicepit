@@ -144,7 +144,7 @@ export class CombatPlaytestScene extends Phaser.Scene {
     this.logText = wrappedText(this, 364, 330, '', 548, { fontSize: '14px', lineSpacing: 3 });
 
     addButton(this, 822, 540, 190, 'Reset spar', () => this.resetSpar(), { accent: PALETTE.bruise });
-    addButton(this, 600, 540, 190, 'Back to title', () => transitionTo(this, 'Title'), { accent: PALETTE.moss });
+    addButton(this, 600, 540, 190, 'Back to title', () => this.returnToTitle(), { accent: PALETTE.moss });
     this.render();
   }
 
@@ -234,5 +234,12 @@ export class CombatPlaytestScene extends Phaser.Scene {
   private resetSpar(): void {
     this.state = buildState();
     this.render();
+  }
+
+  private returnToTitle(): void {
+    const url = new URL(globalThis.location.href);
+    url.searchParams.delete('combatPlaytest');
+    globalThis.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    transitionTo(this, 'Title');
   }
 }
