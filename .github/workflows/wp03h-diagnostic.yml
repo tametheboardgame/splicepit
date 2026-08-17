@@ -32,6 +32,6 @@ jobs:
             echo '```text'
             tail -n 240 wp03h-verify.log
             echo '```'
-          } > wp03h-comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file wp03h-comment.md
+          } > wp03h-body.md
+          gh pr edit "${{ github.event.pull_request.number }}" --body-file wp03h-body.md
           exit "$status"
