@@ -9,3 +9,4 @@ export * from './mutationResearch.js';
 export * from './phenotype.js';
 export * from './labExperimentation.js';
 export * from './combat.js';
+export * from './combatTurn.js';
