@@ -139,15 +139,19 @@ try {
   })()`);
 
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Battle').finished === true`, 5000);
-  const save = await evaluate(`JSON.parse(localStorage.getItem('splicepit-r0-save'))`);
-  if (!save || save.questStage !== 'slice_complete' || save.fitPitWins !== 1 || !save.currentCreature) {
-    throw new Error(`Unexpected save state: ${JSON.stringify(save)}`);
+  const save = await evaluate(`JSON.parse(localStorage.getItem('splicepit-save'))`);
+  const gameplay = save?.payload?.gameplay;
+  if (!save || save.schemaVersion !== 1 || gameplay?.questStage !== 'slice_complete' || gameplay?.fitPitWins !== 1 || !gameplay?.currentCreature) {
+    throw new Error(`Unexpected versioned save state: ${JSON.stringify(save)}`);
+  }
+  if (!Array.isArray(save.payload?.creatures?.records) || !Array.isArray(save.payload?.materials?.stock) || !Array.isArray(save.payload?.research?.knowledge)) {
+    throw new Error(`Missing R0.2 persistence sections: ${JSON.stringify(save)}`);
   }
 
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: dist Title -> Intro -> Lab -> Splice -> Battle -> saved win');
+  console.log('Browser smoke OK: dist Title -> Intro -> Lab -> Splice -> Battle -> versioned saved win');
   ws.close();
 } catch (error) {
   console.error(error);
