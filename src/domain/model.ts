@@ -17,6 +17,19 @@ import type {
 export const CONTENT_STATUSES = ['prototype', 'draft', 'canon', 'deprecated'] as const;
 export type ContentStatus = (typeof CONTENT_STATUSES)[number];
 
+export const BIOLOGICAL_CLASSES = [
+  'anatomical',
+  'physiological',
+  'sensory',
+  'biochemical',
+  'behavioural_neurological',
+  'regulatory',
+] as const;
+export type BiologicalClass = (typeof BIOLOGICAL_CLASSES)[number];
+
+export const BIOLOGICAL_COMPLEXITY_LEVELS = ['low', 'moderate', 'high', 'extreme'] as const;
+export type BiologicalComplexityLevel = (typeof BIOLOGICAL_COMPLEXITY_LEVELS)[number];
+
 export interface ContentDefinition<Id extends string> {
   id: Id;
   status: ContentStatus;
@@ -25,13 +38,48 @@ export interface ContentDefinition<Id extends string> {
   description: string;
 }
 
+export interface BiologicalRequirementSet {
+  allOfTags: readonly string[];
+  anyOfTags: readonly string[];
+  noneOfTags: readonly string[];
+}
+
+export interface BiologicalComplexityProfile {
+  integration: BiologicalComplexityLevel;
+  structuralDemand: BiologicalComplexityLevel;
+  metabolicDemand: BiologicalComplexityLevel;
+  regulatoryVolatility: BiologicalComplexityLevel;
+}
+
+export interface BiologicalExpressionDefinition {
+  id: string;
+  name: string;
+  description: string;
+  biologicalClass: BiologicalClass;
+  requirements: BiologicalRequirementSet;
+  compatibilityTags: readonly string[];
+  createsBiologicalTags: readonly string[];
+  phenotypeHooks: readonly string[];
+  capabilityHooks: readonly string[];
+}
+
 export interface BaseAnimalDefinition extends ContentDefinition<BaseAnimalId> {
+  species: string;
   bodyPlanTags: readonly string[];
+  biologicalTags: readonly string[];
+  baselinePhenotypeHooks: readonly string[];
+  baselineCapabilityHooks: readonly string[];
 }
 
 export interface SourcePackageDefinition extends ContentDefinition<SourcePackageId> {
   sourceSpecies: string;
-  biologicalClassTags: readonly string[];
+  biologicalClassTags: readonly BiologicalClass[];
+  expressions: readonly BiologicalExpressionDefinition[];
+  requirements: BiologicalRequirementSet;
+  compatibilityTags: readonly string[];
+  complexity: BiologicalComplexityProfile;
+  phenotypeHooks: readonly string[];
+  capabilityHooks: readonly string[];
   potentialCapabilityIds: readonly CapabilityId[];
   potentialActionIds: readonly ActionId[];
 }
