@@ -1,5 +1,5 @@
 import { assertValidContentCatalog } from '../domain/validation.js';
-import { PROTOTYPE_CONTENT_CATALOG } from './prototypeCatalog.js';
+import { CONTENT_CATALOG } from './contentCatalog.js';
 
-assertValidContentCatalog(PROTOTYPE_CONTENT_CATALOG);
+assertValidContentCatalog(CONTENT_CATALOG);
 console.log('Content validation passed.');
