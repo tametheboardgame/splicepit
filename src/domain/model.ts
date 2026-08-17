@@ -142,10 +142,29 @@ export type SpliceOutcomeBand = (typeof SPLICE_OUTCOME_BANDS)[number];
 
 export interface SpliceExpressionRecord {
   sourcePackageId: SourcePackageId;
+  expressionId: string;
+  expressed: boolean;
+  magnitude: number;
+  completeness: number;
+  efficiency: number;
+  reliability: number;
+  stability: number;
+  biologicalTags: readonly string[];
+  phenotypeHooks: readonly string[];
+  capabilityHooks: readonly string[];
   capabilityIds: readonly CapabilityId[];
   actionIds: readonly ActionId[];
   functional: boolean;
   notes: string;
+}
+
+export type SpliceInjurySeverityRecord = 'none' | 'minor' | 'major' | 'permanent' | 'lethal';
+
+export interface SpliceAttemptConsequencesRecord {
+  mutationTriggered: boolean;
+  permanentDamage: boolean;
+  death: boolean;
+  injurySeverity: SpliceInjurySeverityRecord;
 }
 
 export interface SpliceAttemptRecord {
@@ -155,6 +174,10 @@ export interface SpliceAttemptRecord {
   sourcePackageIds: readonly SourcePackageId[];
   consumedMaterialLotIds: readonly MaterialLotId[];
   outcomeBand: SpliceOutcomeBand;
+  stabilityBefore: number;
+  stabilityAfter: number;
+  complexityAdded: number;
+  consequences: SpliceAttemptConsequencesRecord;
   expressions: readonly SpliceExpressionRecord[];
 }
 
@@ -170,6 +193,8 @@ export interface InjuryRecord {
   recordedAt: string;
   status: 'active' | 'recovering' | 'healed' | 'permanent';
   notes: string;
+  affectedCapabilityIds?: readonly CapabilityId[];
+  affectedExpressionIds?: readonly string[];
 }
 
 export interface TrainingRecord {
@@ -190,11 +215,14 @@ export interface ArenaCapabilities {
   air: ArenaEnvironmentState;
 }
 
+export type CreatureLifeState = 'living' | 'deceased';
+
 export interface CreatureState {
   id: CreatureId;
   name: string;
   baseAnimalId: BaseAnimalId;
   role: 'main' | 'test';
+  lifeState: CreatureLifeState;
   createdAt: string;
   estimatedAgeDays: number | null;
   phenotypeSeed: string;
