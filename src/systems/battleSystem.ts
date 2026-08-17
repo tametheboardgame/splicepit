@@ -1,6 +1,7 @@
+import type { RandomFn } from '../random/RandomSource.js';
 import type { BattleCreature, Combatant } from '../types.js';
 
-export type RandomFn = () => number;
+export type { RandomFn } from '../random/RandomSource.js';
 export type BattleAction = 'attack' | 'trait' | 'guard';
 
 export function createCombatant(creature: BattleCreature, label = creature.name): Combatant {
@@ -13,7 +14,7 @@ export function createCombatant(creature: BattleCreature, label = creature.name)
   };
 }
 
-export function damageFor(attacker: Combatant, defender: Combatant, power = 1, random: RandomFn = Math.random): number {
+export function damageFor(attacker: Combatant, defender: Combatant, random: RandomFn, power = 1): number {
   const variance = 0.9 + random() * 0.2;
   const raw = (attacker.stats.attack * power - defender.stats.defence * 0.45) * variance;
   const guard = defender.guarding ? 0.52 : 1;
@@ -23,22 +24,22 @@ export function damageFor(attacker: Combatant, defender: Combatant, power = 1, r
 export function resolveAttack(
   attacker: Combatant,
   defender: Combatant,
+  random: RandomFn,
   { power = 1, label = 'attacks' }: { power?: number; label?: string } = {},
-  random: RandomFn = Math.random,
 ): string {
-  const damage = damageFor(attacker, defender, power, random);
+  const damage = damageFor(attacker, defender, random, power);
   defender.hp = Math.max(0, defender.hp - damage);
   defender.guarding = false;
   return `${attacker.name} ${label} for ${damage}.`;
 }
 
-export function resolveTrait(user: Combatant, opponent: Combatant, random: RandomFn = Math.random): string {
+export function resolveTrait(user: Combatant, opponent: Combatant, random: RandomFn): string {
   if (user.genes.includes('gecko_regeneration')) {
     const heal = Math.min(7, user.stats.maxHp - user.hp);
     user.hp += heal;
     return `${user.name} knits ${heal} HP of itself back together.`;
   }
-  if (user.genes.includes('boar_muscle')) return resolveAttack(user, opponent, { power: 1.35, label: 'charges' }, random);
+  if (user.genes.includes('boar_muscle')) return resolveAttack(user, opponent, random, { power: 1.35, label: 'charges' });
   if (user.genes.includes('moth_sense')) {
     user.guarding = true;
     return `${user.name} reads the air and braces before the strike.`;
@@ -48,7 +49,7 @@ export function resolveTrait(user: Combatant, opponent: Combatant, random: Rando
     opponent.hp = Math.max(0, opponent.hp - damage);
     return `${user.name} secretes something medically inadvisable for ${damage}.`;
   }
-  return resolveAttack(user, opponent, { power: 0.9, label: 'flails experimentally' }, random);
+  return resolveAttack(user, opponent, random, { power: 0.9, label: 'flails experimentally' });
 }
 
 export function isDefeated(combatant: Combatant): boolean {

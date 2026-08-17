@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from './config.js';
 import { validateRuntimeContent } from './content/runtimeValidation.js';
+import { installDeveloperDiagnostics } from './diagnostics/debugState.js';
 import { BootScene } from './scenes/BootScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { IntroScene } from './scenes/IntroScene.js';
@@ -25,3 +26,4 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const game = new Phaser.Game(config);
 globalThis.__SPLICEPIT_GAME__ = game;
+installDeveloperDiagnostics(game);

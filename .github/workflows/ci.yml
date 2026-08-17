@@ -5,29 +5,48 @@ on:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  group: splicepit-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run verify
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Validate content
+        run: npm run validate:content
+      - name: Validate RNG boundary
+        run: npm run validate:rng
+      - name: Unit, domain and save tests
+        run: npm test
+      - name: Production build
+        run: npm run build
   browser-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: verify
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
       - id: chrome
         uses: browser-actions/setup-chrome@v1
-      - run: npm run smoke
+      - name: Player-facing browser smoke
+        run: npm run smoke
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}

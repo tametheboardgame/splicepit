@@ -4,6 +4,7 @@ import { GENES } from '../data/genes.js';
 import { BASE_ANIMALS } from '../data/animals.js';
 import { SemanticInput } from '../input/SemanticInput.js';
 import { t } from '../localisation/strings.js';
+import { runtimeRandomFn } from '../runtime/runtimeRandom.js';
 import { gameState } from '../state/GameState.js';
 import { calculateSplice, attemptSplice } from '../systems/spliceSystem.js';
 import { saveGame } from '../systems/saveSystem.js';
@@ -137,7 +138,7 @@ export class SpliceScene extends Phaser.Scene {
     if (genes.length === 0) { this.resultText.setText(t('splice.selectGene')); return; }
     const baseAnimalId = gameState.baseAnimalId;
     if (!baseAnimalId) throw new Error('Splice scene requires a base animal.');
-    const result = attemptSplice(baseAnimalId, genes);
+    const result = attemptSplice(baseAnimalId, genes, runtimeRandomFn);
     if (!result.success) {
       this.resultText.setText(t('splice.failed', { roll: Math.round(result.roll), chance: result.chance, message: result.message }));
       this.cameras.main.shake(180, 0.008);

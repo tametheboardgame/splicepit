@@ -97,19 +97,26 @@ try {
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
-  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?seed=wp02e-smoke&debug=1` });
 
   try {
     await waitExpr(`Boolean(globalThis.__SPLICEPIT_GAME__?.scene?.isActive('Title'))`, 20000);
+    await waitExpr(`Boolean(globalThis.__SPLICEPIT_DEBUG__)`);
   } catch (error) {
     const diagnostics = await evaluate(`({
       href: location.href,
       title: document.title,
       text: document.body.innerText.slice(0, 1200),
       game: Boolean(globalThis.__SPLICEPIT_GAME__),
+      debug: Boolean(globalThis.__SPLICEPIT_DEBUG__),
       scenes: globalThis.__SPLICEPIT_GAME__?.scene?.getScenes(true)?.map(s => s.scene.key) ?? []
     })`);
     throw new Error(`${error.message}; startup diagnostics=${JSON.stringify(diagnostics)}`);
+  }
+
+  const initialDiagnostics = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
+  if (initialDiagnostics?.rng?.seed !== 'wp02e-smoke' || !initialDiagnostics?.scene?.active?.includes('Title')) {
+    throw new Error(`Unexpected deterministic diagnostics: ${JSON.stringify(initialDiagnostics)}`);
   }
 
   await pressKey('Enter', 'Enter', 13);
@@ -131,14 +138,24 @@ try {
   })()`);
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Splice')`);
 
-  await evaluate(`(() => { globalThis.__SPLICEPIT_OLD_RANDOM__ = Math.random; Math.random = () => 0.01; return true; })()`);
   await pressKey('Enter', 'Enter', 13);
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').selected.has('gecko_regeneration')`);
   await pressKey('ArrowDown', 'ArrowDown', 40);
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').menu.index === 1`);
   await pressKey('Enter', 'Enter', 13);
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').resultText.text.startsWith('VIABLE.')`);
-  await evaluate(`(() => { Math.random = globalThis.__SPLICEPIT_OLD_RANDOM__; delete globalThis.__SPLICEPIT_OLD_RANDOM__; return true; })()`);
+
+  const spliceDiagnostics = await evaluate(`(() => ({
+    diagnostics: __SPLICEPIT_DEBUG__.diagnostics(),
+    exported: JSON.parse(__SPLICEPIT_DEBUG__.exportState())
+  }))()`);
+  if (spliceDiagnostics?.diagnostics?.rng?.calls < 3 || !spliceDiagnostics?.diagnostics?.creatureBiology?.id) {
+    throw new Error(`Splice diagnostics missing RNG/biology state: ${JSON.stringify(spliceDiagnostics)}`);
+  }
+  if (spliceDiagnostics?.exported?.rng?.seed !== 'wp02e-smoke' || spliceDiagnostics?.exported?.version !== 1) {
+    throw new Error(`Debug export is not reproducible: ${JSON.stringify(spliceDiagnostics?.exported)}`);
+  }
+
   try {
     await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
   } catch (error) {
@@ -147,6 +164,7 @@ try {
       const lab = __SPLICEPIT_GAME__.scene.getScene('Lab');
       return {
         activeScenes: __SPLICEPIT_GAME__.scene.getScenes(true).map(s => s.scene.key),
+        rng: __SPLICEPIT_DEBUG__.diagnostics().rng,
         selected: [...splice.selected],
         menuIndex: splice.menu?.index,
         resultText: splice.resultText?.text,
@@ -172,10 +190,21 @@ try {
     throw new Error(`Missing R0.2 persistence sections: ${JSON.stringify(save)}`);
   }
 
+  const debugRoundTrip = await evaluate(`(() => {
+    const exported = __SPLICEPIT_DEBUG__.exportState();
+    const before = JSON.parse(exported).rng;
+    __SPLICEPIT_DEBUG__.setSeed('temporary-smoke-seed');
+    const restored = __SPLICEPIT_DEBUG__.importState(exported, { persist: false, restartScene: false });
+    return { before, after: restored.rng, persistedSource: restored.persistedSave?.source };
+  })()`);
+  if (JSON.stringify(debugRoundTrip?.before) !== JSON.stringify(debugRoundTrip?.after) || debugRoundTrip?.persistedSource !== 'primary') {
+    throw new Error(`Debug import/export round-trip failed: ${JSON.stringify(debugRoundTrip)}`);
+  }
+
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: semantic keyboard Title -> Intro -> Lab interaction -> Splice -> Battle -> versioned saved win');
+  console.log('Browser smoke OK: seeded semantic-control flow, diagnostics export/import and versioned saved win');
   ws.close();
 } catch (error) {
   console.error(error);

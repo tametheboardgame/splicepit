@@ -4,6 +4,7 @@ import { ENEMY_CREATURES } from '../data/animals.js';
 import { ACTIONS } from '../input/actions.js';
 import { SemanticInput } from '../input/SemanticInput.js';
 import { t } from '../localisation/strings.js';
+import { runtimeRandomFn } from '../runtime/runtimeRandom.js';
 import { gameState } from '../state/GameState.js';
 import { saveGame } from '../systems/saveSystem.js';
 import { createCombatant, isDefeated, resolveAttack, resolveTrait } from '../systems/battleSystem.js';
@@ -86,14 +87,16 @@ export class BattleScene extends Phaser.Scene {
     if (this.busy || this.finished) return;
     this.busy = true;
     let first = '';
-    if (action === 'attack') first = resolveAttack(this.player, this.enemy);
-    if (action === 'trait') first = resolveTrait(this.player, this.enemy);
+    if (action === 'attack') first = resolveAttack(this.player, this.enemy, runtimeRandomFn);
+    if (action === 'trait') first = resolveTrait(this.player, this.enemy, runtimeRandomFn);
     if (action === 'guard') { this.player.guarding = true; first = t('battle.guard', { name: this.player.name }); }
     this.updateHud(); this.log.setText(first);
     if (isDefeated(this.enemy)) { this.finish(true); return; }
     this.time.delayedCall(650, () => {
-      const enemyAction = Math.random() < 0.28 ? 'trait' : 'attack';
-      const second = enemyAction === 'trait' ? resolveTrait(this.enemy, this.player) : resolveAttack(this.enemy, this.player);
+      const enemyAction = runtimeRandomFn() < 0.28 ? 'trait' : 'attack';
+      const second = enemyAction === 'trait'
+        ? resolveTrait(this.enemy, this.player, runtimeRandomFn)
+        : resolveAttack(this.enemy, this.player, runtimeRandomFn);
       this.log.setText(`${first}\n${second}`); this.updateHud();
       if (isDefeated(this.player)) this.finish(false); else this.busy = false;
     });

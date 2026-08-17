@@ -5,7 +5,7 @@ import { createCombatant, resolveAttack, resolveTrait } from '../src/systems/bat
 test('attack deals at least one damage', () => {
   const a=createCombatant({name:'A',stats:{maxHp:20,attack:6,defence:2,speed:3},genes:[]});
   const b=createCombatant({name:'B',stats:{maxHp:20,attack:3,defence:99,speed:3},genes:[]});
-  resolveAttack(a,b,{},()=>0.5);
+  resolveAttack(a,b,()=>0.5,{});
   assert.equal(b.hp,19);
 });
 
