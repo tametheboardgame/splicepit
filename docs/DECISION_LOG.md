@@ -67,6 +67,7 @@ This file is the authoritative record of decisions that should not drift merely 
 | S-010 | Information shown before a splice depends heavily on accumulated experimentation/records and diagnostic capability. Knowledge progression is a core mechanic. |
 | S-011 | Ordinary failures primarily cost material/resources and/or stability. Extreme failure can permanently damage a creature. Death is possible but rare and associated with clearly extreme risk. |
 | S-012 | Splicing is irreversible; the main protection for a valuable creature is research/testing before commitment, not an undo button. |
+| S-013 | The six biological classes are implemented as expression categories: anatomical, physiological, sensory, biochemical, behavioural/neurological and regulatory. Every potential expression has one primary class; a source package may span several classes and contains multiple independently resolvable potential expressions. Base/source compatibility is described through generic biological tags/requirements plus categorical complexity and phenotype/capability hooks, not base+source pairing tables or final balance values. |
 
 ---
 
@@ -148,11 +149,10 @@ These remain non-canon unless explicitly promoted:
 
 # Remaining open design gates
 
-These are the meaningful questions still open after Design Round 1.
+These are the meaningful questions still open after Design Round 1 and the WP0.3A taxonomy lock.
 
 ## Splicing/system detail
 
-- **S-OPEN-01:** Exact taxonomy boundaries/data schema for the six agreed gene/material classes.
 - **S-OPEN-02:** Exact material economy: quantities, reagents, how samples are stored/replicated, and what experimentation consumes.
 - **S-OPEN-03:** Exact compatibility/epistasis scoring/rules and how hidden versus visible interactions work.
 - **S-OPEN-04:** Probability/distribution rules for the eight outcome bands and variable expression strength.
