@@ -20,6 +20,7 @@ import {
   ensureR03LabPlaytestState,
   nextLabOperationIds,
   persistLabDomainState,
+  replaceDeadMainCreature,
   syncLegacyMainCreature,
 } from '../systems/labPlaytestSystem.js';
 import { addNoiseLines, wrappedText } from '../ui/helpers.js';
@@ -215,8 +216,8 @@ export class SpliceScene extends Phaser.Scene {
           return `${definition?.name ?? expression.expressionId}${expression.functional ? ' [FUNCTIONAL]' : ' [NON-FUNCTIONAL]'}`;
         })
         .join(', ') || t('splice.noneEstablished');
-      const replacementNote = this.lastResult.observation.subjectRole === 'test' && this.lastResult.creature.lifeState === 'deceased'
-        ? `\n${t('splice.testReplacementReady')}`
+      const replacementNote = this.lastResult.creature.lifeState === 'deceased'
+        ? `\n${this.lastResult.observation.subjectRole === 'test' ? t('splice.testReplacementReady') : t('splice.mainReplacementReady')}`
         : '';
       this.outcomeText.setText(`${t('splice.outcomeBody', {
         outcome: humanise(this.lastResult.resolution.outcomeBand),
@@ -277,7 +278,14 @@ export class SpliceScene extends Phaser.Scene {
           .find((creature) => creature?.baseAnimalId === subject.baseAnimalId && creature.lifeState === 'living');
         if (replacement) this.selectedSubjectId = replacement.id;
       }
-      if (subject.role === 'main') syncLegacyMainCreature(result.state);
+
+      if (subject.role === 'main') {
+        syncLegacyMainCreature(result.state);
+        if (result.creature.lifeState === 'deceased') {
+          const replaced = replaceDeadMainCreature(subject.baseAnimalId);
+          this.selectedSubjectId = replaced.mainCreatureIds[0] ?? null;
+        }
+      }
 
       this.lastResult = result;
       this.confirmArmed = false;
