@@ -30,6 +30,10 @@ function humanise(value: string): string {
   return value.replaceAll('_', ' ').toUpperCase();
 }
 
+function compact(value: string, maximum = 70): string {
+  return value.length <= maximum ? value : `${value.slice(0, maximum - 3)}...`;
+}
+
 function sourceIdsFor(state: GameDomainState): SourcePackageId[] {
   return [...new Set([
     ...state.materialStock.map((lot) => lot.sourcePackageId),
@@ -80,9 +84,9 @@ export class SpliceScene extends Phaser.Scene {
 
     this.subjectText = this.add.text(47, 164, '', { ...TEXT.body, fontSize: '14px', wordWrap: { width: 215 } });
     this.sourceText = this.add.text(316, 164, '', { ...TEXT.body, fontSize: '14px', wordWrap: { width: 235 } });
-    this.forecastText = this.add.text(608, 171, '', { ...TEXT.mono, fontSize: '10px', lineSpacing: 4, wordWrap: { width: 300 } });
+    this.forecastText = this.add.text(608, 171, '', { ...TEXT.mono, fontSize: '9px', lineSpacing: 2, wordWrap: { width: 300 } });
     this.historyText = this.add.text(316, 329, '', { ...TEXT.mono, fontSize: '9px', lineSpacing: 3, wordWrap: { width: 235 } });
-    this.outcomeText = this.add.text(608, 322, '', { ...TEXT.mono, fontSize: '9px', lineSpacing: 3, color: '#b7c86c', wordWrap: { width: 300 } });
+    this.outcomeText = this.add.text(608, 327, '', { ...TEXT.mono, fontSize: '9px', lineSpacing: 2, color: '#b7c86c', wordWrap: { width: 300 } });
 
     this.semanticInput = new SemanticInput(this);
     const controls: FocusableControl[] = [];
@@ -109,12 +113,12 @@ export class SpliceScene extends Phaser.Scene {
       }, { accent: PALETTE.bruise }));
     });
 
-    this.testButton = addButton(this, 760, 421, 290, t('splice.runTest'), () => this.execute(false), { accent: PALETTE.acid });
-    this.prepareButton = addButton(this, 760, 421, 290, t('splice.prepareMain'), () => {
+    this.testButton = addButton(this, 760, 440, 290, t('splice.runTest'), () => this.execute(false), { accent: PALETTE.acid });
+    this.prepareButton = addButton(this, 760, 440, 290, t('splice.prepareMain'), () => {
       this.confirmArmed = true;
       this.refresh();
     }, { accent: PALETTE.rust });
-    this.confirmButton = addButton(this, 760, 421, 290, t('splice.confirmMain'), () => this.execute(true), { accent: PALETTE.blood });
+    this.confirmButton = addButton(this, 760, 440, 290, t('splice.confirmMain'), () => this.execute(true), { accent: PALETTE.blood });
     const returnButton = addButton(this, 160, 500, 240, t('splice.return'), () => transitionTo(this, 'Lab'), { accent: PALETTE.rust });
     controls.push(this.testButton, this.prepareButton, this.confirmButton, returnButton);
     this.menu = new FocusMenu(this.semanticInput, controls, 'vertical');
@@ -166,7 +170,7 @@ export class SpliceScene extends Phaser.Scene {
 
     if (plan) {
       const warnings = plan.knownWarnings.length > 0
-        ? plan.knownWarnings.slice(0, 2).map((warning) => `- ${warning}`).join('\n')
+        ? plan.knownWarnings.slice(0, 2).map((warning) => compact(warning)).join(' | ')
         : t('splice.noKnownWarnings');
       this.forecastText.setText(t('splice.forecastBody', {
         confidence: humanise(plan.researchConfidence),
@@ -192,7 +196,7 @@ export class SpliceScene extends Phaser.Scene {
 
     if (this.lastResult) {
       const attempt = this.lastResult.creature.spliceHistory[this.lastResult.creature.spliceHistory.length - 1];
-      const established = attempt?.expressions
+      const establishedFull = attempt?.expressions
         .filter((expression) => expression.expressed)
         .map((expression) => {
           const definition = source?.expressions.find((candidate) => candidate.id === expression.expressionId);
@@ -201,7 +205,7 @@ export class SpliceScene extends Phaser.Scene {
         .join(', ') || t('splice.noneEstablished');
       this.outcomeText.setText(t('splice.outcomeBody', {
         outcome: humanise(this.lastResult.resolution.outcomeBand),
-        established,
+        established: compact(establishedFull, 105),
         before: Math.round(this.lastResult.resolution.stabilityBefore * 100),
         after: Math.round(this.lastResult.resolution.stabilityAfter * 100),
         injury: humanise(this.lastResult.resolution.consequences.injurySeverity),
