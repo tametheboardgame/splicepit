@@ -7,6 +7,7 @@ import { IntroScene } from './scenes/IntroScene.js';
 import { LabScene } from './scenes/LabScene.js';
 import { SpliceScene } from './scenes/SpliceScene.js';
 import { BattleScene } from './scenes/BattleScene.js';
+import { CombatPlaytestScene } from './scenes/CombatPlaytestScene.js';
 
 validateRuntimeContent();
 
@@ -20,7 +21,7 @@ const config: Phaser.Types.Core.GameConfig = {
   antialias: true,
   render: { roundPixels: true },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [TitleScene, IntroScene, LabScene, SpliceScene, BattleScene],
+  scene: [TitleScene, IntroScene, LabScene, SpliceScene, BattleScene, CombatPlaytestScene],
 };
 
 const game = new Phaser.Game(config);
