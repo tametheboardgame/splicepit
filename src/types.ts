@@ -1,3 +1,5 @@
+import type { ContentStatus } from './domain/model.js';
+
 export interface CreatureStats {
   maxHp: number;
   attack: number;
@@ -17,6 +19,7 @@ export interface Mutation {
 
 export interface GeneDefinition {
   id: string;
+  status: ContentStatus;
   name: string;
   source: string;
   description: string;
@@ -27,6 +30,7 @@ export interface GeneDefinition {
 
 export interface BaseAnimalDefinition {
   id: string;
+  status: ContentStatus;
   name: string;
   description: string;
   stats: CreatureStats;
@@ -45,6 +49,7 @@ export interface CreatureRecord {
 
 export interface EnemyCreatureDefinition {
   id: string;
+  status: ContentStatus;
   name: string;
   description: string;
   stats: CreatureStats;
