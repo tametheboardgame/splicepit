@@ -1,4 +1,4 @@
-import { OPENING_BASE_ANIMAL_IDS } from '../content/biologyCatalog.js';
+import { OPENING_BASE_ANIMAL_IDS, OPENING_SOURCE_PACKAGE_IDS } from '../content/biologyCatalog.js';
 import { CONTENT_CATALOG } from '../content/contentCatalog.js';
 import { deriveCreatureBiology } from '../domain/creatureBiology.js';
 import { ids, type CreatureId, type SourcePackageId } from '../domain/ids.js';
@@ -13,6 +13,7 @@ const LEGACY_SOURCE_BRIDGE: Readonly<Record<string, SourcePackageId>> = {
   gecko_regeneration: ids.sourcePackage('gecko_regeneration'),
   boar_muscle: ids.sourcePackage('cheetah_sprint_suite'),
   moth_sense: ids.sourcePackage('owl_nocturnal_sensory_suite'),
+  ...Object.fromEntries(OPENING_SOURCE_PACKAGE_IDS.map((sourcePackageId) => [sourcePackageId, sourcePackageId])),
 };
 
 const LEGACY_TRAIT_BRIDGE: Readonly<Record<string, string>> = {
