@@ -1,4 +1,6 @@
-const INITIAL = {
+import type { CreatureRecord, GameStateSnapshot, QuestStage } from '../types.js';
+
+export const INITIAL: GameStateSnapshot = {
   hasBaseAnimal: false,
   baseAnimalId: null,
   collectedGenes: [],
@@ -10,43 +12,66 @@ const INITIAL = {
   seenIntro: false,
 };
 
-class GameStateStore {
-  constructor() { this.reset(); }
+class GameStateStore implements GameStateSnapshot {
+  hasBaseAnimal = false;
+  baseAnimalId: string | null = null;
+  collectedGenes: string[] = [];
+  currentCreature: CreatureRecord | null = null;
+  coins = 12;
+  debt = 860;
+  fitPitWins = 0;
+  questStage: QuestStage = 'find_animal';
+  seenIntro = false;
 
-  reset() { Object.assign(this, structuredClone(INITIAL)); }
+  constructor() {
+    this.reset();
+  }
 
-  hydrate(data = {}) {
+  reset(): void {
+    const fresh = structuredClone(INITIAL);
+    this.hasBaseAnimal = fresh.hasBaseAnimal;
+    this.baseAnimalId = fresh.baseAnimalId;
+    this.collectedGenes = fresh.collectedGenes;
+    this.currentCreature = fresh.currentCreature;
+    this.coins = fresh.coins;
+    this.debt = fresh.debt;
+    this.fitPitWins = fresh.fitPitWins;
+    this.questStage = fresh.questStage;
+    this.seenIntro = fresh.seenIntro;
+  }
+
+  hydrate(data: Partial<GameStateSnapshot> = {}): void {
     this.reset();
     Object.assign(this, data);
     this.collectedGenes = Array.isArray(data.collectedGenes) ? [...data.collectedGenes] : [];
   }
 
-  acquireAnimal(id) {
+  acquireAnimal(id: string): void {
     this.hasBaseAnimal = true;
     this.baseAnimalId = id;
     if (this.questStage === 'find_animal') this.questStage = 'collect_genes';
   }
 
-  addGene(id) {
+  addGene(id: string): void {
     if (!this.collectedGenes.includes(id)) this.collectedGenes.push(id);
     if (this.hasBaseAnimal && this.collectedGenes.length > 0 && this.questStage === 'collect_genes') {
       this.questStage = 'splice';
     }
   }
 
-  setCreature(creature) {
+  setCreature(creature: CreatureRecord): void {
     this.currentCreature = creature;
     this.questStage = 'fight';
   }
 
-  recordWin(reward = 30) {
+  recordWin(reward = 30): void {
     this.fitPitWins += 1;
     this.coins += reward;
     this.debt = Math.max(0, this.debt - reward);
     this.questStage = 'slice_complete';
   }
 
-  snapshot() {
+  snapshot(): GameStateSnapshot {
     return {
       hasBaseAnimal: this.hasBaseAnimal,
       baseAnimalId: this.baseAnimalId,
@@ -62,4 +87,3 @@ class GameStateStore {
 }
 
 export const gameState = new GameStateStore();
-export { INITIAL };

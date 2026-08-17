@@ -13,6 +13,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm run verify
   browser-smoke:
     runs-on: ubuntu-latest
@@ -21,8 +23,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
       - id: chrome
         uses: browser-actions/setup-chrome@v1
-      - run: node scripts/browser-smoke.mjs
+      - run: npm run smoke
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}

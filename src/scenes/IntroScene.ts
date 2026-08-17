@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, PALETTE, TEXT } from '../config.js';
 import { addButton, addNoiseLines, wrappedText } from '../ui/helpers.js';
 import { gameState } from '../state/GameState.js';
@@ -5,7 +6,7 @@ import { gameState } from '../state/GameState.js';
 export class IntroScene extends Phaser.Scene {
   constructor() { super('Intro'); }
 
-  create() {
+  create(): void {
     this.cameras.main.setBackgroundColor(0x12110f);
     this.drawAftermath();
     addNoiseLines(this, 100, 0.07);
@@ -24,7 +25,7 @@ export class IntroScene extends Phaser.Scene {
     }, { accent: PALETTE.rust });
   }
 
-  drawAftermath() {
+  private drawAftermath(): void {
     const g = this.add.graphics();
     g.fillStyle(PALETTE.paper, 0.88); g.fillRect(625, 0, 335, 540);
     g.fillStyle(PALETTE.bruiseDark, 0.5); g.fillEllipse(792, 238, 250, 145);

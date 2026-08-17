@@ -17,10 +17,10 @@ export const PALETTE = {
   bone: 0xd1c6aa,
   blood: 0x793a36,
   blueGrey: 0x657779,
-};
+} as const;
 
 export const TEXT = {
   title: { fontFamily: 'Georgia, serif', color: '#e8dfc8' },
   body: { fontFamily: 'Georgia, serif', color: '#e8dfc8' },
   mono: { fontFamily: 'ui-monospace, monospace', color: '#a79d88' },
-};
+} as const;

@@ -21,7 +21,7 @@ async function waitFor(fn, timeoutMs = 15000, intervalMs = 100) {
   throw lastError ?? new Error(`Timed out after ${timeoutMs}ms`);
 }
 
-const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1'], {
+const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], {
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 
@@ -98,7 +98,6 @@ try {
       href: location.href,
       title: document.title,
       text: document.body.innerText.slice(0, 1200),
-      phaser: typeof globalThis.Phaser,
       game: Boolean(globalThis.__SPLICEPIT_GAME__),
       scenes: globalThis.__SPLICEPIT_GAME__?.scene?.getScenes(true)?.map(s => s.scene.key) ?? []
     })`);
@@ -148,7 +147,7 @@ try {
   const pageText = await evaluate(`document.body.innerText`);
   if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
 
-  console.log('Browser smoke OK: Title -> Intro -> Lab -> Splice -> Battle -> saved win');
+  console.log('Browser smoke OK: dist Title -> Intro -> Lab -> Splice -> Battle -> saved win');
   ws.close();
 } catch (error) {
   console.error(error);

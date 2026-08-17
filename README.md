@@ -2,7 +2,7 @@
 
 SplicePit is a top-down 2D RPG about acquiring animals and genetic material, experimenting on test animals, irreversibly splicing a small number of persistent creatures, and testing the results in semi-legal Fit Pits.
 
-R0.1 is the accepted first browser vertical slice. Development now proceeds through the detailed execution roadmap committed under `docs/`.
+R0.1 is the accepted first browser vertical slice. R0.2A migrates that same behavioural slice onto the production browser toolchain.
 
 Live prototype: https://splicepit.pages.dev/
 
@@ -32,27 +32,33 @@ System plans:
 - `docs/CONTENT_AND_PRESENTATION.md`
 - `docs/TEST_STRATEGY.md`
 
-A future implementation session can start with a WP command such as `Start WP0.2A`. The WP contract and decision log define the scope/gate.
+A future implementation session can start with a WP command such as `Start WP0.2B`. The WP contract and decision log define the scope/gate.
 
-## Current R0.1 local run
+## Local development
 
-The merged R0.1 implementation is deliberately static. No package install is required for that historical baseline.
+Requirements: Node.js 20 or newer.
 
-1. Run `npm run dev` (or any static HTTP server).
-2. Open `http://localhost:8080`.
+1. Run `npm ci`.
+2. Run `npm run dev`.
+3. Open the Vite URL shown in the terminal, normally `http://localhost:5173`.
 
-R0.2A will migrate the project to Vite + strict TypeScript + a pinned Phaser dependency and generate a production `dist/` build.
+Phaser 3.90.0 is a pinned package dependency. The browser no longer loads Phaser from a CDN or expects a global `Phaser` object.
 
 ## Verify
 
-- `npm run check` checks current JavaScript syntax.
-- `npm test` runs current pure game-system tests.
-- `npm run verify` runs both.
-- GitHub Actions also runs the full headless browser smoke flow.
+- `npm run typecheck` runs strict TypeScript checking.
+- `npm test` compiles the TypeScript game modules and runs the pure game-system tests against the emitted JavaScript.
+- `npm run build` creates the production Vite output in `dist/`.
+- `npm run verify` runs typecheck, unit tests and the production build.
+- `npm run smoke` drives the built `dist/` through the R0.1 Title → Intro → Lab → Splice → Battle flow. It requires a Chromium/Chrome executable at `CHROME_PATH` or `/usr/bin/chromium`.
 
 ## Deployment
 
-R0.1 is deployed through Cloudflare Pages. R0.2A changes deployment output to the Vite production `dist/` directory.
+Cloudflare Pages should build with `npm run build` and publish the `dist/` directory.
+
+## Save/schema impact
+
+WP0.2A deliberately preserves the existing R0.1 prototype local-storage key and save shape so the toolchain migration does not mix in persistence redesign. R0.1 saves remain disposable prototype data. Versioned R0.2 save compatibility is introduced by WP0.2C as planned.
 
 ## Canon
 

@@ -1,4 +1,9 @@
-export function createCombatant(creature, label = creature.name) {
+import type { BattleCreature, Combatant } from '../types.js';
+
+export type RandomFn = () => number;
+export type BattleAction = 'attack' | 'trait' | 'guard';
+
+export function createCombatant(creature: BattleCreature, label = creature.name): Combatant {
   return {
     name: label,
     stats: { ...creature.stats },
@@ -8,21 +13,26 @@ export function createCombatant(creature, label = creature.name) {
   };
 }
 
-export function damageFor(attacker, defender, power = 1, random = Math.random) {
+export function damageFor(attacker: Combatant, defender: Combatant, power = 1, random: RandomFn = Math.random): number {
   const variance = 0.9 + random() * 0.2;
   const raw = (attacker.stats.attack * power - defender.stats.defence * 0.45) * variance;
   const guard = defender.guarding ? 0.52 : 1;
   return Math.max(1, Math.round(raw * guard));
 }
 
-export function resolveAttack(attacker, defender, { power = 1, label = 'attacks' } = {}, random = Math.random) {
+export function resolveAttack(
+  attacker: Combatant,
+  defender: Combatant,
+  { power = 1, label = 'attacks' }: { power?: number; label?: string } = {},
+  random: RandomFn = Math.random,
+): string {
   const damage = damageFor(attacker, defender, power, random);
   defender.hp = Math.max(0, defender.hp - damage);
   defender.guarding = false;
   return `${attacker.name} ${label} for ${damage}.`;
 }
 
-export function resolveTrait(user, opponent, random = Math.random) {
+export function resolveTrait(user: Combatant, opponent: Combatant, random: RandomFn = Math.random): string {
   if (user.genes.includes('gecko_regeneration')) {
     const heal = Math.min(7, user.stats.maxHp - user.hp);
     user.hp += heal;
@@ -41,4 +51,6 @@ export function resolveTrait(user, opponent, random = Math.random) {
   return resolveAttack(user, opponent, { power: 0.9, label: 'flails experimentally' }, random);
 }
 
-export function isDefeated(combatant) { return combatant.hp <= 0; }
+export function isDefeated(combatant: Combatant): boolean {
+  return combatant.hp <= 0;
+}

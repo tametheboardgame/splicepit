@@ -1,4 +1,6 @@
-export const GENES = {
+import type { GeneDefinition } from '../types.js';
+
+export const GENES: Record<string, GeneDefinition> = {
   gecko_regeneration: {
     id: 'gecko_regeneration',
     name: 'Gecko Regeneration',
