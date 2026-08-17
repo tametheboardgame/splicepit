@@ -1,9 +1,16 @@
-import { CONTENT_STATUSES, SPLICE_OUTCOME_BANDS } from './model.js';
+import {
+  BIOLOGICAL_CLASSES,
+  BIOLOGICAL_COMPLEXITY_LEVELS,
+  CONTENT_STATUSES,
+  SPLICE_OUTCOME_BANDS,
+} from './model.js';
 import { isStableId } from './ids.js';
 import type {
+  BiologicalRequirementSet,
   DomainContentCatalog,
   GameDomainState,
   QuestDefinition,
+  SourcePackageDefinition,
   SpliceAttemptRecord,
 } from './model.js';
 
@@ -12,6 +19,7 @@ export type ValidationCode =
   | 'invalid_id'
   | 'invalid_status'
   | 'invalid_range'
+  | 'invalid_schema'
   | 'broken_reference'
   | 'invalid_order'
   | 'roster_limit'
@@ -25,6 +33,8 @@ export interface ValidationIssue {
 
 const contentStatuses = new Set<string>(CONTENT_STATUSES);
 const spliceBands = new Set<string>(SPLICE_OUTCOME_BANDS);
+const biologicalClasses = new Set<string>(BIOLOGICAL_CLASSES);
+const complexityLevels = new Set<string>(BIOLOGICAL_COMPLEXITY_LEVELS);
 
 function pushDuplicateAndBasicIssues(
   issues: ValidationIssue[],
@@ -63,6 +73,136 @@ function requireReference(
   }
 }
 
+function validateNonBlank(issues: ValidationIssue[], value: string, path: string, label: string): void {
+  if (value.trim().length === 0) {
+    issues.push({ code: 'invalid_schema', path, message: `${label} cannot be blank.` });
+  }
+}
+
+function validateTagList(
+  issues: ValidationIssue[],
+  values: readonly string[],
+  path: string,
+  options: { required?: boolean } = {},
+): void {
+  if (options.required && values.length === 0) {
+    issues.push({ code: 'invalid_schema', path, message: 'At least one tag is required.' });
+  }
+
+  const seen = new Set<string>();
+  values.forEach((value, index) => {
+    if (!isStableId(value)) {
+      issues.push({ code: 'invalid_id', path: `${path}[${index}]`, message: `Invalid biological tag/hook ID: ${value}` });
+    }
+    if (seen.has(value)) {
+      issues.push({ code: 'duplicate_id', path: `${path}[${index}]`, message: `Duplicate biological tag/hook: ${value}` });
+    }
+    seen.add(value);
+  });
+}
+
+function validateRequirements(issues: ValidationIssue[], value: BiologicalRequirementSet, path: string): void {
+  validateTagList(issues, value.allOfTags, `${path}.allOfTags`);
+  validateTagList(issues, value.anyOfTags, `${path}.anyOfTags`);
+  validateTagList(issues, value.noneOfTags, `${path}.noneOfTags`);
+
+  const positive = new Set([...value.allOfTags, ...value.anyOfTags]);
+  value.noneOfTags.forEach((tag, index) => {
+    if (positive.has(tag)) {
+      issues.push({
+        code: 'invalid_schema',
+        path: `${path}.noneOfTags[${index}]`,
+        message: `Requirement tag ${tag} cannot be both required/accepted and forbidden.`,
+      });
+    }
+  });
+}
+
+function validateSourcePackageSchema(
+  issues: ValidationIssue[],
+  sourcePackage: SourcePackageDefinition,
+  index: number,
+): void {
+  const path = `sourcePackages[${index}]`;
+  validateNonBlank(issues, sourcePackage.sourceSpecies, `${path}.sourceSpecies`, 'Source species');
+
+  if (sourcePackage.biologicalClassTags.length === 0) {
+    issues.push({ code: 'invalid_schema', path: `${path}.biologicalClassTags`, message: 'A source package must declare at least one biological class.' });
+  }
+  const classSet = new Set<string>();
+  sourcePackage.biologicalClassTags.forEach((biologicalClass, classIndex) => {
+    if (!biologicalClasses.has(biologicalClass)) {
+      issues.push({ code: 'invalid_schema', path: `${path}.biologicalClassTags[${classIndex}]`, message: `Unknown biological class: ${biologicalClass}` });
+    }
+    if (classSet.has(biologicalClass)) {
+      issues.push({ code: 'duplicate_id', path: `${path}.biologicalClassTags[${classIndex}]`, message: `Duplicate biological class: ${biologicalClass}` });
+    }
+    classSet.add(biologicalClass);
+  });
+
+  if (sourcePackage.expressions.length === 0) {
+    issues.push({ code: 'invalid_schema', path: `${path}.expressions`, message: 'A source package must define at least one potential expression.' });
+  }
+  if (sourcePackage.status === 'canon' && sourcePackage.expressions.length < 2) {
+    issues.push({ code: 'invalid_schema', path: `${path}.expressions`, message: 'Canonical source packages must expose multiple potential expressions.' });
+  }
+
+  const expressionIds = new Set<string>();
+  const representedClasses = new Set<string>();
+  sourcePackage.expressions.forEach((expression, expressionIndex) => {
+    const expressionPath = `${path}.expressions[${expressionIndex}]`;
+    if (!isStableId(expression.id)) {
+      issues.push({ code: 'invalid_id', path: `${expressionPath}.id`, message: `Invalid expression ID: ${expression.id}` });
+    }
+    if (expressionIds.has(expression.id)) {
+      issues.push({ code: 'duplicate_id', path: `${expressionPath}.id`, message: `Duplicate expression ID within source package: ${expression.id}` });
+    }
+    expressionIds.add(expression.id);
+    validateNonBlank(issues, expression.name, `${expressionPath}.name`, 'Expression name');
+    validateNonBlank(issues, expression.description, `${expressionPath}.description`, 'Expression description');
+
+    if (!biologicalClasses.has(expression.biologicalClass)) {
+      issues.push({ code: 'invalid_schema', path: `${expressionPath}.biologicalClass`, message: `Unknown biological class: ${expression.biologicalClass}` });
+    } else if (!classSet.has(expression.biologicalClass)) {
+      issues.push({
+        code: 'invalid_schema',
+        path: `${expressionPath}.biologicalClass`,
+        message: `Expression class ${expression.biologicalClass} is not declared by its source package.`,
+      });
+    }
+    representedClasses.add(expression.biologicalClass);
+
+    validateRequirements(issues, expression.requirements, `${expressionPath}.requirements`);
+    validateTagList(issues, expression.compatibilityTags, `${expressionPath}.compatibilityTags`);
+    validateTagList(issues, expression.createsBiologicalTags, `${expressionPath}.createsBiologicalTags`, { required: true });
+    validateTagList(issues, expression.phenotypeHooks, `${expressionPath}.phenotypeHooks`);
+    validateTagList(issues, expression.capabilityHooks, `${expressionPath}.capabilityHooks`);
+  });
+
+  if (sourcePackage.status === 'canon') {
+    sourcePackage.biologicalClassTags.forEach((biologicalClass) => {
+      if (!representedClasses.has(biologicalClass)) {
+        issues.push({
+          code: 'invalid_schema',
+          path: `${path}.biologicalClassTags`,
+          message: `Canonical source package declares ${biologicalClass} without any expression in that class.`,
+        });
+      }
+    });
+  }
+
+  validateRequirements(issues, sourcePackage.requirements, `${path}.requirements`);
+  validateTagList(issues, sourcePackage.compatibilityTags, `${path}.compatibilityTags`, { required: true });
+  validateTagList(issues, sourcePackage.phenotypeHooks, `${path}.phenotypeHooks`);
+  validateTagList(issues, sourcePackage.capabilityHooks, `${path}.capabilityHooks`);
+
+  for (const [dimension, level] of Object.entries(sourcePackage.complexity)) {
+    if (!complexityLevels.has(level)) {
+      issues.push({ code: 'invalid_schema', path: `${path}.complexity.${dimension}`, message: `Unknown biological complexity level: ${level}` });
+    }
+  }
+}
+
 export function validateContentCatalog(catalog: DomainContentCatalog): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const baseAnimalIds = pushDuplicateAndBasicIssues(issues, 'baseAnimals', catalog.baseAnimals);
@@ -75,7 +215,17 @@ export function validateContentCatalog(catalog: DomainContentCatalog): Validatio
   const questIds = pushDuplicateAndBasicIssues(issues, 'quests', catalog.quests);
   const progressionStateIds = pushDuplicateAndBasicIssues(issues, 'progressionStates', catalog.progressionStates);
 
+  catalog.baseAnimals.forEach((baseAnimal, index) => {
+    const path = `baseAnimals[${index}]`;
+    validateNonBlank(issues, baseAnimal.species, `${path}.species`, 'Species');
+    validateTagList(issues, baseAnimal.bodyPlanTags, `${path}.bodyPlanTags`, { required: true });
+    validateTagList(issues, baseAnimal.biologicalTags, `${path}.biologicalTags`, { required: true });
+    validateTagList(issues, baseAnimal.baselinePhenotypeHooks, `${path}.baselinePhenotypeHooks`);
+    validateTagList(issues, baseAnimal.baselineCapabilityHooks, `${path}.baselineCapabilityHooks`);
+  });
+
   catalog.sourcePackages.forEach((sourcePackage, index) => {
+    validateSourcePackageSchema(issues, sourcePackage, index);
     sourcePackage.potentialCapabilityIds.forEach((id, refIndex) => {
       requireReference(issues, capabilityIds, id, `sourcePackages[${index}].potentialCapabilityIds[${refIndex}]`, 'capability');
     });

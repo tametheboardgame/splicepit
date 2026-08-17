@@ -1,7 +1,7 @@
 import { BASE_ANIMALS } from '../data/animals.js';
 import { GENES } from '../data/genes.js';
 import { ids } from '../domain/ids.js';
-import type { DomainContentCatalog } from '../domain/model.js';
+import type { BiologicalClass, DomainContentCatalog } from '../domain/model.js';
 
 const traitDefinitions = [
   ['regenerate', null],
@@ -10,6 +10,13 @@ const traitDefinitions = [
   ['secrete', null],
 ] as const;
 
+const prototypeClassByTrait: Record<string, BiologicalClass> = {
+  regenerate: 'physiological',
+  charge: 'physiological',
+  anticipate: 'sensory',
+  secrete: 'biochemical',
+};
+
 export const PROTOTYPE_CONTENT_CATALOG: DomainContentCatalog = {
   baseAnimals: Object.values(BASE_ANIMALS).map((animal) => ({
     id: ids.baseAnimal(animal.id),
@@ -17,19 +24,49 @@ export const PROTOTYPE_CONTENT_CATALOG: DomainContentCatalog = {
     revision: 1,
     name: animal.name,
     description: animal.description,
-    bodyPlanTags: [animal.body],
+    species: animal.name,
+    bodyPlanTags: [`body.${animal.body}`],
+    biologicalTags: ['prototype.r0_1'],
+    baselinePhenotypeHooks: [`base.${animal.body}`],
+    baselineCapabilityHooks: [],
   })),
-  sourcePackages: Object.values(GENES).map((gene) => ({
-    id: ids.sourcePackage(gene.id),
-    status: gene.status,
-    revision: 1,
-    name: gene.name,
-    description: gene.description,
-    sourceSpecies: gene.source,
-    biologicalClassTags: ['prototype_r0_1'],
-    potentialCapabilityIds: [ids.capability(`trait_${gene.trait}`)],
-    potentialActionIds: [ids.action(`trait_${gene.trait}`)],
-  })),
+  sourcePackages: Object.values(GENES).map((gene) => {
+    const biologicalClass = prototypeClassByTrait[gene.trait] ?? 'physiological';
+    return {
+      id: ids.sourcePackage(gene.id),
+      status: gene.status,
+      revision: 1,
+      name: gene.name,
+      description: gene.description,
+      sourceSpecies: gene.source,
+      biologicalClassTags: [biologicalClass],
+      expressions: [
+        {
+          id: `prototype_${gene.trait}`,
+          name: gene.name,
+          description: 'R0.1 one-effect compatibility expression. Canonical biological content supersedes this where IDs overlap.',
+          biologicalClass,
+          requirements: { allOfTags: [], anyOfTags: [], noneOfTags: [] },
+          compatibilityTags: ['prototype.r0_1'],
+          createsBiologicalTags: [`prototype.${gene.trait}`],
+          phenotypeHooks: [`trait.${gene.trait}`],
+          capabilityHooks: [`trait.${gene.trait}`],
+        },
+      ],
+      requirements: { allOfTags: [], anyOfTags: [], noneOfTags: [] },
+      compatibilityTags: ['prototype.r0_1'],
+      complexity: {
+        integration: gene.complexity <= 1 ? 'low' : 'moderate',
+        structuralDemand: 'low',
+        metabolicDemand: 'low',
+        regulatoryVolatility: 'low',
+      },
+      phenotypeHooks: [`trait.${gene.trait}`],
+      capabilityHooks: [`trait.${gene.trait}`],
+      potentialCapabilityIds: [ids.capability(`trait_${gene.trait}`)],
+      potentialActionIds: [ids.action(`trait_${gene.trait}`)],
+    };
+  }),
   mutations: [
     ['overgrowth', 'Benign Overgrowth'],
     ['tremor', 'Motor Tremor'],
@@ -77,14 +114,7 @@ export const PROTOTYPE_CONTENT_CATALOG: DomainContentCatalog = {
     materialSourcePackageId: ids.sourcePackage(gene.id),
   })),
   locations: [
-    {
-      id: ids.location('damaged_pit'),
-      status: 'prototype',
-      revision: 1,
-      name: 'Damaged Pit',
-      description: 'R0.1 one-room prototype location.',
-      linkedLocationIds: [],
-    },
+    { id: ids.location('damaged_pit'), status: 'prototype', revision: 1, name: 'Damaged Pit', description: 'R0.1 one-room prototype location.', linkedLocationIds: [] },
   ],
   quests: [
     {
@@ -95,26 +125,10 @@ export const PROTOTYPE_CONTENT_CATALOG: DomainContentCatalog = {
       description: 'Compatibility definition for the accepted prototype flow.',
       startLocationId: ids.location('damaged_pit'),
       prerequisiteQuestIds: [],
-      progressionStateIds: [
-        'find_animal',
-        'collect_genes',
-        'splice',
-        'fight',
-        'slice_complete',
-      ].map(ids.progressionState),
+      progressionStateIds: ['find_animal', 'collect_genes', 'splice', 'fight', 'slice_complete'].map(ids.progressionState),
     },
   ],
   progressionStates: [
-    ['find_animal', 'Find Animal'],
-    ['collect_genes', 'Collect Genes'],
-    ['splice', 'Splice'],
-    ['fight', 'Fight'],
-    ['slice_complete', 'Slice Complete'],
-  ].map(([id, name]) => ({
-    id: ids.progressionState(id),
-    status: 'prototype',
-    revision: 1,
-    name,
-    description: 'R0.1 quest-stage compatibility state.',
-  })),
+    ['find_animal', 'Find Animal'], ['collect_genes', 'Collect Genes'], ['splice', 'Splice'], ['fight', 'Fight'], ['slice_complete', 'Slice Complete'],
+  ].map(([id, name]) => ({ id: ids.progressionState(id), status: 'prototype', revision: 1, name, description: 'R0.1 quest-stage compatibility state.' })),
 };
