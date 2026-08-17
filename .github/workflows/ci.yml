@@ -4,7 +4,7 @@ on:
     branches: ['main', 'agent/**']
   pull_request:
 permissions:
-  contents: write
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -13,19 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --ignore-scripts
+          cache: npm
+      - run: npm ci
       - run: npm run verify
-      - name: Commit generated lockfile
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/agent/')
-        run: |
-          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "Add npm lockfile"
-          git push
   browser-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -33,7 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --ignore-scripts
+          cache: npm
+      - run: npm ci
       - run: npm run build
       - id: chrome
         uses: browser-actions/setup-chrome@v1

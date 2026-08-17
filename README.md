@@ -38,7 +38,7 @@ A future implementation session can start with a WP command such as `Start WP0.2
 
 Requirements: Node.js 20 or newer.
 
-1. Run `npm install` (use `npm ci` once the lockfile is present).
+1. Run `npm ci`.
 2. Run `npm run dev`.
 3. Open the Vite URL shown in the terminal, normally `http://localhost:5173`.
 
