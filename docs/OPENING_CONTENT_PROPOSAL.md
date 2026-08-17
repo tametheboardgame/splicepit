@@ -1,6 +1,6 @@
-# Opening Content Proposal — NOT YET CANON
+# Opening Content — APPROVED BASELINE
 
-This proposes the three caged opening animals and ten surviving SpliceMaster gene/source records. It is deliberately easy to replace before production content is locked.
+The three caged opening animals and ten surviving SpliceMaster source packages are now approved as the initial game-content baseline. Exact numeric stats, expression probabilities and tutorial tuning remain implementation details to be proven later.
 
 ## Design purpose
 
@@ -10,11 +10,11 @@ The opening choice should immediately teach three things:
 2. The same source material can express differently.
 3. A starter can plausibly remain one of the player's treasured main creatures rather than being discarded for a strictly higher-tier replacement.
 
-The lab animals should also fit SplicePit's pastoral-biotech identity and plausibly be present in cages after the disaster.
+The lab animals also fit SplicePit's pastoral-biotech identity and plausibly remain in cages after the disaster.
 
 ---
 
-# Proposed opening base animals
+# Opening base animals — LOCKED
 
 ## 1. Rabbit — speed / fragility / easy future testing
 
@@ -68,15 +68,15 @@ The lab animals should also fit SplicePit's pastoral-biotech identity and plausi
 
 ## Why not start with rare animals?
 
-The starter is chosen from what the dead SpliceMaster happened to have in ordinary cages. Rare bases such as lions should become desirable partly because obtaining equivalent animals for safe testing is difficult.
+The starter is chosen from what the dead SpliceMaster happened to have in ordinary cages. Rare bases such as lions become desirable partly because obtaining equivalent animals for safe testing is difficult.
 
-The player can absolutely turn one of these mundane starters into a late-game main creature if they choose.
+The player can turn one of these mundane starters into a late-game main creature if they choose.
 
 ---
 
-# Proposed surviving source records/material
+# Initial source records/material — LOCKED
 
-These are best treated as **source packages**, not literal one-gene-one-power upgrades. Each source has tendencies across the agreed biological classes and can express differently by attempt/base animal.
+These are **source packages**, not literal one-gene-one-power upgrades. Each source has tendencies across the agreed biological classes and can express differently by attempt/base animal.
 
 ## 1. Lion — Predatory Suite
 
@@ -212,13 +212,13 @@ Risks:
 
 ---
 
-# Opening choice structure proposal
+# Opening choice structure — PLANNED
 
 Immediately after the disaster:
 
 1. Player inspects the three surviving caged animals.
-2. Player can inspect the ten surviving records/material packages.
-3. Existing SpliceMaster notes provide only partial knowledge, not guaranteed outcomes.
+2. Player can inspect the ten surviving source records/material packages.
+3. Existing SpliceMaster notes provide partial knowledge, not guaranteed outcomes.
 4. Player chooses one base + one source package for the emergency first attempt.
 5. The first attempt is weighted away from arbitrary instant death because it functions as tutorial/story progression, but still produces variable expression.
 6. The resulting creature enters the imminent local Land Fit Pit bout.
@@ -228,6 +228,6 @@ The game should not tell the player that one starter/source combination is the �
 
 ## Approval status
 
-- Rabbit / Goat / Pig: **PROVISIONAL**
-- Ten source packages above: **PROVISIONAL**
-- One base + one source package emergency opening structure: derived from locked story direction, but exact UI/resources remain **PLANNED**.
+- Rabbit / Goat / Pig: **LOCKED**
+- Ten source packages above: **LOCKED**
+- One base + one source package emergency opening structure: **PLANNED**, with exact UI/resources/tutorial protections to be tuned during implementation.
