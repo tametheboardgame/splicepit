@@ -118,6 +118,7 @@ try {
   await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
 
   await pressKey('ArrowRight', 'ArrowRight', 39);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x === 3`);
   await pressKey('e', 'KeyE', 69);
   await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === true`);
   await pressKey('Escape', 'Escape', 27);
@@ -132,9 +133,25 @@ try {
 
   await evaluate(`(() => { globalThis.__SPLICEPIT_OLD_RANDOM__ = Math.random; Math.random = () => 0.01; return true; })()`);
   await pressKey('Enter', 'Enter', 13);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').selected.has('gecko_regeneration')`);
   await pressKey('ArrowDown', 'ArrowDown', 40);
+  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').menu.index === 1`);
   await pressKey('Enter', 'Enter', 13);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
+  try {
+    await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`, 5000);
+  } catch (error) {
+    const diagnostics = await evaluate(`(() => {
+      const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
+      return {
+        activeScenes: __SPLICEPIT_GAME__.scene.getScenes(true).map(s => s.scene.key),
+        selected: [...splice.selected],
+        menuIndex: splice.menu?.index,
+        resultText: splice.resultText?.text,
+        hasCreature: Boolean(__SPLICEPIT_GAME__.scene.getScene('Lab')?.sys?.settings && splice.scene.isActive() && splice.scene.key === 'Splice')
+      };
+    })()`);
+    throw new Error(`${error.message}; splice diagnostics=${JSON.stringify(diagnostics)}`);
+  }
   await evaluate(`(() => { Math.random = globalThis.__SPLICEPIT_OLD_RANDOM__; delete globalThis.__SPLICEPIT_OLD_RANDOM__; return true; })()`);
 
   await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit(); return true; })()`);
