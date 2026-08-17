@@ -2,9 +2,15 @@ import Phaser from 'phaser';
 import { TILE, PALETTE, TEXT } from '../config.js';
 import { GENES } from '../data/genes.js';
 import { BASE_ANIMALS } from '../data/animals.js';
+import { dialogueText } from '../dialogue/catalogue.js';
+import { ACTIONS } from '../input/actions.js';
+import { SemanticInput } from '../input/SemanticInput.js';
+import { t } from '../localisation/strings.js';
 import { gameState } from '../state/GameState.js';
 import { saveGame } from '../systems/saveSystem.js';
-import { addPaperPanel, wrappedText } from '../ui/helpers.js';
+import { createDialogueBox, addPanel } from '../ui/primitives.js';
+import type { DialogueBoxHandle } from '../ui/primitives.js';
+import { fadeIn, transitionTo } from '../ui/transitions.js';
 import type { QuestStage } from '../types.js';
 
 const COLS = 15;
@@ -33,19 +39,6 @@ interface Interactable {
   action: () => void;
   plate: Phaser.GameObjects.Rectangle;
 }
-interface LabKeys {
-  up: Phaser.Input.Keyboard.Key;
-  down: Phaser.Input.Keyboard.Key;
-  left: Phaser.Input.Keyboard.Key;
-  right: Phaser.Input.Keyboard.Key;
-  w: Phaser.Input.Keyboard.Key;
-  a: Phaser.Input.Keyboard.Key;
-  s: Phaser.Input.Keyboard.Key;
-  d: Phaser.Input.Keyboard.Key;
-  e: Phaser.Input.Keyboard.Key;
-  space: Phaser.Input.Keyboard.Key;
-  esc: Phaser.Input.Keyboard.Key;
-}
 
 export class LabScene extends Phaser.Scene {
   blocked = false;
@@ -58,24 +51,23 @@ export class LabScene extends Phaser.Scene {
   statusText!: Phaser.GameObjects.Text;
   promptBg!: Phaser.GameObjects.Rectangle;
   promptText!: Phaser.GameObjects.Text;
-  messagePanel!: Phaser.GameObjects.Graphics;
-  messageTitle!: Phaser.GameObjects.Text;
-  messageBody!: Phaser.GameObjects.Text;
-  keys!: LabKeys;
+  messageBox!: DialogueBoxHandle;
+  semanticInput!: SemanticInput;
 
   constructor() { super('Lab'); }
 
   create(): void {
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
+    fadeIn(this);
     this.blocked = false;
     this.moving = false;
     this.interactables = [];
     this.playerGrid = { x: 2, y: 5 };
+    this.semanticInput = new SemanticInput(this);
     this.drawWorld();
     this.createInteractables();
     this.createPlayer();
     this.createHud();
-    this.createInput();
     this.updateHud();
     saveGame();
   }
@@ -105,11 +97,11 @@ export class LabScene extends Phaser.Scene {
   }
 
   private createInteractables(): void {
-    this.addObject(3, 2, 'SPLICE BENCH', 'S', PALETTE.bruise, () => this.useSpliceBench());
-    this.addObject(10, 2, 'GENE CABINET', 'G', PALETTE.acid, () => this.useGeneCabinet());
-    this.addObject(3, 6, 'ANIMAL PEN', 'R', PALETTE.moss, () => this.useAnimalPen());
-    this.addObject(9, 6, 'NOTICE BOARD', 'B', PALETTE.rust, () => this.useNoticeBoard());
-    this.addObject(11, 8, 'FIT PIT GATE', 'P', PALETTE.blood, () => this.useFitPit());
+    this.addObject(3, 2, t('lab.object.spliceBench'), 'S', PALETTE.bruise, () => this.useSpliceBench());
+    this.addObject(10, 2, t('lab.object.geneCabinet'), 'G', PALETTE.acid, () => this.useGeneCabinet());
+    this.addObject(3, 6, t('lab.object.animalPen'), 'R', PALETTE.moss, () => this.useAnimalPen());
+    this.addObject(9, 6, t('lab.object.noticeBoard'), 'B', PALETTE.rust, () => this.useNoticeBoard());
+    this.addObject(11, 8, t('lab.object.fitPitGate'), 'P', PALETTE.blood, () => this.useFitPit());
   }
 
   private addObject(gx: number, gy: number, name: string, mark: string, colour: number, action: () => void): void {
@@ -130,40 +122,32 @@ export class LabScene extends Phaser.Scene {
   }
 
   private createHud(): void {
-    this.hudPanel = addPaperPanel(this, 760, 30, 176, 480, 0.97);
-    this.add.text(780, 50, 'PIT LEDGER', { ...TEXT.mono, fontSize: '11px', color: '#a0573d' });
-    this.objectiveText = wrappedText(this, 780, 89, '', 137, { fontSize: '15px', lineSpacing: 3 });
+    this.hudPanel = addPanel(this, 760, 30, 176, 480, 0.97);
+    this.add.text(780, 50, t('lab.ledger'), { ...TEXT.mono, fontSize: '11px', color: '#a0573d' });
+    this.objectiveText = this.add.text(780, 89, '', { ...TEXT.body, fontSize: '15px', lineSpacing: 3, wordWrap: { width: 137, useAdvancedWrap: true } });
     this.statusText = this.add.text(780, 278, '', { ...TEXT.mono, fontSize: '11px', lineSpacing: 7, wordWrap: { width: 140 } });
     this.promptBg = this.add.rectangle(390, 486, 610, 42, PALETTE.paperDeep, 0.9).setStrokeStyle(1, PALETTE.bone, 0.25);
     this.promptText = this.add.text(390, 486, '', { ...TEXT.mono, fontSize: '12px' }).setOrigin(0.5);
-    this.messagePanel = addPaperPanel(this, 70, 356, 620, 125, 0.985).setVisible(false);
-    this.messageTitle = this.add.text(92, 377, '', { ...TEXT.mono, fontSize: '11px', color: '#b7c86c' }).setVisible(false);
-    this.messageBody = wrappedText(this, 92, 402, '', 570, { fontSize: '17px', lineSpacing: 4 }).setVisible(false);
-  }
-
-  private createInput(): void {
-    if (!this.input.keyboard) throw new Error('Keyboard input is unavailable.');
-    this.keys = this.input.keyboard.addKeys({
-      up: Phaser.Input.Keyboard.KeyCodes.UP, down: Phaser.Input.Keyboard.KeyCodes.DOWN,
-      left: Phaser.Input.Keyboard.KeyCodes.LEFT, right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
-      w: Phaser.Input.Keyboard.KeyCodes.W, a: Phaser.Input.Keyboard.KeyCodes.A,
-      s: Phaser.Input.Keyboard.KeyCodes.S, d: Phaser.Input.Keyboard.KeyCodes.D,
-      e: Phaser.Input.Keyboard.KeyCodes.E, space: Phaser.Input.Keyboard.KeyCodes.SPACE,
-      esc: Phaser.Input.Keyboard.KeyCodes.ESC,
-    }) as unknown as LabKeys;
+    this.messageBox = createDialogueBox(this, 70, 356, 620, 125);
+    this.messageBox.setPrompt(`[${this.semanticInput.hint(ACTIONS.CANCEL)} / ${this.semanticInput.hint(ACTIONS.CONFIRM)}]`);
   }
 
   update(): void {
-    if (Phaser.Input.Keyboard.JustDown(this.keys.esc) && this.blocked) { this.closeMessage(); return; }
-    if (this.blocked) return;
-    const dirs: Array<[Phaser.Input.Keyboard.Key, Phaser.Input.Keyboard.Key, number, number]> = [
-      [this.keys.up, this.keys.w, 0, -1], [this.keys.down, this.keys.s, 0, 1],
-      [this.keys.left, this.keys.a, -1, 0], [this.keys.right, this.keys.d, 1, 0],
-    ];
-    for (const [k1, k2, dx, dy] of dirs) {
-      if (Phaser.Input.Keyboard.JustDown(k1) || Phaser.Input.Keyboard.JustDown(k2)) { this.move(dx, dy); break; }
+    if (this.blocked) {
+      if (this.semanticInput.justDown(ACTIONS.LAB_CANCEL) || this.semanticInput.justDown(ACTIONS.CONFIRM)) this.closeMessage();
+      return;
     }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.e) || Phaser.Input.Keyboard.JustDown(this.keys.space)) this.interact();
+
+    const directions: Array<[typeof ACTIONS.MOVE_UP | typeof ACTIONS.MOVE_DOWN | typeof ACTIONS.MOVE_LEFT | typeof ACTIONS.MOVE_RIGHT, number, number]> = [
+      [ACTIONS.MOVE_UP, 0, -1],
+      [ACTIONS.MOVE_DOWN, 0, 1],
+      [ACTIONS.MOVE_LEFT, -1, 0],
+      [ACTIONS.MOVE_RIGHT, 1, 0],
+    ];
+    for (const [action, dx, dy] of directions) {
+      if (this.semanticInput.justDown(action)) { this.move(dx, dy); break; }
+    }
+    if (this.semanticInput.justDown(ACTIONS.LAB_INTERACT)) this.interact();
     this.updatePrompt();
   }
 
@@ -181,77 +165,79 @@ export class LabScene extends Phaser.Scene {
     return this.interactables.find((o) => Math.abs(o.gx - this.playerGrid.x) + Math.abs(o.gy - this.playerGrid.y) <= 1);
   }
 
-  private interact(): void { const o = this.nearby(); if (o) o.action(); }
-  private updatePrompt(): void { const o = this.nearby(); this.promptText.setText(o ? `[E] ${o.name}` : ''); this.promptBg.setVisible(Boolean(o)); }
+  private interact(): void { const object = this.nearby(); if (object) object.action(); }
+
+  private updatePrompt(): void {
+    const object = this.nearby();
+    this.promptText.setText(object ? t('lab.prompt.interact', { control: this.semanticInput.hint(ACTIONS.LAB_INTERACT), name: object.name }) : '');
+    this.promptBg.setVisible(Boolean(object));
+  }
 
   useAnimalPen(): void {
-    if (gameState.hasBaseAnimal) { this.showMessage('ANIMAL PEN', 'The rabbit is already logged as your base specimen. It looks unconvinced by the promotion.'); return; }
+    if (gameState.hasBaseAnimal) { this.showMessage(t('lab.object.animalPen'), dialogueText('lab_animal_already')); return; }
     gameState.acquireAnimal('rabbit'); saveGame(); this.updateHud();
-    this.showMessage('BASE ANIMAL ACQUIRED', `${BASE_ANIMALS.rabbit.name}: ${BASE_ANIMALS.rabbit.description}\n\nThe surviving gene cabinet may still contain usable samples.`);
+    this.showMessage(t('lab.message.animalAcquiredTitle'), dialogueText('lab_animal_acquired', { name: BASE_ANIMALS.rabbit.name, description: BASE_ANIMALS.rabbit.description }));
   }
 
   useGeneCabinet(): void {
     const candidates = ['gecko_regeneration', 'boar_muscle', 'moth_sense'];
     const next = candidates.find((id) => !gameState.collectedGenes.includes(id));
-    if (!gameState.hasBaseAnimal) { this.showMessage('GENE CABINET', 'Samples remain viable, but you need a base animal before any of this becomes useful.'); return; }
-    if (!next) { this.showMessage('GENE CABINET', 'You have taken every viable prototype sample: Gecko Regeneration, Boar Myofibre and Moth Chemosense.'); return; }
+    if (!gameState.hasBaseAnimal) { this.showMessage(t('lab.object.geneCabinet'), dialogueText('lab_need_base_for_genes')); return; }
+    if (!next) { this.showMessage(t('lab.object.geneCabinet'), dialogueText('lab_no_genes_left')); return; }
     gameState.addGene(next); saveGame(); this.updateHud();
-    this.showMessage('GENE SAMPLE RECOVERED', `${GENES[next].name}\n${GENES[next].description}\n\nReturn to the splice bench when you are ready to make a bad decision.`);
+    this.showMessage(t('lab.message.geneRecoveredTitle'), dialogueText('lab_gene_recovered', { name: GENES[next].name, description: GENES[next].description }));
   }
 
   useSpliceBench(): void {
-    if (!gameState.hasBaseAnimal) { this.showMessage('SPLICE BENCH', 'No base animal. The machine can only make alarming noises at you.'); return; }
-    if (gameState.collectedGenes.length === 0) { this.showMessage('SPLICE BENCH', 'The bench survived. The sample rack did not. Find usable genetic material first.'); return; }
-    this.scene.start('Splice');
+    if (!gameState.hasBaseAnimal) { this.showMessage(t('lab.object.spliceBench'), dialogueText('lab_no_base_at_bench')); return; }
+    if (gameState.collectedGenes.length === 0) { this.showMessage(t('lab.object.spliceBench'), dialogueText('lab_no_genes_at_bench')); return; }
+    transitionTo(this, 'Splice');
   }
 
   useFitPit(): void {
-    if (!gameState.currentCreature) { this.showMessage('FIT PIT GATE', 'The house accepts many things as a combatant. An empty transport cage is not one of them. Splice something first.'); return; }
-    this.scene.start('Battle');
+    if (!gameState.currentCreature) { this.showMessage(t('lab.object.fitPitGate'), dialogueText('lab_no_creature_at_gate')); return; }
+    transitionTo(this, 'Battle');
   }
 
   useNoticeBoard(): void {
-    this.showMessage('NOTICE BOARD', `OUTSTANDING PIT DEBT: £${gameState.debt}\n\nFIT PIT LICENCE: SUSPENDED PENDING DEMONSTRATION BOUT\n\nHandwritten underneath: “If it can stand, it can fight.”`);
+    this.showMessage(t('lab.object.noticeBoard'), dialogueText('lab_notice_board', { debt: gameState.debt }));
   }
 
   private showMessage(title: string, body: string): void {
     this.blocked = true;
-    this.messagePanel.setVisible(true);
-    this.messageTitle.setText(title).setVisible(true);
-    this.messageBody.setText(body).setVisible(true);
+    this.messageBox.show(title, body);
     this.promptBg.setVisible(false);
     this.promptText.setVisible(false);
   }
 
   closeMessage(): void {
     this.blocked = false;
-    this.messagePanel.setVisible(false);
-    this.messageTitle.setVisible(false);
-    this.messageBody.setVisible(false);
+    this.messageBox.hide();
     this.promptText.setVisible(true);
     this.updatePrompt();
   }
 
   private updateHud(): void {
     const objectives: Record<QuestStage, string> = {
-      find_animal: 'Obtain a clean base animal from the surviving pen.',
-      collect_genes: 'Recover at least one viable gene sample.',
-      splice: 'Use the splice bench to create a viable creature.',
-      fight: 'Take your creature through the Fit Pit gate.',
-      slice_complete: 'Vertical slice complete. The pit is technically a business again.',
+      find_animal: t('lab.objective.findAnimal'),
+      collect_genes: t('lab.objective.collectGenes'),
+      splice: t('lab.objective.splice'),
+      fight: t('lab.objective.fight'),
+      slice_complete: t('lab.objective.complete'),
     };
     this.objectiveText.setText(objectives[gameState.questStage]);
-    const creature = gameState.currentCreature?.name ?? 'NONE';
+    const none = t('lab.none');
+    const creature = gameState.currentCreature?.name ?? none;
     const base = gameState.baseAnimalId ? BASE_ANIMALS[gameState.baseAnimalId] : undefined;
     this.statusText.setText([
-      `CASH       £${gameState.coins}`,
-      `DEBT       £${gameState.debt}`,
-      `BASE       ${gameState.hasBaseAnimal && base ? base.name.toUpperCase() : 'NONE'}`,
-      `GENES      ${gameState.collectedGenes.length}`,
-      `CREATURE   ${creature.toUpperCase()}`,
-      `PIT WINS   ${gameState.fitPitWins}`,
+      t('lab.status.cash', { value: gameState.coins }),
+      t('lab.status.debt', { value: gameState.debt }),
+      t('lab.status.base', { value: gameState.hasBaseAnimal && base ? base.name.toUpperCase() : none }),
+      t('lab.status.genes', { value: gameState.collectedGenes.length }),
+      t('lab.status.creature', { value: creature.toUpperCase() }),
+      t('lab.status.wins', { value: gameState.fitPitWins }),
       '',
-      '[AUTO-SAVE ENABLED]',
+      t('lab.autoSave'),
     ].join('\n'));
   }
 }
