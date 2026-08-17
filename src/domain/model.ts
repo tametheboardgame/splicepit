@@ -3,6 +3,7 @@ import type {
   BaseAnimalId,
   CapabilityId,
   CreatureId,
+  ExperimentObservationId,
   ItemId,
   LocationId,
   MaterialLotId,
@@ -10,6 +11,7 @@ import type {
   MutationInstanceId,
   ProgressionStateId,
   QuestId,
+  ReagentId,
   SourcePackageId,
   SpliceAttemptId,
 } from './ids.js';
@@ -204,19 +206,69 @@ export interface CreatureState {
   arenaCapabilities: ArenaCapabilities;
 }
 
+export type MaterialAcquisitionChannel = 'buy' | 'harvest' | 'win' | 'trade' | 'inherit' | 'extract' | 'prototype';
+
 export interface MaterialLot {
   id: MaterialLotId;
   sourcePackageId: SourcePackageId;
   quantity: number;
   acquiredAt: string;
   notes: string;
+  quality?: number;
+  acquisitionChannel?: MaterialAcquisitionChannel;
+}
+
+export interface ReagentStockEntry {
+  reagentId: ReagentId;
+  quantity: number;
+  notes: string;
+}
+
+export interface MaterialAttemptCost {
+  sourcePackageId: SourcePackageId;
+  quantity: number;
+  minimumQuality: number;
+}
+
+export interface ReagentAttemptCost {
+  reagentId: ReagentId;
+  quantity: number;
+}
+
+export interface AttemptCost {
+  materials: readonly MaterialAttemptCost[];
+  reagents: readonly ReagentAttemptCost[];
+}
+
+export interface ConsumedMaterialRecord {
+  materialLotId: MaterialLotId;
+  sourcePackageId: SourcePackageId;
+  quantity: number;
+  quality: number;
 }
 
 export interface ResearchKnowledgeRecord {
   sourcePackageId: SourcePackageId;
   baseAnimalId: BaseAnimalId | null;
+  contextKey?: string;
+  contextTags?: readonly string[];
   observationCount: number;
   notes: readonly string[];
+}
+
+export interface ExperimentObservationRecord {
+  id: ExperimentObservationId;
+  subjectCreatureId: CreatureId;
+  sourcePackageId: SourcePackageId;
+  baseAnimalId: BaseAnimalId;
+  subjectRole: 'main' | 'test';
+  contextKey: string;
+  contextTags: readonly string[];
+  observedAt: string;
+  consumedMaterials: readonly ConsumedMaterialRecord[];
+  consumedReagents: readonly ReagentAttemptCost[];
+  resultCode: string;
+  notes: string;
 }
 
 export interface DomainProgressionState {
@@ -230,7 +282,9 @@ export interface GameDomainState {
   mainCreatureIds: readonly CreatureId[];
   testAnimalIds: readonly CreatureId[];
   materialStock: readonly MaterialLot[];
+  reagentStock: readonly ReagentStockEntry[];
   researchKnowledge: readonly ResearchKnowledgeRecord[];
+  experimentHistory: readonly ExperimentObservationRecord[];
   progression: DomainProgressionState;
 }
 
