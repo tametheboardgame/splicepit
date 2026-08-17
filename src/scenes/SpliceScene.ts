@@ -64,7 +64,11 @@ export class SpliceScene extends Phaser.Scene {
     const state = ensureR03LabPlaytestState();
     this.confirmArmed = false;
     this.lastResult = null;
-    this.selectedSubjectId = state.testAnimalIds[0] ?? state.mainCreatureIds[0] ?? null;
+    this.selectedSubjectId = state.testAnimalIds
+      .map((id) => state.creatures.find((creature) => creature.id === id))
+      .find((creature) => creature?.lifeState === 'living')?.id
+      ?? state.mainCreatureIds[0]
+      ?? null;
     this.selectedSourceId = sourceIdsFor(state)[0] ?? null;
 
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
@@ -145,12 +149,20 @@ export class SpliceScene extends Phaser.Scene {
     return buildLabSplicePlan(state, CONTENT_CATALOG, subject.id, this.selectedSourceId);
   }
 
+  private hasTestEvidence(state: GameDomainState): boolean {
+    if (!this.selectedSourceId) return false;
+    return state.experimentHistory.some((observation) => (
+      observation.sourcePackageId === this.selectedSourceId && observation.subjectRole === 'test'
+    ));
+  }
+
   private refresh(): void {
     const state = domainState.snapshot();
     const subject = this.subject(state);
     const source = CONTENT_CATALOG.sourcePackages.find((candidate) => candidate.id === this.selectedSourceId) ?? null;
     const plan = this.plan(state, subject);
     const base = subject ? CONTENT_CATALOG.baseAnimals.find((animal) => animal.id === subject.baseAnimalId) : null;
+    const testEvidence = this.hasTestEvidence(state);
     const biology = subject ? (() => {
       try { return composePhenotype(subject, CONTENT_CATALOG); } catch { return null; }
     })() : null;
@@ -158,7 +170,7 @@ export class SpliceScene extends Phaser.Scene {
     this.subjectText.setText(subject
       ? t('splice.selectedSubject', {
         name: subject.name,
-        role: humanise(subject.role),
+        role: subject.role === 'main' ? t('splice.mainRole') : t('splice.testRole'),
         base: base?.name ?? subject.baseAnimalId,
         life: humanise(subject.lifeState),
         attempts: subject.spliceHistory.length,
@@ -203,7 +215,10 @@ export class SpliceScene extends Phaser.Scene {
           return `${definition?.name ?? expression.expressionId}${expression.functional ? ' [FUNCTIONAL]' : ' [NON-FUNCTIONAL]'}`;
         })
         .join(', ') || t('splice.noneEstablished');
-      this.outcomeText.setText(t('splice.outcomeBody', {
+      const replacementNote = this.lastResult.observation.subjectRole === 'test' && this.lastResult.creature.lifeState === 'deceased'
+        ? `\n${t('splice.testReplacementReady')}`
+        : '';
+      this.outcomeText.setText(`${t('splice.outcomeBody', {
         outcome: humanise(this.lastResult.resolution.outcomeBand),
         established: compact(establishedFull, 105),
         before: Math.round(this.lastResult.resolution.stabilityBefore * 100),
@@ -211,7 +226,9 @@ export class SpliceScene extends Phaser.Scene {
         injury: humanise(this.lastResult.resolution.consequences.injurySeverity),
         mutation: this.lastResult.resolution.consequences.mutationTriggered ? t('splice.mutationDetected') : t('splice.none'),
         history: this.lastResult.creature.spliceHistory.length,
-      }));
+      })}${replacementNote}`);
+    } else if (subject?.role === 'main' && !testEvidence) {
+      this.outcomeText.setText(t('splice.mainNeedsTest'));
     } else if (this.confirmArmed) {
       this.outcomeText.setText(t('splice.irreversibleWarning'));
     } else {
@@ -226,15 +243,20 @@ export class SpliceScene extends Phaser.Scene {
     this.testButton.setVisible(Boolean(subject && !isMain));
     this.testButton.setEnabled(Boolean(subject && !isMain && canAttempt));
     this.prepareButton.setVisible(Boolean(subject && isMain && !this.confirmArmed));
-    this.prepareButton.setEnabled(Boolean(subject && isMain && !this.confirmArmed && canAttempt));
+    this.prepareButton.setEnabled(Boolean(subject && isMain && !this.confirmArmed && canAttempt && testEvidence));
     this.confirmButton.setVisible(Boolean(subject && isMain && this.confirmArmed));
-    this.confirmButton.setEnabled(Boolean(subject && isMain && this.confirmArmed && canAttempt));
+    this.confirmButton.setEnabled(Boolean(subject && isMain && this.confirmArmed && canAttempt && testEvidence));
   }
 
   private execute(requireMainConfirmation: boolean): void {
     const state = domainState.snapshot();
     const subject = this.subject(state);
     if (!subject || !this.selectedSourceId) return;
+    if (subject.role === 'main' && !this.hasTestEvidence(state)) {
+      this.confirmArmed = false;
+      this.outcomeText.setText(t('splice.mainNeedsTest'));
+      return;
+    }
     if (subject.role === 'main' && (!requireMainConfirmation || !this.confirmArmed)) return;
     const operationIds = nextLabOperationIds(state);
     try {
@@ -247,7 +269,16 @@ export class SpliceScene extends Phaser.Scene {
         attemptedAt: new Date().toISOString(),
       }, runtimeRandom);
       persistLabDomainState(result.state);
+
+      if (subject.role === 'test' && result.creature.lifeState === 'deceased') {
+        const restocked = ensureR03LabPlaytestState();
+        const replacement = restocked.testAnimalIds
+          .map((id) => restocked.creatures.find((creature) => creature.id === id))
+          .find((creature) => creature?.baseAnimalId === subject.baseAnimalId && creature.lifeState === 'living');
+        if (replacement) this.selectedSubjectId = replacement.id;
+      }
       if (subject.role === 'main') syncLegacyMainCreature(result.state);
+
       this.lastResult = result;
       this.confirmArmed = false;
       this.cameras.main.flash(180, 183, 200, 108, false);
