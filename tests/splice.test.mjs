@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { SeededRandom } from '../src/random/RandomSource.js';
 import { calculateSplice, attemptSplice } from '../src/systems/spliceSystem.js';
 
 test('additional gene complexity reduces viability', () => {
@@ -9,15 +10,18 @@ test('additional gene complexity reduces viability', () => {
 });
 
 test('successful splice derives stats and stores genes', () => {
-  const values=[0.01,0.99]; let i=0;
-  const result=attemptSplice('rabbit',['boar_muscle'],()=>values[i++]);
-  assert.equal(result.success,true);
-  assert.deepEqual(result.creature.genes,['boar_muscle']);
+  const random = new SeededRandom('splicepit-ci');
+  const result = attemptSplice('rabbit', ['boar_muscle'], () => random.next(), {
+    creatureId: 'splice-test-success',
+    createdAt: '2026-08-17T12:00:00.000Z',
+  });
+  assert.equal(result.success, true);
+  assert.deepEqual(result.creature.genes, ['boar_muscle']);
   assert.ok(result.creature.stats.attack > 6);
 });
 
 test('failed splice does not emit a creature', () => {
-  const result=attemptSplice('rabbit',['boar_muscle','gecko_regeneration','moth_sense'],()=>0.99);
-  assert.equal(result.success,false);
-  assert.equal(result.creature,undefined);
+  const result = attemptSplice('rabbit', ['boar_muscle','gecko_regeneration','moth_sense'], () => 0.99);
+  assert.equal(result.success, false);
+  assert.equal(result.creature, undefined);
 });

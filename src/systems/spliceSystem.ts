@@ -1,7 +1,7 @@
 import { GENES } from '../data/genes.js';
 import { BASE_ANIMALS } from '../data/animals.js';
+import type { RandomFn } from '../random/RandomSource.js';
 import type { BaseAnimalDefinition, CreatureRecord, CreatureStats, Mutation, StatKey } from '../types.js';
-import type { RandomFn } from './battleSystem.js';
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
@@ -11,6 +11,11 @@ export interface SplicePlan {
   complexity: number;
   chance: number;
   stats: CreatureStats;
+}
+
+export interface SpliceAttemptMetadata {
+  creatureId?: string;
+  createdAt?: string;
 }
 
 export type SpliceResult =
@@ -35,7 +40,16 @@ export function calculateSplice(baseAnimalId: string, geneIds: Iterable<string>)
   return { base, geneIds: uniqueGeneIds, complexity, chance, stats };
 }
 
-export function attemptSplice(baseAnimalId: string, geneIds: Iterable<string>, random: RandomFn = Math.random): SpliceResult {
+function generatedCreatureId(random: RandomFn): string {
+  return `splice-${Math.floor(random() * 0x1_0000_0000).toString(16).padStart(8, '0')}`;
+}
+
+export function attemptSplice(
+  baseAnimalId: string,
+  geneIds: Iterable<string>,
+  random: RandomFn,
+  metadata: SpliceAttemptMetadata = {},
+): SpliceResult {
   const plan = calculateSplice(baseAnimalId, geneIds);
   const roll = random() * 100;
   const success = roll <= plan.chance;
@@ -71,13 +85,13 @@ export function attemptSplice(baseAnimalId: string, geneIds: Iterable<string>, r
     chance: plan.chance,
     roll,
     creature: {
-      id: `splice-${Date.now()}`,
+      id: metadata.creatureId ?? generatedCreatureId(random),
       name: makeCreatureName(plan.base.name, plan.geneIds),
       baseAnimalId,
       genes: plan.geneIds,
       stats,
       mutation,
-      createdAt: new Date().toISOString(),
+      createdAt: metadata.createdAt ?? new Date().toISOString(),
     },
     message: mutated ? `Splice held, with mutation: ${mutation?.name}.` : 'Splice held. The specimen is viable.',
   };
