@@ -1,31 +1,42 @@
+import { createSaveEnvelope, domainStateFromSave } from '../persistence/saveSchema.js';
+import { archiveLegacyR01Save, clearPersistedSave, hasReadableSave, readSave, writeSave } from '../persistence/storage.js';
+import { domainState } from '../state/DomainState.js';
 import { gameState } from '../state/GameState.js';
-import type { GameStateSnapshot } from '../types.js';
 
-const SAVE_KEY = 'splicepit-r0-save';
+function browserStorage(): Storage | null { return typeof localStorage === 'undefined' ? null : localStorage; }
 
 export function saveGame(): boolean {
-  if (typeof localStorage === 'undefined') return false;
-  localStorage.setItem(SAVE_KEY, JSON.stringify(gameState.snapshot()));
-  return true;
+  const storage = browserStorage();
+  if (!storage) return false;
+  archiveLegacyR01Save(storage);
+  return writeSave(storage, createSaveEnvelope(gameState.snapshot(), domainState.snapshot()));
 }
 
 export function loadGame(): boolean {
-  if (typeof localStorage === 'undefined') return false;
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) return false;
-  try {
-    gameState.hydrate(JSON.parse(raw) as Partial<GameStateSnapshot>);
-    return true;
-  } catch {
-    return false;
-  }
+  const storage = browserStorage();
+  if (!storage) return false;
+  archiveLegacyR01Save(storage);
+  const loaded = readSave(storage);
+  if (!loaded) return false;
+  gameState.hydrate(loaded.envelope.payload.gameplay);
+  domainState.hydrate(domainStateFromSave(loaded.envelope));
+  if (loaded.source === 'backup') writeSave(storage, loaded.envelope);
+  return true;
 }
 
 export function clearSave(): void {
-  if (typeof localStorage !== 'undefined') localStorage.removeItem(SAVE_KEY);
+  const storage = browserStorage();
+  if (storage) {
+    archiveLegacyR01Save(storage);
+    clearPersistedSave(storage);
+  }
   gameState.reset();
+  domainState.reset();
 }
 
 export function hasSave(): boolean {
-  return typeof localStorage !== 'undefined' && Boolean(localStorage.getItem(SAVE_KEY));
+  const storage = browserStorage();
+  if (!storage) return false;
+  archiveLegacyR01Save(storage);
+  return hasReadableSave(storage);
 }
