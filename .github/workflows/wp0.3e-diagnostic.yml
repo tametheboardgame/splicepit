@@ -21,17 +21,33 @@ jobs:
       - id: verify
         continue-on-error: true
         run: npm run verify > verify.log 2>&1
+      - id: chrome
+        uses: browser-actions/setup-chrome@v1
+      - id: smoke
+        continue-on-error: true
+        run: npm run smoke > smoke.log 2>&1
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
       - name: Persist diagnostic report on branch
         if: always()
         env:
-          RESULT: ${{ steps.verify.outcome }}
+          VERIFY_RESULT: ${{ steps.verify.outcome }}
+          SMOKE_RESULT: ${{ steps.smoke.outcome }}
         run: |
+          OVERALL=failure
+          if [ "$VERIFY_RESULT" = success ] && [ "$SMOKE_RESULT" = success ]; then OVERALL=success; fi
           mkdir -p .ci
           {
-            echo "WP0.3E diagnostic result: ${RESULT}"
+            echo "WP0.3E diagnostic result: ${OVERALL}"
             echo "Commit tested: ${GITHUB_SHA}"
+            echo "npm run verify: ${VERIFY_RESULT}"
+            echo "npm run smoke: ${SMOKE_RESULT}"
             echo
+            echo '===== VERIFY ====='
             cat verify.log 2>/dev/null || true
+            echo
+            echo '===== BROWSER SMOKE ====='
+            cat smoke.log 2>/dev/null || true
           } > .ci/wp0.3e-result.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -39,5 +55,5 @@ jobs:
           git commit -m 'WP0.3E: record diagnostic result [skip ci]'
           git push
       - name: Preserve failure state
-        if: steps.verify.outcome != 'success'
+        if: steps.verify.outcome != 'success' || steps.smoke.outcome != 'success'
         run: exit 1
