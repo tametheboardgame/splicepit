@@ -78,6 +78,9 @@ This file is the authoritative record of decisions that should not drift merely 
 | CR-002 | Active serious combat roster is capped at three creatures. Test animals/lab stock do not count as three main creatures and can exist separately. |
 | CR-003 | Main creatures retain persistent names, history, age and splice/combat record. |
 | CR-004 | Common base animals are strategically valuable because they make repeat testing easier; rare base animals are powerful/interesting partly because reproducing tests on equivalent animals is difficult. |
+| CR-005 | Arena classification is capability-based, not species- or gene-label-based. A creature qualifies for Land, Water or Air only if it can genuinely function/fight in that environment. Cosmetic or non-functional wings do not make a creature Air-capable; a creature that can genuinely sustain flight may qualify. |
+| CR-006 | Multi-environment qualification is allowed. A sufficiently successful creature can qualify for two or even all three arena classes, but extreme generalisation should tend to carry biological/build trade-offs rather than becoming the obvious optimum. |
+| CR-007 | Age is primarily identity/history rather than a harsh retirement timer. Age may have modest species-appropriate effects across the game's roughly five-year-or-less story timespan, particularly for naturally short-lived animals, but should not massively degrade a valued creature merely because time passed. |
 
 ---
 
@@ -93,6 +96,7 @@ This file is the authoritative record of decisions that should not drift merely 
 | C-006 | Battles begin primarily 1v1. The engine must support up to three main creatures and later asymmetric/team formats including 3v1 where rules/story allow. |
 | C-007 | Pit environments have biological eligibility. Initial top-level arena classes are Land, Water and Air. A creature cannot simply enter an environment in which it cannot function. |
 | C-008 | Players may diversify across Land/Water/Air or specialise heavily in one arena class. The game should not force one creature of each class. |
+| C-009 | Arena eligibility must be assessed from expressed functional capability. Successful anatomy is not assumed from attempted splicing: wings may be malformed/useless, aquatic traits may not provide meaningful swimming/respiration, and only functional results unlock the corresponding Pit circuit. |
 
 ---
 
@@ -101,13 +105,16 @@ This file is the authoritative record of decisions that should not drift merely 
 | ID | Decision |
 |---|---|
 | W-001 | World structure is interconnected authored regions/hubs, initially targeting roughly the exploration/content scale of a classic compact monster RPG rather than a giant open world. |
-| W-002 | Opening practical loop: after inheriting the lab, the player has an imminent match and must quickly construct something viable from one of several caged base animals plus stored gene records/material. Exact animals/genes remain provisional until approved. |
-| W-003 | Debt is a real sum and a timed Act 1 pressure, but failure to pay does not produce a game-over. It changes the narrative branch and what opportunities are available. |
-| W-004 | If Act 1 debt is not paid in time, Act 2 places the player under the creditors' control, fighting for them to work down the obligation. |
-| W-005 | If Act 1 debt is paid, Act 2 begins with meaningful freedom: the player can choose where to fight, what path to pursue and whether to specialise. |
-| W-006 | Pit/base progression includes at least: diagnostics, safer splice bench, animal recovery, sample storage, mutation analysis, creature housing, Fit Pit facilities, workshop and cosmetic repair. Exact tree is a design proposal pending tuning. |
-| W-007 | Four primary genetic-material acquisition channels are: buy, harvest, win and trade. Harvesting includes local/common sources and quest/travel to rare sources. |
-| W-008 | Fit Pits are semi-legal in a fragmented post-apocalyptic world with weak central governance. Many people dislike them, but no authority is consistently capable of stopping the practice. |
+| W-002 | Opening practical loop: after inheriting the lab, the player has an imminent match and must quickly construct something viable from one of several caged base animals plus stored gene records/material. |
+| W-003 | The three opening base animals are Rabbit, Goat and Pig. None is intended as a disposable starter tier; a player may develop the chosen original animal through the entire game. |
+| W-004 | The initial ten stored source packages are Lion Predatory Suite; Rhinoceros Cranial Keratin/Impact Suite; Elephant Growth/Mass Regulation; Gecko Regeneration Suite; Cheetah Fast-Twitch/Sprint Suite; Pangolin Dermal Plate Suite; Owl Nocturnal Sensory Suite; Electric Eel Electrocyte Suite; Toad Toxin/Gland Suite; and Chameleon Chromatophore/Visual Adaptation Suite. Individual outcomes remain stochastic and source packages may express only some tendencies. |
+| W-005 | Debt is a real sum and a timed Act 1 pressure, but failure to pay does not produce a game-over. It changes the narrative branch and what opportunities are available. |
+| W-006 | If Act 1 debt is not paid in time, Act 2 places the player under the creditors' control, fighting for them to work down the obligation. |
+| W-007 | If Act 1 debt is paid, Act 2 begins with meaningful freedom: the player can choose where to fight, what path to pursue and whether to specialise. |
+| W-008 | Pit/base progression includes at least: diagnostics, safer splice bench, animal recovery, sample storage, mutation analysis, creature housing, Fit Pit facilities, workshop and cosmetic repair. Exact tree is a design proposal pending tuning. |
+| W-009 | Four primary genetic-material acquisition channels are: buy, harvest, win and trade. Harvesting includes local/common sources and quest/travel to rare sources. |
+| W-010 | Fit Pits are semi-legal in a fragmented post-apocalyptic world with weak central governance. Many people dislike them, but no authority is consistently capable of stopping the practice. |
+| W-011 | The full game's main storyline is expected to span no more than roughly five in-world years; exact day/week structure and Act 1 debt deadline remain open until Act 1 production. |
 
 ---
 
@@ -128,8 +135,8 @@ This file is the authoritative record of decisions that should not drift merely 
 
 These remain non-canon unless explicitly promoted:
 
-- Rabbit as actual starting animal.
-- Gecko Regeneration, Boar Myofibre, Moth Chemosense and Toad Dermal Gland exact prototype definitions.
+- R0.1 exact Rabbit stats/implementation. (Rabbit itself is now canon as one of three opening base-animal choices.)
+- Gecko Regeneration, Boar Myofibre, Moth Chemosense and Toad Dermal Gland exact prototype definitions. (Gecko and Toad source concepts are now canon in the new source-package model; R0.1 implementations are not.)
 - R0.1 stat scales/viability formula.
 - £12 / £860 / £30 economic values.
 - Pit Scrap No. 7.
@@ -155,9 +162,9 @@ These are the meaningful questions still open after Design Round 1.
 
 ## Creature/arena detail
 
-- **CR-OPEN-01:** Whether one creature may qualify for more than one Land/Water/Air arena class after appropriate splicing, or whether arena classification is exclusive.
+- **CR-OPEN-01:** Exact functional thresholds/tests for Land/Water/Air qualification and how partial capabilities are represented.
 - **CR-OPEN-02:** How many non-main test animals/lab-stock animals the pit can practically hold and how housing constrains them.
-- **CR-OPEN-03:** Ageing lifespan mechanics: flavour/history only versus gameplay effects.
+- **CR-OPEN-03:** Exact modest ageing modifiers for short-lived species, if any, and how they are communicated without creating a punitive timer.
 
 ## Combat detail
 
@@ -170,10 +177,10 @@ These are the meaningful questions still open after Design Round 1.
 
 ## World/story detail
 
-- **W-OPEN-01:** Final world geography, hub names and route layout. A proposal may be drafted before locking.
-- **W-OPEN-02:** Final three opening base animals and initial ten stored gene records/materials. A proposal may be drafted before locking.
-- **W-OPEN-03:** Exact debt amount, Act 1 deadline and creditor identity/terms.
-- **W-OPEN-04:** Detailed pit upgrade tree costs/dependencies/effects. A proposal may be drafted before locking.
+- **W-OPEN-01:** Final world geography, hub names and route layout. A proposal exists but is not yet canon.
+- **W-OPEN-02:** Exact debt amount and Act 1 deadline.
+- **W-OPEN-03:** Creditor identity, culture, terms and role in the unpaid-debt Act 2 branch. A proposal may be drafted before locking.
+- **W-OPEN-04:** Detailed pit upgrade tree costs/dependencies/effects. A proposal exists but remains subject to tuning.
 - **W-OPEN-05:** Detailed Fit Pit ladder/rules/ranks and Land/Water/Air circuit structure.
 - **W-OPEN-06:** Story beyond the agreed Act 1 → Act 2 debt branch framework.
 
