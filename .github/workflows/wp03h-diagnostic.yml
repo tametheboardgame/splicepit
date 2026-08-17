@@ -1,13 +1,12 @@
 name: Temporary WP0.3H Diagnostic
 on:
-  pull_request:
-    branches: ['main']
+  push:
+    branches: ['agent/wp0-3h-lab-experimentation-ux']
 permissions:
   contents: read
   pull-requests: write
 jobs:
   report:
-    if: github.event.pull_request.number == 15
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -33,5 +32,5 @@ jobs:
             tail -n 240 wp03h-verify.log
             echo '```'
           } > wp03h-body.md
-          gh pr edit "${{ github.event.pull_request.number }}" --body-file wp03h-body.md
+          gh pr edit 15 --body-file wp03h-body.md
           exit "$status"
