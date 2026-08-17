@@ -14,6 +14,11 @@ export class TitleScene extends Phaser.Scene {
   constructor() { super('Title'); }
 
   create(): void {
+    if (new URLSearchParams(globalThis.location.search).get('combatPlaytest') === '1') {
+      transitionTo(this, 'CombatPlaytest', { duration: 0 });
+      return;
+    }
+
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
     fadeIn(this);
     this.drawBackdrop();
@@ -43,7 +48,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   update(): void {
-    this.menu.update();
+    this.menu?.update();
   }
 
   private drawBackdrop(): void {
