@@ -38,7 +38,8 @@ function gameplayFixture(overrides = {}) {
 
 function domainFixture() {
   const creatureId = ids.creature('creature_mabel');
-  const landCapabilityId = ids.capability('arena_land_function');
+  const landCapabilityId = ids.capability('movement.land');
+  const repairCapabilityId = ids.capability('recovery.wound_repair');
   const sourcePackageId = ids.sourcePackage('gecko_regeneration');
   const materialLotId = ids.materialLot('material_gecko_001');
   const arenaCapabilities = emptyArenaCapabilities();
@@ -50,6 +51,7 @@ function domainFixture() {
       name: 'Mabel',
       baseAnimalId: ids.baseAnimal('rabbit'),
       role: 'main',
+      lifeState: 'living',
       createdAt: '2026-08-17T10:00:00.000Z',
       estimatedAgeDays: 420,
       phenotypeSeed: 'phenotype-seed-mabel',
@@ -60,12 +62,44 @@ function domainFixture() {
         sourcePackageIds: [sourcePackageId],
         consumedMaterialLotIds: [materialLotId],
         outcomeBand: 'normal_success',
-        expressions: [],
+        stabilityBefore: 1,
+        stabilityAfter: 0.91,
+        complexityAdded: 0.72,
+        consequences: {
+          mutationTriggered: false,
+          permanentDamage: false,
+          death: false,
+          injurySeverity: 'none',
+        },
+        expressions: [{
+          sourcePackageId,
+          expressionId: 'rapid_wound_repair',
+          expressed: true,
+          magnitude: 0.82,
+          completeness: 0.76,
+          efficiency: 0.71,
+          reliability: 0.8,
+          stability: 0.74,
+          biologicalTags: ['healing.rapid'],
+          phenotypeHooks: [],
+          capabilityHooks: ['recovery.wound_repair'],
+          capabilityIds: [repairCapabilityId],
+          actionIds: [],
+          functional: true,
+          notes: 'Representative resolved expression.',
+        }],
       }],
       mutations: [],
-      injuries: [{ id: 'injury_001', recordedAt: '2026-08-17T10:10:00.000Z', status: 'healed', notes: 'Representative save fixture.' }],
+      injuries: [{
+        id: 'injury_001',
+        recordedAt: '2026-08-17T10:10:00.000Z',
+        status: 'healed',
+        notes: 'Representative save fixture.',
+        affectedCapabilityIds: [],
+        affectedExpressionIds: [],
+      }],
       training: [{ id: 'training_001', recordedAt: '2026-08-17T10:15:00.000Z', capabilityId: landCapabilityId, notes: 'Representative save fixture.' }],
-      capabilityIds: [landCapabilityId],
+      capabilityIds: [landCapabilityId, repairCapabilityId],
       arenaCapabilities,
     }],
     mainCreatureIds: [creatureId],
@@ -110,24 +144,26 @@ function domainFixture() {
   };
 }
 
-test('current R0.2 save schema round-trips gameplay and persistent biological state', () => {
+test('current save schema round-trips resolved cumulative biological history', () => {
   const gameplay = gameplayFixture();
   const domain = domainFixture();
   const envelope = createSaveEnvelope(gameplay, domain, '2026-08-17T12:00:00.000Z');
   const decoded = decodeSave(JSON.stringify(envelope));
 
   assert.equal(decoded.schemaVersion, SAVE_SCHEMA_VERSION);
+  assert.equal(SAVE_SCHEMA_VERSION, 2);
   assert.deepEqual(decoded.payload.gameplay, gameplay);
   assert.deepEqual(domainStateFromSave(decoded), domain);
-  assert.equal(decoded.payload.creatures.records[0].phenotypeSeed, 'phenotype-seed-mabel');
-  assert.equal(decoded.payload.creatures.records[0].spliceHistory[0].sequence, 1);
+  assert.equal(decoded.payload.creatures.records[0].lifeState, 'living');
+  assert.equal(decoded.payload.creatures.records[0].spliceHistory[0].stabilityAfter, 0.91);
+  assert.equal(decoded.payload.creatures.records[0].spliceHistory[0].expressions[0].expressionId, 'rapid_wound_repair');
   assert.equal(decoded.payload.materials.stock[0].quantity, 2);
   assert.equal(decoded.payload.materials.reagents[0].quantity, 4);
   assert.equal(decoded.payload.research.knowledge[0].observationCount, 3);
   assert.equal(decoded.payload.research.experiments.length, 1);
 });
 
-test('historical versioned fixture migrates through the save pipeline', () => {
+test('historical schema-v0 fixture migrates through the complete save pipeline', () => {
   const gameplay = gameplayFixture();
   const domain = domainFixture();
   const historical = {
@@ -139,22 +175,50 @@ test('historical versioned fixture migrates through the save pipeline', () => {
   };
 
   const migrated = decodeSave(JSON.stringify(historical));
-  assert.equal(migrated.schemaVersion, 1);
+  assert.equal(migrated.schemaVersion, 2);
   assert.deepEqual(migrated.payload.gameplay, gameplay);
   assert.deepEqual(domainStateFromSave(migrated), domain);
 });
 
-test('pre-WP0.3B schema-v1 saves remain readable with empty additive lab collections', () => {
+test('schema-v1 creatures migrate to v2 without losing legacy history or capabilities', () => {
   const domain = domainFixture();
-  const envelope = createSaveEnvelope(gameplayFixture(), domain, '2026-08-17T11:30:00.000Z');
-  delete envelope.payload.materials.reagents;
-  delete envelope.payload.research.experiments;
+  const current = createSaveEnvelope(gameplayFixture(), domain, '2026-08-17T11:30:00.000Z');
+  const oldCreature = structuredClone(current.payload.creatures.records[0]);
+  delete oldCreature.lifeState;
+  const oldAttempt = oldCreature.spliceHistory[0];
+  delete oldAttempt.stabilityBefore;
+  delete oldAttempt.stabilityAfter;
+  delete oldAttempt.complexityAdded;
+  delete oldAttempt.consequences;
+  oldAttempt.expressions = [{
+    sourcePackageId: ids.sourcePackage('gecko_regeneration'),
+    capabilityIds: [ids.capability('recovery.wound_repair')],
+    actionIds: [],
+    functional: true,
+    notes: 'Legacy WP0.2 expression shape.',
+  }];
+  const legacy = {
+    ...current,
+    schemaVersion: 1,
+    payload: {
+      ...current.payload,
+      creatures: { ...current.payload.creatures, records: [oldCreature] },
+      materials: { stock: current.payload.materials.stock },
+      research: { knowledge: current.payload.research.knowledge },
+    },
+  };
 
-  const loaded = domainStateFromSave(decodeSave(JSON.stringify(envelope)));
-  assert.deepEqual(loaded.reagentStock, []);
-  assert.deepEqual(loaded.experimentHistory, []);
-  assert.equal(loaded.materialStock[0].quantity, 2);
-  assert.equal(loaded.researchKnowledge[0].observationCount, 3);
+  const migrated = decodeSave(JSON.stringify(legacy));
+  const creature = migrated.payload.creatures.records[0];
+  assert.equal(migrated.schemaVersion, 2);
+  assert.equal(creature.lifeState, 'living');
+  assert.equal(creature.spliceHistory[0].stabilityBefore, 1);
+  assert.equal(creature.spliceHistory[0].stabilityAfter, 1);
+  assert.equal(creature.spliceHistory[0].complexityAdded, 0);
+  assert.equal(creature.spliceHistory[0].expressions[0].expressionId, 'legacy_expression_1');
+  assert.deepEqual(creature.spliceHistory[0].expressions[0].capabilityIds, [ids.capability('recovery.wound_repair')]);
+  assert.deepEqual(migrated.payload.materials.reagents ?? [], []);
+  assert.deepEqual(migrated.payload.research.experiments ?? [], []);
 });
 
 test('failed primary decode falls back to the last readable backup without destroying it', () => {
