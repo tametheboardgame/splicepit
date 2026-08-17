@@ -54,6 +54,17 @@ function blankCreature(
   };
 }
 
+function nextCreatureId(state: GameDomainState, stem: string): CreatureId {
+  const used = new Set(state.creatures.map((creature) => creature.id));
+  let ordinal = 1;
+  let candidate = ids.creature(`${stem}.${ordinal}`);
+  while (used.has(candidate)) {
+    ordinal += 1;
+    candidate = ids.creature(`${stem}.${ordinal}`);
+  }
+  return candidate;
+}
+
 function unlockedSources(): SourcePackageId[] {
   const mapped = gameState.collectedGenes
     .map((legacyId) => LEGACY_SOURCE_BRIDGE[legacyId])
@@ -91,15 +102,78 @@ function bridgeNewlyRecoveredSources(state: GameDomainState, now: string): GameD
   };
 }
 
+/**
+ * Common test animals are replaceable playtest stock. Dead test subjects remain
+ * in creature/experiment history, but the holding area supplies one fresh living
+ * Rabbit, Goat and Pig whenever a species has been exhausted. This prevents the
+ * experimentation loop from soft-locking after an unlucky lethal test.
+ */
+export function restockMissingTestAnimals(state: GameDomainState, now: string): GameDomainState {
+  let next = state;
+  for (const baseAnimalId of OPENING_BASE_ANIMAL_IDS) {
+    const hasLivingTest = next.testAnimalIds
+      .map((id) => next.creatures.find((creature) => creature.id === id))
+      .some((creature) => creature?.role === 'test' && creature.baseAnimalId === baseAnimalId && creature.lifeState === 'living');
+    if (hasLivingTest) continue;
+
+    const id = nextCreatureId(next, `r03.test.${baseAnimalId}.replacement`);
+    const definition = CONTENT_CATALOG.baseAnimals.find((animal) => animal.id === baseAnimalId);
+    const replacement = blankCreature(id, `Test ${definition?.name ?? baseAnimalId}`, baseAnimalId, 'test', now);
+    next = {
+      ...next,
+      creatures: [...next.creatures, replacement],
+      testAnimalIds: [...next.testAnimalIds, replacement.id],
+    };
+  }
+  return next;
+}
+
+export function hasLivingMainCreature(state = domainState.snapshot()): boolean {
+  return state.mainCreatureIds
+    .map((id) => state.creatures.find((creature) => creature.id === id))
+    .some((creature) => creature?.role === 'main' && creature.lifeState === 'living');
+}
+
+/**
+ * A dead valued creature is a real loss, but not a permanent game soft-lock.
+ * The dead individual stays in history; animal holding can register a new main.
+ */
+export function replaceDeadMainCreature(baseAnimalId: string, now = new Date().toISOString()): GameDomainState {
+  const current = domainState.snapshot();
+  if (hasLivingMainCreature(current)) return current;
+
+  const id = nextCreatureId(current, `r03.main.${baseAnimalId}.replacement`);
+  const definition = CONTENT_CATALOG.baseAnimals.find((animal) => animal.id === baseAnimalId);
+  const replacement = blankCreature(id, `Pit ${definition?.name ?? baseAnimalId}`, baseAnimalId, 'main', now);
+  const next = restockMissingTestAnimals({
+    ...current,
+    creatures: [...current.creatures, replacement],
+    mainCreatureIds: [replacement.id],
+  }, now);
+
+  domainState.hydrate(next);
+  const gameplay = gameState.snapshot();
+  gameState.hydrate({
+    ...gameplay,
+    hasBaseAnimal: true,
+    baseAnimalId,
+    currentCreature: null,
+    questStage: gameplay.collectedGenes.length > 0 ? 'splice' : 'collect_genes',
+  });
+  saveGame();
+  return next;
+}
+
 export function ensureR03LabPlaytestState(now = new Date().toISOString()): GameDomainState {
   const current = domainState.snapshot();
   if (current.creatures.length > 0) {
     const bridged = bridgeNewlyRecoveredSources(current, now);
-    if (bridged !== current) {
-      domainState.hydrate(bridged);
+    const restocked = restockMissingTestAnimals(bridged, now);
+    if (restocked !== current) {
+      domainState.hydrate(restocked);
       saveGame();
     }
-    return bridged;
+    return restocked;
   }
   if (!gameState.baseAnimalId) return current;
 
@@ -175,7 +249,7 @@ export function syncLegacyMainCreature(state = domainState.snapshot()): void {
   const main = domainMains.find((creature) => creature.lifeState === 'living' && creature.spliceHistory.length > 0);
   if (!main) {
     if (domainMains.some((creature) => creature.spliceHistory.length > 0)) {
-      gameState.hydrate({ ...gameState.snapshot(), currentCreature: null, questStage: 'splice' });
+      gameState.hydrate({ ...gameState.snapshot(), currentCreature: null, questStage: 'find_animal' });
       saveGame();
     }
     return;
