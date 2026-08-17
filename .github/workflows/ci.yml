@@ -5,7 +5,6 @@ on:
   pull_request:
 permissions:
   contents: read
-  statuses: write
 concurrency:
   group: splicepit-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -15,18 +14,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Publish pending diagnostic status
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: 'pending',
-              context: 'wp0.3g/diagnostic',
-              description: 'Running repository verification'
-            });
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -63,24 +50,3 @@ jobs:
         run: npm run smoke
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
-  publish-diagnostic-status:
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    needs: [verify, browser-smoke]
-    steps:
-      - name: Publish final diagnostic status
-        uses: actions/github-script@v7
-        env:
-          VERIFY_RESULT: ${{ needs.verify.result }}
-          SMOKE_RESULT: ${{ needs.browser-smoke.result }}
-        with:
-          script: |
-            const passed = process.env.VERIFY_RESULT === 'success' && process.env.SMOKE_RESULT === 'success';
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: passed ? 'success' : 'failure',
-              context: 'wp0.3g/diagnostic',
-              description: passed ? 'Full repository verification passed' : `verify=${process.env.VERIFY_RESULT}, smoke=${process.env.SMOKE_RESULT}`
-            });
