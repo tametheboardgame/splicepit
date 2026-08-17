@@ -7,10 +7,11 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
+    "validate:content": "node scripts/validate-content.mjs",
     "test": "node scripts/run-tests.mjs",
     "build": "vite build",
     "smoke": "node scripts/browser-smoke.mjs",
-    "verify": "npm run typecheck && npm test && npm run build"
+    "verify": "npm run typecheck && npm run validate:content && npm test && npm run build"
   },
   "dependencies": {
     "phaser": "3.90.0"

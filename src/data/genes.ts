@@ -3,6 +3,7 @@ import type { GeneDefinition } from '../types.js';
 export const GENES: Record<string, GeneDefinition> = {
   gecko_regeneration: {
     id: 'gecko_regeneration',
+    status: 'prototype',
     name: 'Gecko Regeneration',
     source: 'Gecko',
     description: 'Rapid tissue repair. Unhelpfully enthusiastic about growing things back.',
@@ -12,6 +13,7 @@ export const GENES: Record<string, GeneDefinition> = {
   },
   boar_muscle: {
     id: 'boar_muscle',
+    status: 'prototype',
     name: 'Boar Myofibre',
     source: 'Boar',
     description: 'Dense muscle fibres and a strong suggestion that walls are optional.',
@@ -21,6 +23,7 @@ export const GENES: Record<string, GeneDefinition> = {
   },
   moth_sense: {
     id: 'moth_sense',
+    status: 'prototype',
     name: 'Moth Chemosense',
     source: 'Moth',
     description: 'Fine antennae tuned to movement, pheromones and regrettable laboratory smells.',
@@ -30,6 +33,7 @@ export const GENES: Record<string, GeneDefinition> = {
   },
   toad_hide: {
     id: 'toad_hide',
+    status: 'prototype',
     name: 'Toad Dermal Gland',
     source: 'Toad',
     description: 'Thick glandular skin. Durable, damp and faintly offensive.',

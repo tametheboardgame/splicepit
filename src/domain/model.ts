@@ -1,0 +1,195 @@
+import type {
+  ActionId,
+  BaseAnimalId,
+  CapabilityId,
+  CreatureId,
+  ItemId,
+  LocationId,
+  MaterialLotId,
+  MutationDefinitionId,
+  MutationInstanceId,
+  ProgressionStateId,
+  QuestId,
+  SourcePackageId,
+  SpliceAttemptId,
+} from './ids.js';
+
+export const CONTENT_STATUSES = ['prototype', 'draft', 'canon', 'deprecated'] as const;
+export type ContentStatus = (typeof CONTENT_STATUSES)[number];
+
+export interface ContentDefinition<Id extends string> {
+  id: Id;
+  status: ContentStatus;
+  revision: number;
+  name: string;
+  description: string;
+}
+
+export interface BaseAnimalDefinition extends ContentDefinition<BaseAnimalId> {
+  bodyPlanTags: readonly string[];
+}
+
+export interface SourcePackageDefinition extends ContentDefinition<SourcePackageId> {
+  sourceSpecies: string;
+  biologicalClassTags: readonly string[];
+  potentialCapabilityIds: readonly CapabilityId[];
+  potentialActionIds: readonly ActionId[];
+}
+
+export interface MutationDefinition extends ContentDefinition<MutationDefinitionId> {
+  tags: readonly string[];
+}
+
+export type ArenaEnvironment = 'land' | 'water' | 'air';
+
+export interface CapabilityDefinition extends ContentDefinition<CapabilityId> {
+  environment: ArenaEnvironment | null;
+}
+
+export interface ActionDefinition extends ContentDefinition<ActionId> {
+  requiredCapabilityIds: readonly CapabilityId[];
+}
+
+export interface ItemDefinition extends ContentDefinition<ItemId> {
+  materialSourcePackageId: SourcePackageId | null;
+}
+
+export interface LocationDefinition extends ContentDefinition<LocationId> {
+  linkedLocationIds: readonly LocationId[];
+}
+
+export interface QuestDefinition extends ContentDefinition<QuestId> {
+  startLocationId: LocationId | null;
+  prerequisiteQuestIds: readonly QuestId[];
+  progressionStateIds: readonly ProgressionStateId[];
+}
+
+export interface ProgressionStateDefinition extends ContentDefinition<ProgressionStateId> {}
+
+export interface DomainContentCatalog {
+  baseAnimals: readonly BaseAnimalDefinition[];
+  sourcePackages: readonly SourcePackageDefinition[];
+  mutations: readonly MutationDefinition[];
+  capabilities: readonly CapabilityDefinition[];
+  actions: readonly ActionDefinition[];
+  items: readonly ItemDefinition[];
+  locations: readonly LocationDefinition[];
+  quests: readonly QuestDefinition[];
+  progressionStates: readonly ProgressionStateDefinition[];
+}
+
+export const SPLICE_OUTCOME_BANDS = [
+  'clean_rejection',
+  'damaging_failure',
+  'partial_expression',
+  'unstable_viable',
+  'normal_success',
+  'mutated_success',
+  'exceptional_synergy',
+  'catastrophic_result',
+] as const;
+export type SpliceOutcomeBand = (typeof SPLICE_OUTCOME_BANDS)[number];
+
+export interface SpliceExpressionRecord {
+  sourcePackageId: SourcePackageId;
+  capabilityIds: readonly CapabilityId[];
+  actionIds: readonly ActionId[];
+  functional: boolean;
+  notes: string;
+}
+
+export interface SpliceAttemptRecord {
+  id: SpliceAttemptId;
+  sequence: number;
+  attemptedAt: string;
+  sourcePackageIds: readonly SourcePackageId[];
+  consumedMaterialLotIds: readonly MaterialLotId[];
+  outcomeBand: SpliceOutcomeBand;
+  expressions: readonly SpliceExpressionRecord[];
+}
+
+export interface MutationInstance {
+  id: MutationInstanceId;
+  definitionId: MutationDefinitionId;
+  acquiredFromSpliceAttemptId: SpliceAttemptId | null;
+  recordedAt: string;
+}
+
+export interface InjuryRecord {
+  id: string;
+  recordedAt: string;
+  status: 'active' | 'recovering' | 'healed' | 'permanent';
+  notes: string;
+}
+
+export interface TrainingRecord {
+  id: string;
+  recordedAt: string;
+  capabilityId: CapabilityId | null;
+  notes: string;
+}
+
+export interface ArenaEnvironmentState {
+  functional: boolean;
+  supportingCapabilityIds: readonly CapabilityId[];
+}
+
+export interface ArenaCapabilities {
+  land: ArenaEnvironmentState;
+  water: ArenaEnvironmentState;
+  air: ArenaEnvironmentState;
+}
+
+export interface CreatureState {
+  id: CreatureId;
+  name: string;
+  baseAnimalId: BaseAnimalId;
+  role: 'main' | 'test';
+  createdAt: string;
+  estimatedAgeDays: number | null;
+  phenotypeSeed: string;
+  spliceHistory: readonly SpliceAttemptRecord[];
+  mutations: readonly MutationInstance[];
+  injuries: readonly InjuryRecord[];
+  training: readonly TrainingRecord[];
+  capabilityIds: readonly CapabilityId[];
+  arenaCapabilities: ArenaCapabilities;
+}
+
+export interface MaterialLot {
+  id: MaterialLotId;
+  sourcePackageId: SourcePackageId;
+  quantity: number;
+  acquiredAt: string;
+  notes: string;
+}
+
+export interface ResearchKnowledgeRecord {
+  sourcePackageId: SourcePackageId;
+  baseAnimalId: BaseAnimalId | null;
+  observationCount: number;
+  notes: readonly string[];
+}
+
+export interface DomainProgressionState {
+  activeStateIds: readonly ProgressionStateId[];
+  activeQuestIds: readonly QuestId[];
+  completedQuestIds: readonly QuestId[];
+}
+
+export interface GameDomainState {
+  creatures: readonly CreatureState[];
+  mainCreatureIds: readonly CreatureId[];
+  testAnimalIds: readonly CreatureId[];
+  materialStock: readonly MaterialLot[];
+  researchKnowledge: readonly ResearchKnowledgeRecord[];
+  progression: DomainProgressionState;
+}
+
+export function emptyArenaCapabilities(): ArenaCapabilities {
+  return {
+    land: { functional: false, supportingCapabilityIds: [] },
+    water: { functional: false, supportingCapabilityIds: [] },
+    air: { functional: false, supportingCapabilityIds: [] },
+  };
+}
