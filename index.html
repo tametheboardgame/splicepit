@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#181512" />
-  <meta name="description" content="SplicePit - a pastoral biotech creature-splicing RPG prototype." />
+  <meta name="theme-color" content="#79d4e8" />
+  <meta name="description" content="SplicePit - a colourful pastoral biotech creature-splicing RPG prototype." />
   <title>SplicePit</title>
   <link rel="stylesheet" href="./styles.css" />
   <style>
@@ -15,28 +15,28 @@
       display: grid;
       place-items: center;
       padding: 2rem;
-      background: #0c0c0b;
-      color: #a79d88;
-      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #79d4e8;
+      color: #392c35;
+      font: 800 12px/1.5 Verdana, "Trebuchet MS", Arial, sans-serif;
       letter-spacing: .08em;
       text-align: center;
       text-transform: uppercase;
       pointer-events: none;
     }
-    #game-status[data-error="true"] { color: #d98b6d; }
+    #game-status[data-error="true"] { color: #9d2447; background: #ffd39d; }
   </style>
 </head>
 <body>
   <main id="shell">
     <header class="site-header">
       <div>
-        <span class="eyebrow">FIT PIT LICENCE: SUSPENDED</span>
+        <span class="eyebrow">FIT PIT LICENCE: EXTREMELY QUESTIONABLE</span>
         <h1>SplicePit</h1>
       </div>
-      <div class="build-mark">WP0.3H / FEEDBACK PASS 1</div>
+      <div class="build-mark">WP0.4C / VISUAL MUTATION PASS</div>
     </header>
     <section id="game-wrap" aria-label="SplicePit game">
-      <div id="game"><div id="game-status" role="status" aria-live="polite">STARTING SPLICEPIT LAB PREVIEW…</div></div>
+      <div id="game"><div id="game-status" role="status" aria-live="polite">WAKING THE SPECIMENS…</div></div>
       <noscript>SplicePit needs JavaScript enabled.</noscript>
     </section>
     <footer>
@@ -66,7 +66,9 @@
 
       const monitor = window.setInterval(() => {
         const game = globalThis.__SPLICEPIT_GAME__;
-        if (game?.scene?.isActive?.('Title')) {
+        const titleActive = game?.scene?.isActive?.('Title');
+        const playtestActive = game?.scene?.isActive?.('CombatPlaytest');
+        if (titleActive || playtestActive) {
           finished = true;
           window.clearInterval(monitor);
           status?.remove();
@@ -78,7 +80,7 @@
           if (elapsed > 1800) {
             recoveryAttempted = true;
             try {
-              game.scene.start('Title');
+              game.scene.start(new URLSearchParams(location.search).get('combatPlaytest') === '1' ? 'CombatPlaytest' : 'Title');
             } catch (error) {
               showFailure(`Recovery failed: ${error instanceof Error ? error.message : String(error)}`);
             }
@@ -94,7 +96,7 @@
         const canvasCount = document.querySelectorAll('#game canvas').length;
         const booted = Boolean(game?.isBooted);
         const running = Boolean(game?.loop?.running);
-        showFailure(`Title did not start. game=${Boolean(game)} booted=${booted} loop=${running} active=${active} known=${known} canvas=${canvasCount} visibility=${document.visibilityState}.`);
+        showFailure(`Expected scene did not start. game=${Boolean(game)} booted=${booted} loop=${running} active=${active} known=${known} canvas=${canvasCount} visibility=${document.visibilityState}.`);
       }, 6000);
     })();
   </script>
