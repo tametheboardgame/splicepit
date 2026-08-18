@@ -3,7 +3,7 @@ import { CONTENT_CATALOG } from '../content/contentCatalog.js';
 import { deriveCreatureBiology } from '../domain/creatureBiology.js';
 import { ids, type CreatureId, type SourcePackageId } from '../domain/ids.js';
 import { emptyArenaCapabilities, type CreatureState, type GameDomainState, type MaterialLot } from '../domain/model.js';
-import { PROTOTYPE_GENERAL_REAGENT_ID } from '../domain/research.js';
+import { availableMaterialQuantity, PROTOTYPE_GENERAL_REAGENT_ID } from '../domain/research.js';
 import { domainState } from '../state/DomainState.js';
 import { gameState } from '../state/GameState.js';
 import type { CreatureRecord, CreatureStats } from '../types.js';
@@ -84,6 +84,18 @@ function prototypeMaterialLot(sourcePackageId: SourcePackageId, acquiredAt: stri
   };
 }
 
+function mainCommitRecoveryLot(sourcePackageId: SourcePackageId, acquiredAt: string): MaterialLot {
+  return {
+    id: ids.materialLot(`r03.lot.${sourcePackageId}.wp04c-main-reserve`),
+    sourcePackageId,
+    quantity: 1,
+    acquiredAt,
+    notes: 'WP0.4C one-time recovery dose for saves that spent every prototype unit on disposable tests before the main-reserve rule existed.',
+    quality: 0.82,
+    acquisitionChannel: 'prototype',
+  };
+}
+
 function sourceWasAlreadyIntroduced(state: GameDomainState, sourcePackageId: SourcePackageId): boolean {
   return state.materialStock.some((lot) => lot.sourcePackageId === sourcePackageId)
     || state.experimentHistory.some((observation) => observation.sourcePackageId === sourcePackageId)
@@ -103,17 +115,22 @@ function bridgeNewlyRecoveredSources(state: GameDomainState, now: string): GameD
 }
 
 /**
- * Common test animals are replaceable playtest stock. Dead test subjects remain
- * in creature/experiment history, but the holding area supplies one fresh living
- * Rabbit, Goat and Pig whenever a species has been exhausted. This prevents the
- * experimentation loop from soft-locking after an unlucky lethal test.
+ * Common test animals are disposable experimental stock. One individual is used
+ * for one bench experiment, then removed from the active roster while its full
+ * creature/experiment history remains persistent. Animal holding supplies a
+ * fresh clean Rabbit, Goat and Pig whenever an active species slot is missing.
  */
 export function restockMissingTestAnimals(state: GameDomainState, now: string): GameDomainState {
   let next = state;
   for (const baseAnimalId of OPENING_BASE_ANIMAL_IDS) {
     const hasLivingTest = next.testAnimalIds
       .map((id) => next.creatures.find((creature) => creature.id === id))
-      .some((creature) => creature?.role === 'test' && creature.baseAnimalId === baseAnimalId && creature.lifeState === 'living');
+      .some((creature) => (
+        creature?.role === 'test'
+        && creature.baseAnimalId === baseAnimalId
+        && creature.lifeState === 'living'
+        && creature.spliceHistory.length === 0
+      ));
     if (hasLivingTest) continue;
 
     const id = nextCreatureId(next, `r03.test.${baseAnimalId}.replacement`);
@@ -126,6 +143,62 @@ export function restockMissingTestAnimals(state: GameDomainState, now: string): 
     };
   }
   return next;
+}
+
+/**
+ * Migrates old prototype saves that left used/dead disposable subjects in the
+ * active roster. Used individuals remain in creature/history data but cannot be
+ * selected as clean test stock again.
+ */
+export function normaliseDisposableTestRoster(state: GameDomainState, now: string): GameDomainState {
+  const cleanActiveIds = state.testAnimalIds.filter((id) => {
+    const creature = state.creatures.find((candidate) => candidate.id === id);
+    return Boolean(
+      creature
+      && creature.role === 'test'
+      && creature.lifeState === 'living'
+      && creature.spliceHistory.length === 0,
+    );
+  });
+  const pruned = cleanActiveIds.length === state.testAnimalIds.length
+    ? state
+    : { ...state, testAnimalIds: cleanActiveIds };
+  return restockMissingTestAnimals(pruned, now);
+}
+
+export function retireDisposableTestSubject(state: GameDomainState, creatureId: CreatureId, now: string): GameDomainState {
+  const subject = state.creatures.find((creature) => creature.id === creatureId);
+  if (!subject || subject.role !== 'test') return state;
+  return normaliseDisposableTestRoster({
+    ...state,
+    testAnimalIds: state.testAnimalIds.filter((id) => id !== creatureId),
+  }, now);
+}
+
+/**
+ * WP0.4C recovery bridge. Earlier playtest UI allowed disposable tests to spend
+ * all eight source units, leaving a correctly researched main splice impossible.
+ * If that exact legacy condition is detected, restore one and only one physical
+ * dose. Once a main attempt is recorded, no replacement dose is ever generated.
+ */
+export function restoreMainCommitReserve(state: GameDomainState, now: string): GameDomainState {
+  const testedSources = [...new Set(state.experimentHistory
+    .filter((observation) => observation.subjectRole === 'test')
+    .map((observation) => observation.sourcePackageId))];
+  const recoverable = testedSources.filter((sourcePackageId) => {
+    const mainAttemptExists = state.experimentHistory.some((observation) => (
+      observation.sourcePackageId === sourcePackageId && observation.subjectRole === 'main'
+    ));
+    return !mainAttemptExists && availableMaterialQuantity(state, sourcePackageId) === 0;
+  });
+  if (recoverable.length === 0) return state;
+  return {
+    ...state,
+    materialStock: [
+      ...state.materialStock,
+      ...recoverable.map((sourcePackageId) => mainCommitRecoveryLot(sourcePackageId, now)),
+    ],
+  };
 }
 
 export function hasLivingMainCreature(state = domainState.snapshot()): boolean {
@@ -145,7 +218,7 @@ export function replaceDeadMainCreature(baseAnimalId: string, now = new Date().t
   const id = nextCreatureId(current, `r03.main.${baseAnimalId}.replacement`);
   const definition = CONTENT_CATALOG.baseAnimals.find((animal) => animal.id === baseAnimalId);
   const replacement = blankCreature(id, `Pit ${definition?.name ?? baseAnimalId}`, baseAnimalId, 'main', now);
-  const next = restockMissingTestAnimals({
+  const next = normaliseDisposableTestRoster({
     ...current,
     creatures: [...current.creatures, replacement],
     mainCreatureIds: [replacement.id],
@@ -168,12 +241,13 @@ export function ensureR03LabPlaytestState(now = new Date().toISOString()): GameD
   const current = domainState.snapshot();
   if (current.creatures.length > 0) {
     const bridged = bridgeNewlyRecoveredSources(current, now);
-    const restocked = restockMissingTestAnimals(bridged, now);
-    if (restocked !== current) {
-      domainState.hydrate(restocked);
+    const normalised = normaliseDisposableTestRoster(bridged, now);
+    const repaired = restoreMainCommitReserve(normalised, now);
+    if (repaired !== current) {
+      domainState.hydrate(repaired);
       saveGame();
     }
-    return restocked;
+    return repaired;
   }
   if (!gameState.baseAnimalId) return current;
 
