@@ -50,3 +50,7 @@ jobs:
         run: npm run smoke
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: WP0.4C combat control layout smoke
+        run: npm run smoke:combat-layout
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
