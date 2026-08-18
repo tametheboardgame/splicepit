@@ -1,159 +1,171 @@
 # WP0.4C Visual Direction Reset
 
-**Status:** CANDIDATE — HUMAN GATE PENDING
+**Status:** DIRECTION APPROVED — IN-ENGINE STUDY IMPLEMENTED
 
 **Date:** 18 August 2026
 
 **Authoritative WP contract:** `docs/work-packages/R0_VISUAL_FIRST_REBASE.md`
 
-## Purpose
+## Approved direction
 
-Reset the presentation target before more mechanics are built. This package deliberately does not redesign splicing, combat, world progression, character creation or production assets.
+The visual reset is now explicitly a **top-down pixel-RPG presentation with richer modern detail**, using late-era 2D handheld RPG readability as the structural reference point while remaining an original SplicePit visual language.
 
-The intended read is a small, animated mad-science game with restrained colour, compact characters and creatures, an intimate workshop and biological wrongness concentrated in details. The game world should be the visual subject. Interface should support it rather than occupy it.
+The target is not painterly concept art, not an isometric action RPG and not a giant-card interface. The intended game view is small, readable and tile-based: the player moves through compact authored environments, characters and creatures are expressive small sprites, and SplicePit atmosphere comes from the materials, props, lighting, creatures and biological details embedded in those spaces.
+
+The approved mood setter remains the SplicePit logo/splash identity: blackened metal, biotech machinery, acid/specimen green, hot amber/orange industrial light, restrained horror and visibly questionable genetic engineering.
 
 ## Visual thesis
 
-- Cartoony and animated rather than painterly or photoreal.
-- Small, deliberate silhouettes rather than giant illustrated subjects.
-- Intimate top-down/three-quarter spaces rather than broad display-case compositions.
-- Dark-neutral environment values with muted material colour.
-- Strong colour reserved for lamps, fluids, alerts, wounds, specimens and other meaningful accents.
-- Workshop first: metal, aged wood, ceramic, glass, rubber tubing, cages, notes, improvised repairs and practical lighting.
-- Biological strangeness appears in creatures, jars, discarded tissue, asymmetry and machinery interfaces instead of turning every surface into horror decoration.
-- Animation should make the room feel occupied and unstable through small loops, not constant screen-wide motion.
+- Orthographic/top-down exploration, approximately the readability and scale of a polished 2D handheld RPG.
+- Pixel art as the core rendering language, with more environmental detail, animation, lighting accents and creature complexity than the classic reference point.
+- Compact player and NPC sprites rather than large illustrated characters during exploration.
+- Creatures remain identifiable at small scale but may become larger and more detailed in battle or inspection views.
+- Tile-built rooms and streets should feel dense and authored, not empty rectangular prototype boxes.
+- The world is the interface wherever practical: tanks, cages, market stalls, benches, signs and machinery communicate purpose visually.
+- UI is small and contextual during exploration. Larger panels appear only when a task genuinely needs them.
+- Green biotech light and orange industrial light are accents, not blanket colour washes.
+- Biological wrongness is selective and readable: grafts, unsuitable limbs, fluid tanks, tissue samples, cages, stains, mutated silhouettes and machinery designed around living subjects.
 
-## Reference-board translation into original principles
+## Reference translation
 
-This direction uses references only as evidence for qualities, not as assets or compositions to copy.
+The late-era handheld RPG reference is being translated into original design principles rather than copied literally.
 
-- Animated adventure readability becomes clean silhouettes, simplified material groups and strong foreground/background separation.
-- Small-sprite charm becomes compact characters with readable posture and a few decisive shape cues at actual game size.
-- Mad-science atmosphere becomes functional machinery with implausible biological attachments, specimen light, patched cables and improvised containment.
-- Darker mood becomes low overall saturation and value-controlled rooms, not a return to black terminal panels.
-- Horror influence becomes selective biological contradiction: something twitching in a jar, an extra eye, an unsuitable limb, a stain where it should not be. The room itself remains usable and legible.
-- Polished game feel becomes restrained ambient animation, deliberate staging, compact prompts and consistent visual hierarchy rather than large decorative cards.
+- Clear tile logic → immediately understandable navigation and collision.
+- Small character sprites → the player can read a populated room without the camera needing to pull far back.
+- Distinct building/prop silhouettes → workshop stations and market traders can be recognised before reading text.
+- Strong scene-to-scene identity → workshop, underground market, streets and battle spaces can share one visual language without looking interchangeable.
+- Simple interaction language → a small prompt or marker is enough when the environment already communicates what an object is.
+- Battle readability → creatures can be presented larger than exploration sprites with clean status framing and concise action choice.
 
-## Palette families
+The increased-detail layer adds richer metalwork, pipes, stains, wiring, tank contents, machinery, market clutter, ambient animation, creature grafts and more complex battle sprites while preserving the readability of the underlying 2D structure.
 
-The WP0.4C direction study uses these provisional families. Exact production values remain adjustable until the visual lock.
+## Core palette families
 
-- Void / deepest shadow: `#111414`
-- Charred wall: `#1B1F1E`
-- Workshop wall: `#292D2A`
-- Floor neutral: `#242826`
-- Utility metal: `#4A4F49`
-- Highlight metal: `#6F756D`
-- Aged bone / readable light: `#D1C8B5`
-- Muted bone: `#9F9889`
-- Moss utility colour: `#66715A`
-- Deep moss: `#394139`
-- Oxidised copper accent: `#A56849`
-- Deep copper: `#684433`
-- Bruise plum accent: `#70566E`
-- Clinical cyan accent: `#6F989A`
-- Acid/specimen accent: `#A6B96E`
-- Blood/warning accent: `#874744`
-- Warm task light: `#E4B978`
+Exact production values remain tunable, but the direction is now locked around these families:
 
-## Contrast and colour rules
+- Deep background / shadow: `#0D0F0E`
+- Blackened wall: `#1B1F1D`
+- Workshop stone/metal: `#2A2F2B`
+- Neutral floor range: approximately `#34352F` to `#403A32`
+- Utility metal: `#535A52`
+- Metal highlight: `#788074`
+- Dark wood: `#4A3025`
+- Worn wood: `#744936`
+- Copper/rust: `#A6673F`
+- Industrial amber: `#E19A43`
+- Deep biotech green: `#355530`
+- Main biotech green: `#77A94F`
+- Bright specimen green: `#B3D867`
+- Fluid green: `#7BC84A`
+- Clinical cyan: `#619A94`
+- Bruise/plum: `#745472`
+- Blood/warning red: `#8D3D37`
+- Bone/skin/light neutral: warm cream and tan families rather than pure white.
 
-- Most of the screen should sit in dark neutral, low-saturation values.
-- Accent colours should normally occupy a small minority of the visible frame.
-- Do not colour whole panels, floors or walls with accent hues simply to make the scene lively.
-- Warm task lighting and cool specimen lighting may overlap, but neither should wash the whole room.
-- Important text should target WCAG-style readable contrast against its immediate backing surface even though it is rendered inside the game canvas.
-- State must never be communicated by colour alone.
-- Red/blood colour is for biological consequence, danger or failed containment, not general decoration.
-- Acid green is rare enough to feel meaningful when it appears.
+## Colour and contrast rules
 
-## Proposed camera and world scale
+- Most exploration pixels should be neutral/dark material colours.
+- Bright green is primarily living biotech, active machinery, specimen fluid or important system feedback.
+- Amber/orange is primarily heat, lamps, market signage and industrial activity.
+- Red is primarily danger, blood, failure or hostile battle state.
+- A room should still read correctly if its accent lighting is mentally removed.
+- Characters and interactable silhouettes must remain separable from floors at actual gameplay size.
+- State must not rely on colour alone.
+- Avoid screen-wide bloom, fog or gradients that undermine pixel readability.
 
-These are WP0.4C planning values, not production locks.
+## Camera and tile scale
 
-- Retain the existing `960 × 540` logical game canvas for the direction study.
-- Use a provisional `24 px` environmental planning grid rather than treating the current `48 px` tile as the visual scale target.
-- At `24 px`, the camera sees roughly 40 columns by 22.5 rows, producing a denser and more intimate room without making the player tiny.
-- Use mostly fixed or gently following top-down/three-quarter framing. Avoid dramatic zoom changes as a substitute for composition.
-- Player proxy target: roughly `20–26 px` tall at the logical resolution.
-- Common-creature proxy target: roughly `18–32 px` depending on species and posture.
-- Large-creature proxy target: roughly `34–48 px`, used sparingly so size remains meaningful.
-- Furniture should use multiple planning cells where required; the grid is for proportion and placement, not a requirement that every object visibly tile.
-- WP0.4E owns the final player/creature sprite metric and rendering decision.
+WP0.4C now proposes the following baseline for subsequent visual WPs:
 
-## UI density and spacing target
+- Existing browser logical canvas remains `960 × 540` during the transition.
+- Exploration composition uses a provisional `24 px` world planning grid.
+- Final production may render a lower internal pixel resolution and upscale by an integer factor once WP0.4E proves the sprite pipeline.
+- Camera remains orthographic/top-down for ordinary exploration.
+- No isometric perspective for the main game world.
+- No fake 3D perspective that makes tile navigation ambiguous.
+- Small vertical overlap, foreground props and lighting can provide a modest 2.5D sense of depth without changing the navigation plane.
 
-WP0.4D will define the component style. WP0.4C only sets the density target.
+## Sprite scale target
 
-- Persistent HUD should use approximately 0–8% of the viewport in ordinary workshop exploration.
-- Contextual information should appear close to the relevant object or edge rather than opening a large central card by default.
-- Ordinary contextual prompts should normally be one or two short lines.
-- Temporary panels should normally remain below roughly one third of the viewport width unless the task genuinely requires a larger surface.
-- Prefer 8 / 12 / 16 px internal spacing rhythms, with 24 px reserved for major separation.
-- Preserve clear negative space around the playable world. Do not fill unused space with decorative boxes.
-- No giant hero cards, screen-wide sticker panels or oversized illustrated buttons.
-- World content should remain visible behind most transient UI unless focus or accessibility requires otherwise.
+Provisional exploration targets:
 
-## Workshop mood and composition
+- Player/NPC: roughly `24–32 px` tall before any integer display scaling.
+- Small/common creature: roughly `20–36 px` depending on body plan.
+- Large exploration creature: roughly `36–56 px`, used when physical size matters.
+- Battle creature: deliberately larger dedicated sprite/presentation, not merely the exploration sprite magnified.
 
-The prototype scene at `?visualDirection=1` is a composition study, not the WP0.4G final workshop.
+WP0.4E owns the final sprite dimensions, direction count, animation frames and production asset format.
 
-The study uses four functional clusters:
+## UI density target
 
-1. Specimen wall: cool light, glass containment and the clearest concentrated biological oddities.
-2. Central operating island: the visual centre, lit warmly, large enough to read but physically modest inside the room.
-3. Machinery cluster: mostly neutral equipment with tiny status accents, patched lines and practical utility.
-4. Holding pens / exit: darker secondary spaces that imply future movement and creature handling without implementing those systems.
+- Exploration HUD should remain minimal, normally under roughly 8% of the visible play area.
+- Location/object prompts should use one short title and one short action line where possible.
+- Menus should resemble compact game interfaces, not web cards.
+- Battle can temporarily dedicate more screen area to status and actions because combat is itself the current task.
+- Inventory, creature summary and splicing interfaces may use larger dedicated screens, but should preserve pixel-art framing, compact spacing and the same material/palette language.
+- Avoid huge headers, oversized title text inside gameplay, cream sticker panels and decorative empty UI chrome.
 
-The player and one common creature are represented by intentionally primitive scale proxies. Their purpose is to test scene proportion only. Final sprite shape language belongs to WP0.4E.
+## In-engine visual sampler
 
-Ambient movement is limited to specimen glow, bubbles and one warning pulse. The goal is a room that feels alive without looking like every prop is demanding attention.
+`?visualDirection=1` now contains three switchable views rendered directly by Phaser rather than as concept art.
 
-## Explicitly rejected WP0.4C-v1 traits
+### 1. Workshop
 
-The superseded bright visual experiment remains forensic evidence only. The following traits must not creep back into the new direction:
+- True top-down/tile-based composition.
+- Compact player sprite at gameplay scale.
+- Small mutated creature on the central splice platform.
+- Specimen tanks, test cages, benches, chemistry stock, control machinery, drains and market exit.
+- Sparse contextual prompt rather than large interface panels.
+- Biotech green and industrial amber limited to meaningful objects.
 
-- Bright pastoral sky-and-grass presentation as the primary SplicePit identity.
-- Blanket high saturation across the world or browser shell.
-- Cream sticker/card UI as the dominant framing device.
-- Thick plum outlines around most interface surfaces.
-- Oversized hero art, giant titles or giant illustrated UI cards competing with the playable space.
-- Colourful focus states everywhere simply because the prototype can support them.
-- Treating old scenes as visually solved by applying a global colour remap.
-- Cheerful/funny surface treatment dominating the workshop mood.
-- Making every screen look equally colourful regardless of narrative or functional context.
-- Preserving rejected layout or interaction solely because code already exists for it.
+### 2. Underground market
 
-The reset also rejects the opposite over-correction: returning to a black terminal aesthetic or coating every surface in gore. Restraint is part of the direction.
+- Same tile scale and player sprite language as the workshop.
+- Dense stalls around a navigable centre rather than a wide cinematic bazaar.
+- Genes, augments, live stock, mutagen and questionable biological goods represented as physical stalls and props.
+- Multiple small NPC sprites establish the target population density.
+- Sewer/fluid channels and industrial construction keep the area visually related to the wider SplicePit world.
 
-## Prototype implementation
+### 3. Battle
 
-- `src/scenes/VisualDirectionScene.ts` provides the isolated workshop treatment.
-- `src/scenes/BootScene.ts` routes to it only when `visualDirection=1` is present in the URL.
-- Normal Title → Intro → Lab → Splice → Battle behaviour remains the default path so technical smoke coverage is not repurposed into a subjective visual test.
-- Press Enter, Space or click inside the direction study to continue into the existing prototype for comparison.
+- A dedicated 2D battle presentation rather than an isometric arena.
+- Creatures use larger battle sprites so grafts and body construction matter visually.
+- Status framing is compact and readable.
+- Action choice is contained in a small lower command area.
+- Industrial spectators and arena construction retain the SplicePit setting while keeping the creatures as the subject.
 
-## Acceptance review
+Use `1`, `2`, `3` or Left/Right to switch views. Escape returns to the inherited prototype.
 
-Human approval should answer these questions before WP0.4D begins:
+## Explicitly rejected directions
 
-1. Does the smaller world scale feel materially closer to the intended game?
-2. Is the darker controlled palette restrained without becoming muddy or terminal-like?
-3. Does the workshop feel like mad science rather than pastoral fantasy or generic horror?
-4. Is colour localised enough that specimens, warnings and biological details matter?
-5. Does the composition leave the world dominant rather than the interface?
-6. Is the biological weirdness present but sufficiently selective?
+The following must not return unless explicitly reconsidered:
 
-If the answer is broadly yes, WP0.4D can define the interface system inside this direction. If not, WP0.4C should iterate rather than carrying uncertainty into later visual WPs.
+- Painterly/concept-art gameplay presentation.
+- Diablo-like/isometric action-RPG camera.
+- Photoreal or pre-rendered-looking environments pretending to be gameplay.
+- Giant rooms where the player is a tiny unreadable figure.
+- Giant illustrated cards dominating the game world.
+- Bright pastoral sky/grass identity as the default SplicePit look.
+- Blanket high saturation.
+- Cream sticker/card interface framing.
+- Thick plum outlines around most UI.
+- Black terminal-style prototype presentation.
+- Global colour remapping presented as a substitute for actual art direction.
+- Gore covering every surface merely to make the game feel mature.
 
 ## Save/schema impact
 
-None. WP0.4C introduces no save fields, migration, gameplay state or domain rule changes.
+None. WP0.4C changes presentation only and introduces no save data, migrations, gameplay rules or domain-state changes.
 
-## Deliberately unresolved for later WPs
+## Rendering impact
 
-- Typography and final interface components: WP0.4D.
-- Pixel/vector/raster choice, sprite proportions, directions and animation states: WP0.4E.
-- Character creation choices and persistence: WP0.4F.
-- Final workshop layout, navigation and interactions: WP0.4G.
-- Production art and animation pipeline: R0.7.
+The branch now enables Phaser pixel-art rendering and nearest-neighbour canvas scaling so the approved direction can be assessed without smoothing the intended hard edges.
+
+## Handoff to later WPs
+
+- WP0.4D: formalise the compact pixel UI language shown provisionally in the sampler.
+- WP0.4E: build the actual player/creature sprite pipeline and representative production-quality sprites.
+- WP0.4F: character creation using that sprite pipeline.
+- WP0.4G: replace the workshop sampler with the real navigable workshop scene.
+- WP0.4H–I: rebuild the opening and integrate the first-ten-minutes presentation.
+- WP0.4J: final visual lock before mechanic redesign resumes.
