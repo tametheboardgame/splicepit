@@ -60,7 +60,6 @@ export class InterfaceStyleScene extends Phaser.Scene {
     g.fillStyle(0x535a52, 1);
     g.fillRect(0, 101, GAME_WIDTH, 4);
 
-    // Workbench and tank silhouettes keep the UI grounded in the world.
     g.fillStyle(0x4a3025, 1);
     g.fillRect(64, 142, 235, 50);
     g.fillStyle(0x744936, 1);
@@ -86,7 +85,6 @@ export class InterfaceStyleScene extends Phaser.Scene {
     g.fillCircle(744, 176, 8);
     g.fillRect(739, 184, 10, 25);
 
-    // Player proxy.
     g.fillStyle(0x0b0d0c, 1);
     g.fillCircle(465, 259, 10);
     g.fillStyle(0xc98e69, 1);
@@ -96,7 +94,6 @@ export class InterfaceStyleScene extends Phaser.Scene {
     g.fillStyle(UI_COLOURS.greenBright, 0.8);
     g.fillRect(461, 263, 8, 3);
 
-    // Splice bench proxy.
     g.fillStyle(0x151917, 1);
     g.fillRect(372, 152, 188, 72);
     g.lineStyle(2, 0x535a52, 1);
@@ -152,7 +149,6 @@ export class InterfaceStyleScene extends Phaser.Scene {
     const dialogue = createDialogueBox(this, 30, 384, 610, 112);
     dialogue.show('MARA // GENE TRADER', 'That sample is alive enough. Whether it stays that way after the splice is your problem.');
     dialogue.setPrompt('E  Continue');
-    (dialogue as unknown as { __wp04d?: boolean }).__wp04d = true;
     this.registry.set('wp04d-dialogue', dialogue);
   }
 
@@ -188,7 +184,7 @@ export class InterfaceStyleScene extends Phaser.Scene {
   }
 
   private toggleTooltip(): void {
-    const tooltip = this.children.getByName('wp04d-tooltip');
+    const tooltip = this.children.getByName('wp04d-tooltip') as Phaser.GameObjects.Container | null;
     if (!tooltip) return;
     this.tooltipVisible = !this.tooltipVisible;
     tooltip.setVisible(this.tooltipVisible);
