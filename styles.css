@@ -56,7 +56,7 @@ body::after {
 }
 
 #shell {
-  width: min(1240px, 150dvh, 100%);
+  width: min(1240px, 134dvh, 100%);
   margin: 0 auto;
   padding: clamp(8px, 1.7dvh, 18px);
 }
@@ -140,7 +140,7 @@ footer span {
 }
 
 @media (max-height: 760px) {
-  #shell { width: min(1220px, 142dvh, 100%); padding-block: 7px; }
+  #shell { width: min(1220px, 132dvh, 100%); padding-block: 7px; }
   .site-header { margin-bottom: 5px; }
   h1 { font-size: clamp(2rem, 6dvh, 3.2rem); }
   .eyebrow { margin-bottom: 4px; padding-block: 3px; }
