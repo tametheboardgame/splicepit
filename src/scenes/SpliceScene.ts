@@ -21,6 +21,7 @@ import {
   nextLabOperationIds,
   persistLabDomainState,
   replaceDeadMainCreature,
+  retireDisposableTestSubject,
   syncLegacyMainCreature,
 } from '../systems/labPlaytestSystem.js';
 import { addNoiseLines, wrappedText } from '../ui/helpers.js';
@@ -67,7 +68,7 @@ export class SpliceScene extends Phaser.Scene {
     this.lastResult = null;
     this.selectedSubjectId = state.testAnimalIds
       .map((id) => state.creatures.find((creature) => creature.id === id))
-      .find((creature) => creature?.lifeState === 'living')?.id
+      .find((creature) => creature?.lifeState === 'living' && creature.spliceHistory.length === 0)?.id
       ?? state.mainCreatureIds[0]
       ?? null;
     this.selectedSourceId = sourceIdsFor(state)[0] ?? null;
@@ -99,10 +100,7 @@ export class SpliceScene extends Phaser.Scene {
     subjects.forEach((subject, index) => {
       const label = `${subject.role === 'main' ? t('splice.mainTag') : t('splice.testTag')} ${subject.name}`;
       controls.push(addButton(this, 155, 215 + index * 42, 215, label, () => {
-        this.selectedSubjectId = subject.id;
-        this.confirmArmed = false;
-        this.lastResult = null;
-        this.refresh();
+        this.selectSubjectSlot(subject.role, subject.baseAnimalId);
       }, { accent: subject.role === 'main' ? PALETTE.rust : PALETTE.moss }));
     });
 
@@ -139,6 +137,23 @@ export class SpliceScene extends Phaser.Scene {
     g.fillStyle(PALETTE.paper, 0.72); g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
     g.lineStyle(7, PALETTE.bruise, 0.16); g.lineBetween(540, 0, 610, GAME_HEIGHT);
     g.lineStyle(3, PALETTE.rustDark, 0.18); g.lineBetween(250, 0, 320, GAME_HEIGHT);
+  }
+
+  private selectSubjectSlot(role: 'main' | 'test', baseAnimalId: string): void {
+    const state = domainState.snapshot();
+    const idsForRole = role === 'main' ? state.mainCreatureIds : state.testAnimalIds;
+    const current = idsForRole
+      .map((id) => state.creatures.find((creature) => creature.id === id))
+      .find((creature) => (
+        creature?.role === role
+        && creature.baseAnimalId === baseAnimalId
+        && creature.lifeState === 'living'
+        && (role === 'main' || creature.spliceHistory.length === 0)
+      ));
+    this.selectedSubjectId = current?.id ?? null;
+    this.confirmArmed = false;
+    this.lastResult = null;
+    this.refresh();
   }
 
   private subject(state: GameDomainState): CreatureState | null {
@@ -216,9 +231,11 @@ export class SpliceScene extends Phaser.Scene {
           return `${definition?.name ?? expression.expressionId}${expression.functional ? ' [FUNCTIONAL]' : ' [NON-FUNCTIONAL]'}`;
         })
         .join(', ') || t('splice.noneEstablished');
-      const replacementNote = this.lastResult.creature.lifeState === 'deceased'
-        ? `\n${this.lastResult.observation.subjectRole === 'test' ? t('splice.testReplacementReady') : t('splice.mainReplacementReady')}`
-        : '';
+      const replacementNote = this.lastResult.observation.subjectRole === 'test'
+        ? `\n${t('splice.testReplacementReady')}`
+        : this.lastResult.creature.lifeState === 'deceased'
+          ? `\n${t('splice.mainReplacementReady')}`
+          : '';
       this.outcomeText.setText(`${t('splice.outcomeBody', {
         outcome: humanise(this.lastResult.resolution.outcomeBand),
         established: compact(establishedFull, 105),
@@ -230,6 +247,10 @@ export class SpliceScene extends Phaser.Scene {
       })}${replacementNote}`);
     } else if (subject?.role === 'main' && !testEvidence) {
       this.outcomeText.setText(t('splice.mainNeedsTest'));
+    } else if (subject?.role === 'test' && subject.spliceHistory.length > 0) {
+      this.outcomeText.setText(t('splice.testSubjectSpent'));
+    } else if (subject?.role === 'test' && testEvidence && (plan?.availableMaterial ?? 0) <= 1) {
+      this.outcomeText.setText(t('splice.mainDoseReserved'));
     } else if (this.confirmArmed) {
       this.outcomeText.setText(t('splice.irreversibleWarning'));
     } else {
@@ -241,8 +262,10 @@ export class SpliceScene extends Phaser.Scene {
 
     const isMain = subject?.role === 'main';
     const canAttempt = Boolean(plan?.canAttempt);
+    const disposableIsFresh = Boolean(subject?.role === 'test' && subject.spliceHistory.length === 0);
+    const materialAllowsAnotherTest = (plan?.availableMaterial ?? 0) > 1;
     this.testButton.setVisible(Boolean(subject && !isMain));
-    this.testButton.setEnabled(Boolean(subject && !isMain && canAttempt));
+    this.testButton.setEnabled(Boolean(subject && !isMain && canAttempt && disposableIsFresh && materialAllowsAnotherTest));
     this.prepareButton.setVisible(Boolean(subject && isMain && !this.confirmArmed));
     this.prepareButton.setEnabled(Boolean(subject && isMain && !this.confirmArmed && canAttempt && testEvidence));
     this.confirmButton.setVisible(Boolean(subject && isMain && this.confirmArmed));
@@ -253,6 +276,15 @@ export class SpliceScene extends Phaser.Scene {
     const state = domainState.snapshot();
     const subject = this.subject(state);
     if (!subject || !this.selectedSourceId) return;
+    const plan = this.plan(state, subject);
+    if (subject.role === 'test' && subject.spliceHistory.length > 0) {
+      this.outcomeText.setText(t('splice.testSubjectSpent'));
+      return;
+    }
+    if (subject.role === 'test' && (plan?.availableMaterial ?? 0) <= 1) {
+      this.outcomeText.setText(t('splice.mainDoseReserved'));
+      return;
+    }
     if (subject.role === 'main' && !this.hasTestEvidence(state)) {
       this.confirmArmed = false;
       this.outcomeText.setText(t('splice.mainNeedsTest'));
@@ -260,6 +292,7 @@ export class SpliceScene extends Phaser.Scene {
     }
     if (subject.role === 'main' && (!requireMainConfirmation || !this.confirmArmed)) return;
     const operationIds = nextLabOperationIds(state);
+    const attemptedAt = new Date().toISOString();
     try {
       const result = executeLabSplice(state, CONTENT_CATALOG, {
         subjectCreatureId: subject.id,
@@ -267,20 +300,28 @@ export class SpliceScene extends Phaser.Scene {
         attemptId: operationIds.attemptId,
         observationId: operationIds.observationId,
         mutationInstanceId: operationIds.mutationInstanceId,
-        attemptedAt: new Date().toISOString(),
+        attemptedAt,
       }, runtimeRandom);
-      persistLabDomainState(result.state);
 
-      if (subject.role === 'test' && result.creature.lifeState === 'deceased') {
-        const restocked = ensureR03LabPlaytestState();
-        const replacement = restocked.testAnimalIds
-          .map((id) => restocked.creatures.find((creature) => creature.id === id))
-          .find((creature) => creature?.baseAnimalId === subject.baseAnimalId && creature.lifeState === 'living');
+      let persistedState = result.state;
+      if (subject.role === 'test') {
+        persistedState = retireDisposableTestSubject(result.state, subject.id, attemptedAt);
+      }
+      persistLabDomainState(persistedState);
+
+      if (subject.role === 'test') {
+        const replacement = persistedState.testAnimalIds
+          .map((id) => persistedState.creatures.find((creature) => creature.id === id))
+          .find((creature) => (
+            creature?.baseAnimalId === subject.baseAnimalId
+            && creature.lifeState === 'living'
+            && creature.spliceHistory.length === 0
+          ));
         if (replacement) this.selectedSubjectId = replacement.id;
       }
 
       if (subject.role === 'main') {
-        syncLegacyMainCreature(result.state);
+        syncLegacyMainCreature(persistedState);
         if (result.creature.lifeState === 'deceased') {
           const replaced = replaceDeadMainCreature(subject.baseAnimalId);
           this.selectedSubjectId = replaced.mainCreatureIds[0] ?? null;
