@@ -1,65 +1,77 @@
 :root {
-  --ink: #e8dfc8;
-  --muted: #a79d88;
-  --paper: #27221c;
-  --paper-deep: #181512;
-  --moss: #71845c;
-  --bruise: #73516f;
-  --rust: #a0573d;
-  --acid: #b7c86c;
+  --ink: #e3dcc7;
+  --muted: #9b9587;
+  --paper: #1a1e1b;
+  --paper-deep: #0d0f0e;
+  --moss: #77a94f;
+  --bruise: #745472;
+  --rust: #a6673f;
+  --amber: #e19a43;
+  --acid: #b3d867;
+  --metal: #535a52;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: var(--paper-deep); color: var(--ink); }
 body {
   min-height: 100dvh;
   overflow-x: hidden;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   background-image:
-    radial-gradient(circle at 20% 10%, rgba(113,132,92,.12), transparent 28rem),
-    radial-gradient(circle at 85% 85%, rgba(115,81,111,.1), transparent 26rem),
-    repeating-linear-gradient(2deg, rgba(255,255,255,.015) 0 1px, transparent 1px 5px);
+    radial-gradient(circle at 18% 12%, rgba(119,169,79,.07), transparent 26rem),
+    radial-gradient(circle at 84% 82%, rgba(225,154,67,.055), transparent 24rem),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 4px);
 }
 
-/*
- * The Phaser canvas is 16:9, so width is also its height budget. Limiting the
- * shell by viewport height keeps the entire game chrome visible on common
- * 14-inch laptop viewports instead of making the player scroll to the footer.
- */
 #shell {
   width: min(1180px, 145dvh, 100%);
   margin: 0 auto;
-  padding: clamp(8px, 1.7dvh, 18px);
+  padding: clamp(7px, 1.4dvh, 15px);
 }
 .site-header, footer { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
-.site-header { margin-bottom: clamp(6px, 1.1dvh, 12px); }
+.site-header { margin-bottom: clamp(5px, .9dvh, 10px); }
 h1 {
   margin: 0;
-  font-size: clamp(2rem, min(5vw, 7dvh), 4.6rem);
-  line-height: .85;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(1.8rem, min(4.4vw, 6.2dvh), 4rem);
+  line-height: .9;
   letter-spacing: -.045em;
-  font-weight: 500;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 .eyebrow, .build-mark, footer { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; }
-.eyebrow { display: block; color: var(--rust); font-size: .72rem; margin-bottom: 7px; }
-.build-mark { color: var(--muted); font-size: .68rem; text-align: right; }
+.eyebrow { display: block; color: var(--amber); font-size: .68rem; margin-bottom: 5px; }
+.build-mark { color: var(--muted); font-size: .64rem; text-align: right; }
 #game-wrap {
-  position: relative; overflow: hidden; border: 1px solid #5a5144; border-radius: 5px;
-  background: #0c0c0b; box-shadow: 0 24px 80px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.025);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #111411;
+  outline: 1px solid var(--metal);
+  border-radius: 2px;
+  background: #080a09;
+  box-shadow: 0 20px 64px rgba(0,0,0,.55), inset 0 0 0 1px rgba(179,216,103,.04);
 }
 #game { width: 100%; aspect-ratio: 16 / 9; }
 #game canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; }
-footer { padding: clamp(5px, .9dvh, 10px) 2px 0; color: var(--muted); font-size: .65rem; flex-wrap: wrap; }
+footer { padding: clamp(4px, .7dvh, 8px) 2px 0; color: var(--muted); font-size: .61rem; flex-wrap: wrap; }
 
 @media (max-height: 760px) {
-  #shell { width: min(1180px, 140dvh, 100%); padding-block: 7px; }
-  .site-header { margin-bottom: 5px; }
-  h1 { font-size: clamp(2rem, 6dvh, 3.2rem); }
-  .eyebrow { margin-bottom: 4px; }
-  footer { padding-top: 4px; }
+  #shell { width: min(1180px, 142dvh, 100%); padding-block: 5px; }
+  .site-header { margin-bottom: 4px; }
+  h1 { font-size: clamp(1.6rem, 5.4dvh, 2.8rem); }
+  .eyebrow { margin-bottom: 3px; }
+  footer { padding-top: 3px; }
+}
+
+@media (max-height: 620px) {
+  #shell { width: min(1180px, 151dvh, 100%); padding-block: 3px; }
+  .site-header { margin-bottom: 2px; }
+  .site-header h1 { font-size: 1.45rem; }
+  .eyebrow { display: none; }
+  footer { font-size: .55rem; padding-top: 2px; }
 }
 
 @media (max-width: 650px) {
-  #shell { width: 100%; padding: 8px; }
+  #shell { width: 100%; padding: 6px; }
   .site-header { align-items: start; }
   .build-mark { max-width: 120px; }
   footer { gap: 8px 14px; }
