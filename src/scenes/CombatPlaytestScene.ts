@@ -16,8 +16,8 @@ import { ids } from '../domain/ids.js';
 import { emptyArenaCapabilities, type CreatureState, type SpliceExpressionRecord } from '../domain/model.js';
 import { SemanticInput } from '../input/SemanticInput.js';
 import { runtimeRandomFn } from '../runtime/runtimeRandom.js';
-import { addNoiseLines, wrappedText } from '../ui/helpers.js';
-import { addButton, addPanel, FocusMenu, type ButtonControl } from '../ui/primitives.js';
+import { wrappedText } from '../ui/helpers.js';
+import { addButton, FocusMenu, type ButtonControl } from '../ui/primitives.js';
 import { fadeIn, transitionTo } from '../ui/transitions.js';
 
 const PLAYER_ID = 'wp0.4b-player';
@@ -90,10 +90,10 @@ function buildState(): CombatTurnState {
 function actionLabel(action: LegalCombatAction): string {
   const economy = actionEconomyFor(action);
   const extras = [
-    economy.cooldownRounds > 0 ? `CD${economy.cooldownRounds}` : null,
-    economy.setupCost > 0 ? `SET${economy.setupCost}` : null,
-  ].filter(Boolean).join(' ');
-  return `${action.name}  ${economy.metabolicCost}${extras ? `  ${extras}` : ''}`;
+    economy.cooldownRounds > 0 ? `CD ${economy.cooldownRounds}` : null,
+    economy.setupCost > 0 ? `SET ${economy.setupCost}` : null,
+  ].filter(Boolean).join(' · ');
+  return `${action.name} · MET ${economy.metabolicCost}${extras ? ` · ${extras}` : ''}`;
 }
 
 export class CombatPlaytestScene extends Phaser.Scene {
@@ -109,42 +109,100 @@ export class CombatPlaytestScene extends Phaser.Scene {
   constructor() { super('CombatPlaytest'); }
 
   create(): void {
-    this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
+    this.cameras.main.setBackgroundColor(PALETTE.sky);
     fadeIn(this);
-    addNoiseLines(this, 120, 0.06);
     this.state = buildState();
     this.semanticInput = new SemanticInput(this);
 
-    this.add.text(34, 22, 'WP0.4B COMBAT CADENCE PLAYTEST', { ...TEXT.mono, fontSize: '12px', color: '#a0573d' });
-    this.add.text(34, 43, 'Initiative Rounds', { ...TEXT.title, fontSize: '30px', color: '#e8dfc8' });
-    this.add.text(34, 80, 'Choose one action. Both creatures commit, then action speed + biology decides resolution order.', { ...TEXT.body, fontSize: '15px', color: '#a79d88' });
+    this.drawArena();
+    this.add.text(28, 20, 'WP0.4B COMBAT CADENCE PLAYTEST', {
+      ...TEXT.mono,
+      fontSize: '10px',
+      color: '#392c35',
+      backgroundColor: '#d8f64b',
+      padding: { x: 8, y: 5 },
+    }).setRotation(-0.012);
+    this.add.text(28, 49, 'Initiative Rounds', {
+      ...TEXT.title,
+      fontSize: '29px',
+      color: '#fff2bd',
+      stroke: '#392c35',
+      strokeThickness: 6,
+      shadow: { offsetX: 4, offsetY: 4, color: '#ff78ad', blur: 0, fill: true },
+    });
+    this.add.text(29, 89, 'Pick one action. Both creatures commit, then speed + biology decides who actually moves first.', {
+      ...TEXT.body,
+      fontSize: '13px',
+      color: '#392c35',
+      backgroundColor: '#fff2bd',
+      padding: { x: 8, y: 5 },
+    });
 
-    addPanel(this, 24, 116, 300, 452, 0.82);
-    addPanel(this, 342, 116, 594, 178, 0.82);
-    addPanel(this, 342, 310, 594, 258, 0.82);
+    addButton(this, 865, 36, 150, 'Reset spar', () => this.resetSpar(), { accent: PALETTE.candy });
+    addButton(this, 700, 36, 150, 'Back to title', () => this.returnToTitle(), { accent: PALETTE.acid });
+
+    this.roundStatus = this.add.text(480, 132, '', {
+      ...TEXT.mono,
+      fontSize: '11px',
+      color: '#392c35',
+      backgroundColor: '#fff2bd',
+      padding: { x: 8, y: 5 },
+    }).setOrigin(0.5, 0);
+
+    this.playerStatus = wrappedText(this, 92, 248, '', 250, {
+      fontSize: '13px',
+      lineSpacing: 2,
+      color: '#392c35',
+      backgroundColor: '#fff2bd',
+      padding: { x: 9, y: 7 },
+    });
+    this.opponentStatus = wrappedText(this, 688, 248, '', 250, {
+      fontSize: '13px',
+      lineSpacing: 2,
+      color: '#392c35',
+      backgroundColor: '#fff2bd',
+      padding: { x: 9, y: 7 },
+    });
+    this.logText = wrappedText(this, 348, 176, '', 265, {
+      fontSize: '12px',
+      lineSpacing: 2,
+      color: '#392c35',
+      backgroundColor: '#fff2bd',
+      padding: { x: 10, y: 8 },
+    });
 
     const player = this.player();
+    const actionEntries: Array<{ id: string; label: string; accent: number }> = player.profile.legalActions.map((action) => ({
+      id: action.id,
+      label: actionLabel(action),
+      accent: action.role === 'offence' ? PALETTE.rust : action.role === 'defence' ? PALETTE.moss : PALETTE.bruise,
+    }));
+    actionEntries.push({ id: RECOVER_BREATH_ACTION_ID, label: 'Recover Breath · MET 0', accent: PALETTE.acid });
+
+    this.add.text(30, 324, 'WHAT DOES THIS THING DO?', {
+      ...TEXT.title,
+      fontSize: '20px',
+      color: '#392c35',
+      backgroundColor: '#ff78ad',
+      padding: { x: 8, y: 4 },
+    }).setRotation(0.01);
+
     const controls: ButtonControl[] = [];
-    player.profile.legalActions.forEach((action, index) => {
-      const button = addButton(this, 174, 148 + index * 48, 268, actionLabel(action), () => this.commit(action.id), {
-        accent: action.role === 'offence' ? PALETTE.rust : PALETTE.moss,
-      });
-      this.actionButtons.set(action.id, button);
+    const columns = actionEntries.length > 8 ? 4 : 3;
+    const width = columns === 4 ? 210 : 280;
+    const gap = columns === 4 ? 230 : 305;
+    const firstX = columns === 4 ? 120 : 175;
+    const firstY = 383;
+    const rowGap = 48;
+
+    actionEntries.forEach((entry, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const button = addButton(this, firstX + column * gap, firstY + row * rowGap, width, entry.label, () => this.commit(entry.id), { accent: entry.accent });
+      this.actionButtons.set(entry.id, button);
       controls.push(button);
     });
-    const recoverY = 148 + player.profile.legalActions.length * 48;
-    const recover = addButton(this, 174, recoverY, 268, 'Recover Breath  0', () => this.commit(RECOVER_BREATH_ACTION_ID), { accent: PALETTE.acid });
-    this.actionButtons.set(RECOVER_BREATH_ACTION_ID, recover);
-    controls.push(recover);
     this.menu = new FocusMenu(this.semanticInput, controls, 'vertical');
-
-    this.roundStatus = this.add.text(364, 134, '', { ...TEXT.mono, fontSize: '12px', color: '#b7c86c' });
-    this.playerStatus = wrappedText(this, 364, 162, '', 255, { fontSize: '16px', lineSpacing: 3 });
-    this.opponentStatus = wrappedText(this, 650, 162, '', 255, { fontSize: '16px', lineSpacing: 3 });
-    this.logText = wrappedText(this, 364, 330, '', 548, { fontSize: '14px', lineSpacing: 3 });
-
-    addButton(this, 822, 540, 190, 'Reset spar', () => this.resetSpar(), { accent: PALETTE.bruise });
-    addButton(this, 600, 540, 190, 'Back to title', () => this.returnToTitle(), { accent: PALETTE.moss });
     this.render();
   }
 
@@ -194,29 +252,25 @@ export class CombatPlaytestScene extends Phaser.Scene {
     const playerAvailable = new Set(availableActionIdsForNextRound(player, this.state.round));
     const finished = player.hp <= 0 || opponent.hp <= 0;
 
-    this.roundStatus.setText(`ROUND ${this.state.round} COMPLETE  •  declaring round ${nextRound}`);
+    this.roundStatus.setText(`ROUND ${this.state.round} DONE · CHOOSING ROUND ${nextRound}`);
     this.playerStatus.setText([
       `${player.name}`,
-      `Vitality ${player.hp}/${player.maxHp}`,
-      `Reserve ${player.metabolicReserve}/${player.maxMetabolicReserve}`,
-      `Setup ${player.setup}/2`,
-      this.cooldownSummary(player.cooldownAvailableFromRound, nextRound),
+      `Vitality ${player.hp}/${player.maxHp} · Reserve ${player.metabolicReserve}/${player.maxMetabolicReserve}`,
+      `Setup ${player.setup}/2 · ${this.cooldownSummary(player.cooldownAvailableFromRound, nextRound)}`,
     ]);
     this.opponentStatus.setText([
       `${opponent.name}`,
-      `Vitality ${opponent.hp}/${opponent.maxHp}`,
-      `Reserve ${opponent.metabolicReserve}/${opponent.maxMetabolicReserve}`,
-      `Setup ${opponent.setup}/2`,
-      this.cooldownSummary(opponent.cooldownAvailableFromRound, nextRound),
+      `Vitality ${opponent.hp}/${opponent.maxHp} · Reserve ${opponent.metabolicReserve}/${opponent.maxMetabolicReserve}`,
+      `Setup ${opponent.setup}/2 · ${this.cooldownSummary(opponent.cooldownAvailableFromRound, nextRound)}`,
     ]);
 
     const messages = this.state.events.length === 0
       ? [
-          'Try a setup action before Burst Lunge, then watch what cooldown and reserve do to your next decision.',
-          'Fast defence should often resolve before a slower committed attack. Recover Breath is always available, but gives up offensive pressure.',
+          'Try a setup action before Burst Lunge. Then see what reserve and cooldown do to the next choice.',
+          'Fast defence can resolve before a slower committed attack.',
         ]
-      : this.state.events.map((value) => value.message);
-    if (finished) messages.push(player.hp <= 0 ? 'PLAYTEST END: the sparring goat wins.' : 'PLAYTEST END: Burstwire Rabbit wins.');
+      : this.state.events.slice(-4).map((value) => value.message);
+    if (finished) messages.push(player.hp <= 0 ? 'The goat wins. Embarrassing.' : 'Burstwire Rabbit wins. Concerning.');
     this.logText.setText(messages.join('\n'));
 
     for (const [actionId, button] of this.actionButtons) {
@@ -228,7 +282,7 @@ export class CombatPlaytestScene extends Phaser.Scene {
     const active = Object.entries(cooldowns)
       .filter(([, availableFrom]) => availableFrom > nextRound)
       .map(([actionId, availableFrom]) => `${actionId.replace('combat.', '')}→R${availableFrom}`);
-    return active.length > 0 ? `Cooldown ${active.join(', ')}` : 'Cooldown none';
+    return active.length > 0 ? `Cooldown ${active.join(', ')}` : 'No cooldown';
   }
 
   private resetSpar(): void {
@@ -241,5 +295,58 @@ export class CombatPlaytestScene extends Phaser.Scene {
     url.searchParams.delete('combatPlaytest');
     globalThis.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
     transitionTo(this, 'Title');
+  }
+
+  private drawArena(): void {
+    const g = this.add.graphics();
+    g.fillStyle(PALETTE.sky, 1); g.fillRect(0, 0, 960, 540);
+    g.fillStyle(0xffffff, 0.78); g.fillCircle(165, 72, 34); g.fillCircle(197, 77, 25); g.fillCircle(132, 82, 24);
+    g.fillStyle(0xffffff, 0.72); g.fillCircle(820, 104, 30); g.fillCircle(850, 108, 22); g.fillCircle(792, 112, 20);
+    g.fillStyle(PALETTE.grassLight, 1); g.fillEllipse(238, 371, 700, 250);
+    g.fillStyle(PALETTE.grass, 1); g.fillEllipse(735, 390, 820, 275);
+
+    // The actual Fit Pit is painted into the field instead of being another UI box.
+    g.fillStyle(0xe7b86f, 1); g.fillEllipse(480, 252, 700, 210);
+    g.lineStyle(8, PALETTE.inkDark, 0.34); g.strokeEllipse(480, 252, 700, 210);
+    g.lineStyle(5, PALETTE.bone, 1);
+    g.lineBetween(96, 194, 864, 194); g.lineBetween(104, 302, 856, 302);
+    for (let x = 118; x <= 842; x += 64) g.lineBetween(x, 173, x - 4, 318);
+
+    this.drawRabbit(g, 246, 228);
+    this.drawGoat(g, 714, 229);
+
+    // Cheerful little flowers around the illegal animal-fighting venue.
+    for (let i = 0; i < 17; i += 1) {
+      const x = 25 + ((i * 113) % 910);
+      const y = 293 + ((i * 43) % 65);
+      const colour = [PALETTE.candy, PALETTE.yolk, PALETTE.bruise][i % 3];
+      g.fillStyle(colour, 0.95); g.fillCircle(x - 3, y, 3); g.fillCircle(x + 3, y, 3); g.fillCircle(x, y - 3, 3);
+      g.fillStyle(PALETTE.bone, 1); g.fillCircle(x, y, 2);
+    }
+  }
+
+  private drawRabbit(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+    g.fillStyle(PALETTE.candy, 1); g.lineStyle(5, PALETTE.inkDark, 0.92);
+    g.fillEllipse(x, y, 92, 62); g.strokeEllipse(x, y, 92, 62);
+    g.fillCircle(x + 35, y - 30, 29); g.strokeCircle(x + 35, y - 30, 29);
+    g.fillEllipse(x + 22, y - 70, 20, 58); g.strokeEllipse(x + 22, y - 70, 20, 58);
+    g.fillEllipse(x + 47, y - 72, 18, 61); g.strokeEllipse(x + 47, y - 72, 18, 61);
+    g.fillStyle(PALETTE.acid, 1); g.fillCircle(x + 45, y - 34, 8);
+    g.fillStyle(PALETTE.inkDark, 1); g.fillCircle(x + 47, y - 34, 4);
+    g.lineStyle(9, PALETTE.bruise, 1); g.lineBetween(x - 20, y + 18, x - 42, y + 54); g.lineBetween(x + 12, y + 22, x + 8, y + 59);
+    g.lineStyle(7, PALETTE.rust, 0.95); g.lineBetween(x - 28, y - 8, x - 67, y - 29); g.lineBetween(x - 67, y - 29, x - 76, y - 7);
+    g.lineBetween(x - 23, y + 3, x - 72, y + 23);
+    g.fillStyle(0x55dce1, 0.76); g.fillRoundedRect(x - 15, y - 61, 25, 51, 10); g.lineStyle(4, PALETTE.inkDark, 0.9); g.strokeRoundedRect(x - 15, y - 61, 25, 51, 10);
+    g.fillStyle(PALETTE.acid, 0.9); g.fillCircle(x - 3, y - 26, 8);
+  }
+
+  private drawGoat(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+    g.fillStyle(PALETTE.bone, 1); g.lineStyle(5, PALETTE.inkDark, 0.92);
+    g.fillEllipse(x, y, 105, 66); g.strokeEllipse(x, y, 105, 66);
+    g.fillEllipse(x - 40, y - 38, 48, 42); g.strokeEllipse(x - 40, y - 38, 48, 42);
+    g.lineStyle(7, PALETTE.grape, 1); g.lineBetween(x - 52, y - 55, x - 69, y - 82); g.lineBetween(x - 29, y - 57, x - 14, y - 83);
+    g.lineStyle(8, PALETTE.inkDark, 0.9); g.lineBetween(x - 25, y + 24, x - 32, y + 62); g.lineBetween(x + 30, y + 23, x + 37, y + 61);
+    g.fillStyle(PALETTE.inkDark, 1); g.fillCircle(x - 51, y - 40, 4);
+    g.fillStyle(PALETTE.rust, 0.88); g.fillCircle(x - 61, y - 29, 6);
   }
 }
