@@ -18,12 +18,17 @@ export interface ButtonControl extends FocusableControl {
 
 export function addPanel(scene: Phaser.Scene, x: number, y: number, width: number, height: number, alpha = 0.96): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
+
+  // Cartoon sticker-card treatment: soft offset shadow, warm paper surface,
+  // dark plum outline and a deliberately imperfect inner accent.
+  g.fillStyle(PALETTE.inkDark, 0.18 * alpha);
+  g.fillRoundedRect(x + 7, y + 8, width, height, 18);
   g.fillStyle(PALETTE.paper, alpha);
-  g.lineStyle(2, PALETTE.bone, 0.34);
-  g.fillRoundedRect(x, y, width, height, 8);
-  g.strokeRoundedRect(x, y, width, height, 8);
-  g.lineStyle(1, PALETTE.moss, 0.2);
-  g.strokeRect(x + 6, y + 6, width - 12, height - 12);
+  g.fillRoundedRect(x, y, width, height, 18);
+  g.lineStyle(4, PALETTE.inkDark, 0.74);
+  g.strokeRoundedRect(x, y, width, height, 18);
+  g.lineStyle(2, PALETTE.candy, 0.28);
+  g.strokeRoundedRect(x + 8, y + 8, width - 16, height - 16, 12);
   return g;
 }
 
@@ -37,8 +42,14 @@ export function addButton(
   { accent = PALETTE.moss }: { accent?: number } = {},
 ): ButtonControl {
   const container = scene.add.container(x, y);
-  const bg = scene.add.rectangle(0, 0, width, 42, PALETTE.paperDeep, 0.94).setStrokeStyle(1, accent, 0.9);
-  const text = scene.add.text(0, 0, label, { ...TEXT.mono, fontSize: '14px' }).setOrigin(0.5);
+  const bg = scene.add.graphics();
+  const text = scene.add.text(0, -1, label, {
+    ...TEXT.mono,
+    fontSize: '13px',
+    color: '#392c35',
+    align: 'center',
+    wordWrap: { width: width - 24, useAdvancedWrap: true },
+  }).setOrigin(0.5);
   container.add([bg, text]);
   container.setSize(width, 42).setInteractive({ useHandCursor: true });
 
@@ -47,10 +58,19 @@ export function addButton(
   let focusRequester: (() => void) | undefined;
 
   const render = (): void => {
-    bg.setFillStyle(focused ? accent : PALETTE.paperDeep, focused ? 0.32 : 0.94);
-    bg.setStrokeStyle(focused ? 3 : 1, accent, enabled ? 0.9 : 0.32);
-    text.setColor(focused ? '#ffffff' : '#a79d88');
-    container.setAlpha(enabled ? 1 : 0.48);
+    bg.clear();
+    bg.fillStyle(PALETTE.inkDark, enabled ? 0.23 : 0.1);
+    bg.fillRoundedRect(-width / 2 + 4, -17, width, 38, 14);
+    bg.fillStyle(focused ? accent : PALETTE.paper, enabled ? 1 : 0.62);
+    bg.fillRoundedRect(-width / 2, -21, width, 38, 14);
+    bg.lineStyle(focused ? 4 : 3, PALETTE.inkDark, enabled ? 0.86 : 0.3);
+    bg.strokeRoundedRect(-width / 2, -21, width, 38, 14);
+    if (focused) {
+      bg.lineStyle(2, PALETTE.paper, 0.78);
+      bg.strokeRoundedRect(-width / 2 + 6, -15, width - 12, 26, 9);
+    }
+    text.setColor(enabled ? '#392c35' : '#7f7380');
+    container.setAlpha(enabled ? 1 : 0.7);
   };
 
   const control: ButtonControl = {
@@ -59,7 +79,11 @@ export function addButton(
     activate(): void { if (enabled) onClick(); },
     setFocusRequester(requester: (() => void) | undefined): void { focusRequester = requester; },
     setVisible(visible: boolean): void { container.setVisible(visible); },
-    setEnabled(value: boolean): void { enabled = value; if (value) container.setInteractive({ useHandCursor: true }); else container.disableInteractive(); render(); },
+    setEnabled(value: boolean): void {
+      enabled = value;
+      if (value) container.setInteractive({ useHandCursor: true }); else container.disableInteractive();
+      render();
+    },
   };
 
   container.on('pointerover', () => { if (!enabled) return; focusRequester?.(); if (!focusRequester) control.setFocused(true); });
@@ -127,8 +151,8 @@ export function createModal(
   width: number,
   height: number,
 ): ModalHandle {
-  const panel = addPanel(scene, x, y, width, height, 0.985).setDepth(50).setVisible(false);
-  const titleText = scene.add.text(x + 22, y + 20, '', { ...TEXT.mono, fontSize: '11px', color: '#b7c86c' }).setDepth(51).setVisible(false);
+  const panel = addPanel(scene, x, y, width, height, 0.99).setDepth(50).setVisible(false);
+  const titleText = scene.add.text(x + 22, y + 20, '', { ...TEXT.mono, fontSize: '11px', color: '#73439a' }).setDepth(51).setVisible(false);
   const bodyText = wrappedText(scene, x + 22, y + 45, '', width - 44, { fontSize: '17px', lineSpacing: 4 }).setDepth(51).setVisible(false);
 
   const setVisible = (visible: boolean): void => {
@@ -155,10 +179,10 @@ export function createDialogueBox(
   width: number,
   height: number,
 ): DialogueBoxHandle {
-  const panel = addPanel(scene, x, y, width, height, 0.985).setDepth(50).setVisible(false);
-  const titleText = scene.add.text(x + 22, y + 20, '', { ...TEXT.mono, fontSize: '11px', color: '#b7c86c' }).setDepth(51).setVisible(false);
+  const panel = addPanel(scene, x, y, width, height, 0.99).setDepth(50).setVisible(false);
+  const titleText = scene.add.text(x + 22, y + 20, '', { ...TEXT.mono, fontSize: '11px', color: '#73439a' }).setDepth(51).setVisible(false);
   const bodyText = wrappedText(scene, x + 22, y + 45, '', width - 44, { fontSize: '17px', lineSpacing: 4 }).setDepth(51).setVisible(false);
-  const promptText = scene.add.text(x + width - 18, y + height - 14, '', { ...TEXT.mono, fontSize: '9px', color: '#a79d88' }).setOrigin(1, 1).setDepth(51).setVisible(false);
+  const promptText = scene.add.text(x + width - 18, y + height - 14, '', { ...TEXT.mono, fontSize: '9px', color: '#5a365f' }).setOrigin(1, 1).setDepth(51).setVisible(false);
 
   const setVisible = (visible: boolean): void => {
     panel.setVisible(visible);
