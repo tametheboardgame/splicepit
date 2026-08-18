@@ -1,66 +1,156 @@
 :root {
-  --ink: #e8dfc8;
-  --muted: #a79d88;
-  --paper: #27221c;
-  --paper-deep: #181512;
-  --moss: #71845c;
-  --bruise: #73516f;
-  --rust: #a0573d;
-  --acid: #b7c86c;
+  --ink: #392c35;
+  --muted: #694f70;
+  --cream: #fff2bd;
+  --sky: #79d4e8;
+  --grass: #8fd25f;
+  --grass-deep: #2f8f4e;
+  --candy: #ff78ad;
+  --grape: #73439a;
+  --coral: #f06a4f;
+  --acid: #d8f64b;
+  --yolk: #ffc94d;
 }
+
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; background: var(--paper-deep); color: var(--ink); }
+html, body { margin: 0; min-height: 100%; color: var(--ink); }
 body {
   min-height: 100dvh;
   overflow-x: hidden;
-  font-family: Georgia, 'Times New Roman', serif;
-  background-image:
-    radial-gradient(circle at 20% 10%, rgba(113,132,92,.12), transparent 28rem),
-    radial-gradient(circle at 85% 85%, rgba(115,81,111,.1), transparent 26rem),
-    repeating-linear-gradient(2deg, rgba(255,255,255,.015) 0 1px, transparent 1px 5px);
+  font-family: "Trebuchet MS", Verdana, Arial, sans-serif;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(255,255,255,.78) 0 2.6rem, transparent 2.7rem),
+    radial-gradient(circle at 19% 10%, rgba(255,255,255,.72) 0 1.8rem, transparent 1.9rem),
+    radial-gradient(circle at 82% 18%, rgba(255,255,255,.72) 0 2.2rem, transparent 2.3rem),
+    linear-gradient(to bottom, var(--sky) 0 58%, #a5e875 58% 76%, var(--grass) 76% 100%);
+  background-attachment: fixed;
+}
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(.2px);
+}
+body::before {
+  width: 38vw;
+  height: 18vw;
+  min-width: 320px;
+  min-height: 150px;
+  left: -8vw;
+  bottom: 3vh;
+  background: rgba(47,143,78,.28);
+  transform: rotate(-7deg);
+}
+body::after {
+  width: 32vw;
+  height: 14vw;
+  min-width: 280px;
+  min-height: 130px;
+  right: -7vw;
+  bottom: 8vh;
+  background: rgba(255,120,173,.16);
+  transform: rotate(8deg);
 }
 
-/*
- * The Phaser canvas is 16:9, so width is also its height budget. Limiting the
- * shell by viewport height keeps the entire game chrome visible on common
- * 14-inch laptop viewports instead of making the player scroll to the footer.
- */
 #shell {
-  width: min(1180px, 145dvh, 100%);
+  width: min(1240px, 150dvh, 100%);
   margin: 0 auto;
   padding: clamp(8px, 1.7dvh, 18px);
 }
-.site-header, footer { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
-.site-header { margin-bottom: clamp(6px, 1.1dvh, 12px); }
+
+.site-header, footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.site-header {
+  margin-bottom: clamp(7px, 1.2dvh, 13px);
+  padding: 4px 8px;
+}
 h1 {
   margin: 0;
-  font-size: clamp(2rem, min(5vw, 7dvh), 4.6rem);
-  line-height: .85;
-  letter-spacing: -.045em;
-  font-weight: 500;
+  font-family: "Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif;
+  font-size: clamp(2rem, min(5vw, 7dvh), 4.5rem);
+  line-height: .82;
+  letter-spacing: -.055em;
+  color: var(--cream);
+  -webkit-text-stroke: 2px var(--ink);
+  text-shadow: 4px 5px 0 var(--candy), 7px 9px 0 rgba(57,44,53,.25);
 }
-.eyebrow, .build-mark, footer { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; }
-.eyebrow { display: block; color: var(--rust); font-size: .72rem; margin-bottom: 7px; }
-.build-mark { color: var(--muted); font-size: .68rem; text-align: right; }
+.eyebrow, .build-mark, footer {
+  font-family: Verdana, "Trebuchet MS", Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 800;
+}
+.eyebrow {
+  display: inline-block;
+  color: var(--ink);
+  background: var(--acid);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 3px 4px 0 rgba(57,44,53,.22);
+  font-size: .68rem;
+  padding: 5px 9px;
+  margin-bottom: 8px;
+  transform: rotate(-1deg);
+}
+.build-mark {
+  color: var(--ink);
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 5px 0 rgba(57,44,53,.2);
+  font-size: .66rem;
+  padding: 8px 10px;
+  text-align: right;
+  transform: rotate(1deg);
+}
 #game-wrap {
-  position: relative; overflow: hidden; border: 1px solid #5a5144; border-radius: 5px;
-  background: #0c0c0b; box-shadow: 0 24px 80px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.025);
+  position: relative;
+  overflow: hidden;
+  border: 5px solid var(--ink);
+  border-radius: 28px;
+  background: var(--sky);
+  box-shadow: 8px 10px 0 rgba(57,44,53,.24), 0 26px 70px rgba(57,44,53,.22);
 }
 #game { width: 100%; aspect-ratio: 16 / 9; }
-#game canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: auto; }
-footer { padding: clamp(5px, .9dvh, 10px) 2px 0; color: var(--muted); font-size: .65rem; flex-wrap: wrap; }
+#game canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: auto;
+}
+footer {
+  padding: clamp(8px, 1dvh, 11px) 4px 0;
+  color: var(--ink);
+  font-size: .62rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+footer span {
+  background: rgba(255,242,189,.88);
+  border: 2px solid rgba(57,44,53,.75);
+  border-radius: 999px;
+  padding: 4px 8px;
+}
 
 @media (max-height: 760px) {
-  #shell { width: min(1180px, 140dvh, 100%); padding-block: 7px; }
+  #shell { width: min(1220px, 142dvh, 100%); padding-block: 7px; }
   .site-header { margin-bottom: 5px; }
   h1 { font-size: clamp(2rem, 6dvh, 3.2rem); }
-  .eyebrow { margin-bottom: 4px; }
-  footer { padding-top: 4px; }
+  .eyebrow { margin-bottom: 4px; padding-block: 3px; }
+  footer { padding-top: 5px; }
 }
 
 @media (max-width: 650px) {
   #shell { width: 100%; padding: 8px; }
-  .site-header { align-items: start; }
-  .build-mark { max-width: 120px; }
-  footer { gap: 8px 14px; }
+  .site-header { align-items: flex-start; }
+  .build-mark { max-width: 150px; }
+  footer { gap: 8px; }
+  #game-wrap { border-radius: 18px; border-width: 3px; }
 }
