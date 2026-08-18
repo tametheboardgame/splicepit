@@ -4,6 +4,7 @@ import { validateRuntimeContent } from './content/runtimeValidation.js';
 import { installDeveloperDiagnostics } from './diagnostics/debugState.js';
 import { BootScene } from './scenes/BootScene.js';
 import { VisualDirectionScene } from './scenes/VisualDirectionScene.js';
+import { InterfaceStyleScene } from './scenes/InterfaceStyleScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { IntroScene } from './scenes/IntroScene.js';
 import { LabScene } from './scenes/LabScene.js';
@@ -17,12 +18,12 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'game',
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
-  backgroundColor: '#181512',
+  backgroundColor: '#0d0f0e',
   pixelArt: true,
   antialias: false,
   render: { roundPixels: true },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, VisualDirectionScene, TitleScene, IntroScene, LabScene, SpliceScene, BattleScene],
+  scene: [BootScene, VisualDirectionScene, InterfaceStyleScene, TitleScene, IntroScene, LabScene, SpliceScene, BattleScene],
 };
 
 const game = new Phaser.Game(config);
