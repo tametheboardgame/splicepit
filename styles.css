@@ -47,7 +47,7 @@ h1 {
   background: #0c0c0b; box-shadow: 0 24px 80px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.025);
 }
 #game { width: 100%; aspect-ratio: 16 / 9; }
-#game canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: auto; }
+#game canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; }
 footer { padding: clamp(5px, .9dvh, 10px) 2px 0; color: var(--muted); font-size: .65rem; flex-wrap: wrap; }
 
 @media (max-height: 760px) {
