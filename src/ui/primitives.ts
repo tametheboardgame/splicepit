@@ -229,7 +229,9 @@ export function addInventorySlot(
   const countText = scene.add.text(size - 4, size - 3, '', UI_TEXT.micro).setOrigin(1, 1);
   container.add([frame, glyph, countText]);
 
-  const setCount = (next: number | undefined): void => countText.setText(next === undefined ? '' : `x${next}`);
+  const setCount = (next: number | undefined): void => {
+    countText.setText(next === undefined ? '' : `x${next}`);
+  };
   setCount(count);
 
   return {
