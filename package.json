@@ -12,6 +12,7 @@
     "test": "node scripts/run-tests.mjs",
     "build": "vite build",
     "smoke": "node scripts/browser-smoke.mjs",
+    "smoke:combat-layout": "node scripts/combat-layout-smoke.mjs",
     "verify": "npm run typecheck && npm run validate:content && npm run validate:rng && npm test && npm run build"
   },
   "dependencies": {
