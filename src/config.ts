@@ -3,24 +3,29 @@ export const GAME_HEIGHT = 540;
 export const TILE = 48;
 
 export const PALETTE = {
-  ink: 0xe8dfc8,
-  inkDark: 0x302a23,
-  paper: 0x27221c,
-  paperDeep: 0x181512,
-  moss: 0x71845c,
-  mossDark: 0x3e4b34,
-  bruise: 0x73516f,
+  ink: 0xe3dcc7,
+  inkDark: 0x111411,
+  paper: 0x1a1e1b,
+  paperDeep: 0x0d0f0e,
+  moss: 0x77a94f,
+  mossDark: 0x355530,
+  bruise: 0x745472,
   bruiseDark: 0x3f2d3c,
-  rust: 0xa0573d,
+  rust: 0xa6673f,
   rustDark: 0x5e3327,
-  acid: 0xb7c86c,
-  bone: 0xd1c6aa,
-  blood: 0x793a36,
-  blueGrey: 0x657779,
+  amber: 0xe19a43,
+  acid: 0xb3d867,
+  bone: 0xc8bca2,
+  blood: 0x8d3d37,
+  blueGrey: 0x619a94,
+  metal: 0x535a52,
+  metalLight: 0x788074,
 } as const;
 
+const pixelUiFamily = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
 export const TEXT = {
-  title: { fontFamily: 'Georgia, serif', color: '#e8dfc8' },
-  body: { fontFamily: 'Georgia, serif', color: '#e8dfc8' },
-  mono: { fontFamily: 'ui-monospace, monospace', color: '#a79d88' },
+  title: { fontFamily: pixelUiFamily, color: '#e3dcc7', fontStyle: 'bold' },
+  body: { fontFamily: pixelUiFamily, color: '#e3dcc7' },
+  mono: { fontFamily: pixelUiFamily, color: '#9b9587' },
 } as const;
