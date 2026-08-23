@@ -1,8 +1,9 @@
+import atlasBase64 from './assets/protagonist-static-atlas-v4.base64.txt?raw';
+
 const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
 const DISPLAY_SCALE = 2;
 const SPEED = 180;
-const ATLAS_BASE64_PATH = '/assets/protagonists/protagonist-static-atlas-v4.base64.txt';
 
 const CHARACTERS = ['milo', 'theo', 'ada', 'pip'] as const;
 type CharacterId = (typeof CHARACTERS)[number];
@@ -178,10 +179,8 @@ function frame(now: number): void {
 
 async function start(): Promise<void> {
   try {
-    const response = await fetch(ATLAS_BASE64_PATH, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Atlas base64 HTTP ${response.status}`);
-    const base64 = (await response.text()).trim();
-    if (!base64.startsWith('iVBORw0KGgo')) throw new Error('Atlas base64 payload is invalid');
+    const base64 = atlasBase64.trim();
+    if (!base64.startsWith('iVBORw0KGgo')) throw new Error('Bundled atlas base64 payload is invalid');
 
     atlas.src = `data:image/png;base64,${base64}`;
     await atlas.decode();
@@ -195,7 +194,7 @@ async function start(): Promise<void> {
     requestAnimationFrame(frame);
   } catch (error) {
     debug.error = error instanceof Error ? error.message : String(error);
-    console.error('Failed to load verified protagonist atlas', error);
+    console.error('Failed to load bundled protagonist atlas', error);
   }
 }
 
