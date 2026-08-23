@@ -1,0 +1,1 @@
+Visual smoke now asserts rendered non-black pixels rather than state only.
