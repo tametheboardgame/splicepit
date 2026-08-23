@@ -1,4 +1,19 @@
-import atlasBase64 from './assets/protagonist-static-atlas-v4.base64.txt?raw';
+import miloDown from './assets/frames/milo-down.txt?raw';
+import miloLeft from './assets/frames/milo-left.txt?raw';
+import miloRight from './assets/frames/milo-right.txt?raw';
+import miloUp from './assets/frames/milo-up.txt?raw';
+import theoDown from './assets/frames/theo-down.txt?raw';
+import theoLeft from './assets/frames/theo-left.txt?raw';
+import theoRight from './assets/frames/theo-right.txt?raw';
+import theoUp from './assets/frames/theo-up.txt?raw';
+import adaDown from './assets/frames/ada-down.txt?raw';
+import adaLeft from './assets/frames/ada-left.txt?raw';
+import adaRight from './assets/frames/ada-right.txt?raw';
+import adaUp from './assets/frames/ada-up.txt?raw';
+import pipDown from './assets/frames/pip-down.txt?raw';
+import pipLeft from './assets/frames/pip-left.txt?raw';
+import pipRight from './assets/frames/pip-right.txt?raw';
+import pipUp from './assets/frames/pip-up.txt?raw';
 
 const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
@@ -6,14 +21,18 @@ const DISPLAY_SCALE = 2;
 const SPEED = 180;
 
 const CHARACTERS = ['milo', 'theo', 'ada', 'pip'] as const;
+const DIRECTIONS = ['down', 'left', 'right', 'up'] as const;
 type CharacterId = (typeof CHARACTERS)[number];
-type Direction = 'down' | 'left' | 'right' | 'up';
+type Direction = (typeof DIRECTIONS)[number];
 
-const DIRECTION_ROW: Record<Direction, number> = {
-  down: 0,
-  left: 1,
-  right: 2,
-  up: 3,
+type FrameSources = Record<CharacterId, Record<Direction, string>>;
+type FrameImages = Record<CharacterId, Record<Direction, HTMLImageElement>>;
+
+const FRAME_SOURCES: FrameSources = {
+  milo: { down: miloDown, left: miloLeft, right: miloRight, up: miloUp },
+  theo: { down: theoDown, left: theoLeft, right: theoRight, up: theoUp },
+  ada: { down: adaDown, left: adaLeft, right: adaRight, up: adaUp },
+  pip: { down: pipDown, left: pipLeft, right: pipRight, up: pipUp },
 };
 
 const KEY_DIRECTION: Record<string, Direction | undefined> = {
@@ -45,8 +64,8 @@ if (!maybeContext) throw new Error('Canvas 2D is unavailable');
 const ctx: CanvasRenderingContext2D = maybeContext;
 ctx.imageSmoothingEnabled = false;
 
-const atlas = new Image();
 const held = new Set<string>();
+const images = {} as FrameImages;
 let characterIndex = 0;
 let direction: Direction = 'down';
 let x = window.innerWidth / 2;
@@ -96,6 +115,7 @@ const movementKeys = new Set(Object.keys(KEY_DIRECTION));
 
 window.addEventListener('keydown', (event) => {
   const key = normaliseKey(event);
+
   if (movementKeys.has(key)) {
     event.preventDefault();
     held.add(key);
@@ -145,17 +165,13 @@ function draw(): void {
 
   if (!debug.ready) return;
 
+  const character = CHARACTERS[characterIndex];
+  const image = images[character][direction];
   const width = FRAME_WIDTH * DISPLAY_SCALE;
   const height = FRAME_HEIGHT * DISPLAY_SCALE;
-  const sourceX = characterIndex * FRAME_WIDTH;
-  const sourceY = DIRECTION_ROW[direction] * FRAME_HEIGHT;
 
   ctx.drawImage(
-    atlas,
-    sourceX,
-    sourceY,
-    FRAME_WIDTH,
-    FRAME_HEIGHT,
+    image,
     Math.round(x - width / 2),
     Math.round(y - height),
     width,
@@ -164,7 +180,7 @@ function draw(): void {
 
   debug.x = x;
   debug.y = y;
-  debug.character = CHARACTERS[characterIndex];
+  debug.character = character;
   debug.direction = direction;
   debug.held = [...held];
 }
@@ -177,15 +193,36 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
+async function decodeFrame(character: CharacterId, frameDirection: Direction): Promise<HTMLImageElement> {
+  const base64 = FRAME_SOURCES[character][frameDirection].trim();
+  if (!base64.startsWith('iVBORw0KGgo')) {
+    throw new Error(`${character}-${frameDirection} frame payload is invalid`);
+  }
+
+  const image = new Image();
+  image.src = `data:image/png;base64,${base64}`;
+  await image.decode();
+
+  if (image.naturalWidth !== FRAME_WIDTH || image.naturalHeight !== FRAME_HEIGHT) {
+    throw new Error(
+      `${character}-${frameDirection} has unexpected dimensions ${image.naturalWidth}x${image.naturalHeight}`,
+    );
+  }
+
+  return image;
+}
+
 async function start(): Promise<void> {
   try {
-    const base64 = atlasBase64.trim();
-    if (!base64.startsWith('iVBORw0KGgo')) throw new Error('Bundled atlas base64 payload is invalid');
+    for (const character of CHARACTERS) {
+      const characterImages = {} as Record<Direction, HTMLImageElement>;
+      images[character] = characterImages;
 
-    atlas.src = `data:image/png;base64,${base64}`;
-    await atlas.decode();
-    if (atlas.naturalWidth !== 256 || atlas.naturalHeight !== 384) {
-      throw new Error(`Unexpected atlas dimensions ${atlas.naturalWidth}x${atlas.naturalHeight}`);
+      await Promise.all(
+        DIRECTIONS.map(async (frameDirection) => {
+          characterImages[frameDirection] = await decodeFrame(character, frameDirection);
+        }),
+      );
     }
 
     debug.ready = true;
@@ -194,7 +231,7 @@ async function start(): Promise<void> {
     requestAnimationFrame(frame);
   } catch (error) {
     debug.error = error instanceof Error ? error.message : String(error);
-    console.error('Failed to load bundled protagonist atlas', error);
+    console.error('Failed to load standalone protagonist frames', error);
   }
 }
 
