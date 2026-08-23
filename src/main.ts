@@ -2,7 +2,7 @@ const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
 const DISPLAY_SCALE = 2;
 const SPEED = 180;
-const ATLAS_PATH = 'assets/protagonists/protagonist-static-atlas-v3.png';
+const ATLAS_BASE64_PATH = '/assets/protagonists/protagonist-static-atlas-v4.base64.txt';
 
 const CHARACTERS = ['milo', 'theo', 'ada', 'pip'] as const;
 type CharacterId = (typeof CHARACTERS)[number];
@@ -24,6 +24,7 @@ const KEY_DIRECTION: Record<string, Direction | undefined> = {
 
 type SandboxDebug = {
   ready: boolean;
+  error: string | null;
   x: number;
   y: number;
   character: CharacterId;
@@ -38,7 +39,7 @@ const canvas = document.createElement('canvas');
 canvas.setAttribute('aria-label', 'SplicePit bare sprite movement sandbox');
 root.replaceChildren(canvas);
 
-const maybeContext = canvas.getContext('2d', { alpha: false });
+const maybeContext = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
 if (!maybeContext) throw new Error('Canvas 2D is unavailable');
 const ctx: CanvasRenderingContext2D = maybeContext;
 ctx.imageSmoothingEnabled = false;
@@ -53,6 +54,7 @@ let previousTime = performance.now();
 
 const debug: SandboxDebug = {
   ready: false,
+  error: null,
   x,
   y,
   character: CHARACTERS[characterIndex],
@@ -174,12 +176,27 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
-atlas.src = ATLAS_PATH;
-atlas.decode().then(() => {
-  debug.ready = true;
-  resize();
-  previousTime = performance.now();
-  requestAnimationFrame(frame);
-}).catch((error) => {
-  console.error('Failed to load protagonist atlas', error);
-});
+async function start(): Promise<void> {
+  try {
+    const response = await fetch(ATLAS_BASE64_PATH, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Atlas base64 HTTP ${response.status}`);
+    const base64 = (await response.text()).trim();
+    if (!base64.startsWith('iVBORw0KGgo')) throw new Error('Atlas base64 payload is invalid');
+
+    atlas.src = `data:image/png;base64,${base64}`;
+    await atlas.decode();
+    if (atlas.naturalWidth !== 256 || atlas.naturalHeight !== 384) {
+      throw new Error(`Unexpected atlas dimensions ${atlas.naturalWidth}x${atlas.naturalHeight}`);
+    }
+
+    debug.ready = true;
+    resize();
+    previousTime = performance.now();
+    requestAnimationFrame(frame);
+  } catch (error) {
+    debug.error = error instanceof Error ? error.message : String(error);
+    console.error('Failed to load verified protagonist atlas', error);
+  }
+}
+
+void start();
