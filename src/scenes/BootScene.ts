@@ -7,7 +7,6 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
-    const visualDirectionReview = new URLSearchParams(window.location.search).get('visualDirection') === '1';
-    transitionTo(this, visualDirectionReview ? 'VisualDirection' : 'Title', { duration: 0 });
+    transitionTo(this, 'Title', { duration: 0 });
   }
 }
