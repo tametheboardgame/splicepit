@@ -35,7 +35,6 @@ function cleanup() {
   if (!chrome.killed) chrome.kill('SIGTERM');
 }
 process.on('exit', cleanup);
-process.on('SIGINT', () => { cleanup(); process.exit(130); });
 
 try {
   const targets = await waitFor(async () => {
@@ -69,10 +68,7 @@ try {
 
   async function evaluate(expression) {
     const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-    if (result.exceptionDetails) {
-      const detail = result.exceptionDetails.exception?.description || result.exceptionDetails.text || 'Browser evaluation failed';
-      throw new Error(detail);
-    }
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Browser evaluation failed');
     return result.result?.value;
   }
 
@@ -82,10 +78,6 @@ try {
     await sleep(durationMs);
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
     await sleep(100);
-  }
-
-  async function pressKey(key, code, windowsVirtualKeyCode) {
-    await holdKey(key, code, windowsVirtualKeyCode, 40);
   }
 
   await cdp('Page.enable');
@@ -98,39 +90,37 @@ try {
   });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
 
-  await waitFor(async () => Boolean(await evaluate(`globalThis.__SPLICEPIT_GAME__?.scene?.isActive('SpriteSandbox')`)), 20000);
+  await waitFor(async () => Boolean(await evaluate(`globalThis.__SPLICEPIT_SANDBOX__?.ready`)), 20000);
 
-  const initial = await evaluate(`(() => {
-    const scene = __SPLICEPIT_GAME__.scene.getScene('SpriteSandbox');
-    return { x: scene.player.x, y: scene.player.y, texture: scene.player.texture.key };
-  })()`);
+  const state = () => evaluate(`({ ...globalThis.__SPLICEPIT_SANDBOX__, held: [...globalThis.__SPLICEPIT_SANDBOX__.held] })`);
+  const initial = await state();
 
   await holdKey('ArrowRight', 'ArrowRight', 39);
-  const afterRight = await evaluate(`(() => { const p = __SPLICEPIT_GAME__.scene.getScene('SpriteSandbox').player; return { x: p.x, y: p.y, frame: p.frame.name }; })()`);
-  if (!(afterRight.x > initial.x)) throw new Error(`Right movement failed: ${JSON.stringify({ initial, afterRight })}`);
-
-  await holdKey('ArrowLeft', 'ArrowLeft', 37);
-  const afterLeft = await evaluate(`(() => { const p = __SPLICEPIT_GAME__.scene.getScene('SpriteSandbox').player; return { x: p.x, y: p.y, frame: p.frame.name }; })()`);
-  if (!(afterLeft.x < afterRight.x)) throw new Error(`Left movement failed: ${JSON.stringify({ afterRight, afterLeft })}`);
+  const right = await state();
+  if (!(right.x > initial.x + 20)) throw new Error(`Right movement failed: ${JSON.stringify({ initial, right })}`);
 
   await holdKey('ArrowUp', 'ArrowUp', 38);
-  const afterUp = await evaluate(`(() => { const p = __SPLICEPIT_GAME__.scene.getScene('SpriteSandbox').player; return { x: p.x, y: p.y, frame: p.frame.name }; })()`);
-  if (!(afterUp.y < afterLeft.y)) throw new Error(`Up movement failed: ${JSON.stringify({ afterLeft, afterUp })}`);
+  const up = await state();
+  if (!(up.y < right.y - 20)) throw new Error(`Up movement failed: ${JSON.stringify({ right, up })}`);
+
+  await holdKey('ArrowLeft', 'ArrowLeft', 37);
+  const left = await state();
+  if (!(left.x < up.x - 20)) throw new Error(`Left movement failed: ${JSON.stringify({ up, left })}`);
 
   await holdKey('ArrowDown', 'ArrowDown', 40);
-  const afterDown = await evaluate(`(() => { const p = __SPLICEPIT_GAME__.scene.getScene('SpriteSandbox').player; return { x: p.x, y: p.y, frame: p.frame.name }; })()`);
-  if (!(afterDown.y > afterUp.y)) throw new Error(`Down movement failed: ${JSON.stringify({ afterUp, afterDown })}`);
+  const down = await state();
+  if (!(down.y > left.y + 20)) throw new Error(`Down movement failed: ${JSON.stringify({ left, down })}`);
 
-  await pressKey('2', 'Digit2', 50);
-  const switched = await evaluate(`__SPLICEPIT_GAME__.scene.getScene('SpriteSandbox').player.texture.key`);
-  if (switched !== 'sandbox-theo') throw new Error(`Character switch failed: ${switched}`);
+  await holdKey('2', 'Digit2', 50, 40);
+  const switched = await state();
+  if (switched.character !== 'theo') throw new Error(`Character switch failed: ${JSON.stringify(switched)}`);
 
-  const layout = await evaluate(`({ width: innerWidth, height: innerHeight, bodyWidth: document.body.scrollWidth, bodyHeight: document.body.scrollHeight, canvases: document.querySelectorAll('#game canvas').length })`);
+  const layout = await evaluate(`({ canvases: document.querySelectorAll('#game canvas').length, width: innerWidth, height: innerHeight, bodyWidth: document.body.scrollWidth, bodyHeight: document.body.scrollHeight })`);
   if (layout.canvases !== 1 || layout.bodyWidth !== layout.width || layout.bodyHeight !== layout.height) {
-    throw new Error(`Sandbox is not a single full-screen canvas: ${JSON.stringify(layout)}`);
+    throw new Error(`Sandbox is not one full-screen canvas: ${JSON.stringify(layout)}`);
   }
 
-  console.log('Sprite sandbox browser smoke passed.');
+  console.log('Raw canvas movement smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
