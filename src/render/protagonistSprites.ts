@@ -60,12 +60,19 @@ export function createProtagonistAnimations(scene: Phaser.Scene): void {
       }
 
       if (!scene.anims.exists(walkKey)) {
+        // The generated front-facing walk row is coherent. The current side and
+        // back rows contain frame-to-frame AI redraw drift that reads as severe
+        // morphing in motion. Until those secondary walk frames are properly
+        // authored, movement in those directions deliberately holds the clean
+        // directional pose rather than animating broken art.
+        const walkFrames = direction === 'down'
+          ? [frames.walk[0], frames.walk[1], frames.walk[2], frames.walk[1]]
+          : [frames.idle];
+
         scene.anims.create({
           key: walkKey,
-          frames: scene.anims.generateFrameNumbers(definition.textureKey, {
-            frames: [frames.walk[0], frames.walk[1], frames.walk[2], frames.walk[1]],
-          }),
-          frameRate: 8,
+          frames: scene.anims.generateFrameNumbers(definition.textureKey, { frames: walkFrames }),
+          frameRate: direction === 'down' ? 8 : 1,
           repeat: -1,
         });
       }
