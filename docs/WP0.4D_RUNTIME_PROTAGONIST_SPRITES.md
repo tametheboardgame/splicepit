@@ -34,6 +34,8 @@ For WP0.4D branch testing only, the protagonist can be changed with:
 
 The isolated visual review route remains available with `?spriteTest=1`.
 
+To review a protagonist immediately inside the real Lab without replaying the intro, use `?labTest=1&protagonist=<id>`.
+
 ## Cosmetic extension boundary
 
 WP0.4D does not implement a character creator, but the protagonist definition now separates authored identity from future cosmetic choices.

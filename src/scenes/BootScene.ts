@@ -18,7 +18,13 @@ export class BootScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
     applyProtagonistNearestNeighbourFiltering(this);
     createProtagonistAnimations(this);
-    const spriteTest = new URLSearchParams(window.location.search).get('spriteTest') === '1';
-    transitionTo(this, spriteTest ? 'ProtagonistSpriteTest' : 'Title', { duration: 0 });
+
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('spriteTest') === '1'
+      ? 'ProtagonistSpriteTest'
+      : params.get('labTest') === '1'
+        ? 'Lab'
+        : 'Title';
+    transitionTo(this, target, { duration: 0 });
   }
 }
