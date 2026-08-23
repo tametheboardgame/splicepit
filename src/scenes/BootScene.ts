@@ -7,6 +7,7 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(PALETTE.paperDeep);
-    transitionTo(this, 'Title', { duration: 0 });
+    const spriteTest = new URLSearchParams(window.location.search).get('spriteTest') === '1';
+    transitionTo(this, spriteTest ? 'ProtagonistSpriteTest' : 'Title', { duration: 0 });
   }
 }
