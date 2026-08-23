@@ -34,7 +34,7 @@ Repeated experimentation improves prediction but never turns biology into a dete
 
 ### 2. Creatures are histories, not loadouts
 
-A creature can be spliced again and again. Nothing is “unequipped”. Its current body is the accumulated result of irreversible experiments, mutations, injuries and training.
+A creature can be spliced again and again. Nothing is "unequipped". Its current body is the accumulated result of irreversible experiments, mutations, injuries and training.
 
 ### 3. Small main roster, large experimental space
 
@@ -46,7 +46,7 @@ Rabbits/other common animals can be excellent test subjects because equivalent r
 
 ### 5. Full mad science, not molecular simulation
 
-The system borrows intuitive ideas from real animals but follows playful logic: “put a rhino horn on this fish” is a valid design goal. Internal rules should be coherent without being biologically realistic.
+The system borrows intuitive ideas from real animals but follows playful logic: "put a rhino horn on this fish" is a valid design goal. Internal rules should be coherent without being biologically realistic.
 
 ### 6. Capability-driven combat
 
@@ -67,6 +67,25 @@ Genes/material are bought, harvested, won and traded. The laboratory should cons
 ### 10. Tone is black comedy, not torture spectacle
 
 The concepts are ethically horrific; the presentation is stylised and comic. The game explicitly warns/acknowledges fictional animal harm rather than pretending otherwise.
+
+### 11. Graphics-first game-feel foundation
+
+Player-facing systems must not outrun the visual and movement foundation. If choosing a protagonist and moving through the world does not already feel good, adding mechanics is not considered progress.
+
+The approved current visual direction is documented in `VISUAL_DIRECTION_2026-08-23.md` and anchored by `visual-reference/splicepit-protagonists-biotech-v2.webp`.
+
+## Locked protagonist direction
+
+The initial player-facing choice is between four authored SpliceApprentice protagonists:
+
+- **Milo** — biotech tinkerer;
+- **Theo** — scavenger field collector;
+- **Ada** — obsessive field scientist;
+- **Pip** — chaos experimenter.
+
+They are visual identities, not gameplay classes. The current milestone supports choosing one of the four plus entering a player name. Broad modular appearance customisation is deferred until and unless the authored four-character approach proves insufficient.
+
+The visual tone is **cute but concerning**: attractive premium pixel-art presentation, immediately readable like a compact handheld-era top-down RPG, but full of improvised biotech gear, specimen containers, patched clothing, strange husbandry and ethically dubious experiments.
 
 ## Story frame currently locked
 
@@ -93,22 +112,72 @@ Detailed story beyond this structure remains authored separately. Exact creditor
 - R0.2 begins versioned-save compatibility contract;
 - keyboard first, controller/touch-ready architecture;
 - localisation-ready text/data architecture;
-- no initial full voice acting.
+- no initial full voice acting;
+- pixel-art rendering uses nearest-neighbour behaviour and avoids smoothing/blur.
+
+## Current graphics-first implementation contract
+
+The immediate playable target is intentionally narrow:
+
+```text
+Boot
+  ↓
+Character Select
+  ↓
+Choose Milo / Theo / Ada / Pip + enter name
+  ↓
+Apprentice Splicer Yard
+  ↓
+Walk around with polished movement, collision, depth and camera
+  ↓
+HUMAN PLAYTEST STOP
+```
+
+The player sprite prototype contract is:
+
+- 24 × 32 px per frame;
+- down / left / right / up;
+- one idle plus three walk frames per direction;
+- nearest-neighbour scaling;
+- coherent fixed-grid runtime sheets for all four protagonists.
+
+The Apprentice Splicer Yard is a fresh scene, not a reskin of the rejected Lab presentation. It should contain a compact workshop, paths, foliage, water/bridge where appropriate, test pens/cages, specimen/workshop clutter and enough biological wrongness to feel specifically like SplicePit.
+
+Until the graphics-first walking gate passes, do **not** add:
+
+- splice gameplay UI;
+- battle gameplay UI;
+- economy systems;
+- quest systems;
+- broad character customisation;
+- giant information/menu layers;
+- mass creature/NPC asset production;
+- opening-production work that delays the movement proof.
 
 ## Development ordering
 
 ```text
-R0.2 architecture
+R0.2 architecture hardening — COMPLETE
   ↓
-R0.3 irreversible uncertain splicing + knowledge/testing
+R0.3 biology/splicing technical prototypes — COMPLETE AS TECHNICAL EXPERIMENT
   ↓
-R0.4 capability-driven turn combat + functional Land/Water/Air
+R0.4 graphics-first player/world foundation
+    visual lock
+      → runtime Milo/Theo/Ada/Pip sprites
+      → character selection + identity persistence
+      → Apprentice Splicer Yard
+      → movement/collision/depth/camera polish
+      → HUMAN WALKING-AROUND GATE
+      → limited post-gate presentation proof
+      → visual lock for mechanic re-entry
   ↓
-R0.5 world/quests/acquisition/debt/upgrades
+R0.5 splice and battle mechanic redesign
   ↓
-R0.6 production presentation/audio/accessibility
+R0.6 world / quests / acquisition / progression
   ↓
-R0.7 integrated pre-alpha
+R0.7 production presentation / audio / accessibility
+  ↓
+R0.8 integrated pre-alpha
   ↓
 R1 complete Act 1 / Alpha 1
   ↓
@@ -119,9 +188,23 @@ R3 content-complete Beta / feature-freeze gate
 R4 release candidate / certification
 ```
 
-Architecture comes before content volume. Prototype content must not become canon through inertia.
+Architecture comes before content volume, but player-facing mechanics also come **after** a convincing visual/game-feel foundation. Prototype content must not become canon through inertia.
 
 The definitive sequence is `ROADMAP.md`, with detailed contracts under `work-packages/`.
+
+## Superseded presentation rule
+
+The following are historical evidence only and are not active visual targets:
+
+- old `VisualDirectionScene` presentation;
+- old player-facing Lab/Splice/Battle presentation;
+- oversized/high-saturation visual treatments;
+- dark terminal-style presentation;
+- giant web-card interface patterns;
+- removed pre-23-August visual-reference boards;
+- older WP0.4 contracts that placed broad interface work, creature pipeline work or modular character creation before the walking-around proof.
+
+Useful domain code, deterministic infrastructure, data models, saves, input abstractions and technical tests may survive if they do not impose the rejected presentation.
 
 ## Work-package rule
 
@@ -138,4 +221,4 @@ Every implementation WP defines:
 
 A WP is complete when its gate passes, not when code merely exists.
 
-The current master execution roadmap contains **74 WPs**. Later playtests may create narrowly numbered patch/hardening WPs, but material new features must enter at the earliest dependency-correct point rather than being bolted onto unrelated work.
+The current master execution roadmap contains **80 WPs**. Later playtests may create narrowly numbered patch/hardening WPs, but material new features must enter at the earliest dependency-correct point rather than being bolted onto unrelated work.
