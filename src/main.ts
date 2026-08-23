@@ -27,9 +27,10 @@ const canvas = document.createElement('canvas');
 canvas.setAttribute('aria-label', 'SplicePit bare sprite movement sandbox');
 root.replaceChildren(canvas);
 
-const context = canvas.getContext('2d', { alpha: false });
-if (!context) throw new Error('Canvas 2D is unavailable');
-context.imageSmoothingEnabled = false;
+const maybeContext = canvas.getContext('2d', { alpha: false });
+if (!maybeContext) throw new Error('Canvas 2D is unavailable');
+const ctx: CanvasRenderingContext2D = maybeContext;
+ctx.imageSmoothingEnabled = false;
 
 const images = new Map<CharacterId, HTMLImageElement>();
 const held = new Set<string>();
@@ -53,8 +54,8 @@ function resize(): void {
   canvas.height = Math.max(1, Math.floor(window.innerHeight * dpr));
   canvas.style.width = `${window.innerWidth}px`;
   canvas.style.height = `${window.innerHeight}px`;
-  context.setTransform(dpr, 0, 0, dpr, 0, 0);
-  context.imageSmoothingEnabled = false;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
   clampPosition();
 }
 
@@ -130,8 +131,8 @@ function update(deltaSeconds: number): void {
 }
 
 function draw(): void {
-  context.fillStyle = '#000000';
-  context.fillRect(0, 0, window.innerWidth, window.innerHeight);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
   const character = CHARACTERS[characterIndex];
   const image = images.get(character.id);
@@ -142,7 +143,7 @@ function draw(): void {
 
   // Deliberately draw the one known-good DOWN frame for every movement direction.
   // This build isolates movement from all directional-frame logic.
-  context.drawImage(
+  ctx.drawImage(
     image,
     0,
     0,
