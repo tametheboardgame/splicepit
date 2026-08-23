@@ -2,21 +2,32 @@ const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
 const DISPLAY_SCALE = 2;
 const SPEED = 180;
+const ATLAS_PATH = 'assets/protagonists/protagonist-static-atlas-v3.png';
 
-const CHARACTERS = [
-  { id: 'milo', path: 'assets/protagonists/milo-hd-v2.png' },
-  { id: 'theo', path: 'assets/protagonists/theo-hd-v2.png' },
-  { id: 'ada', path: 'assets/protagonists/ada-hd-v2.png' },
-  { id: 'pip', path: 'assets/protagonists/pip-hd-v2.png' },
-] as const;
+const CHARACTERS = ['milo', 'theo', 'ada', 'pip'] as const;
+type CharacterId = (typeof CHARACTERS)[number];
+type Direction = 'down' | 'left' | 'right' | 'up';
 
-type CharacterId = (typeof CHARACTERS)[number]['id'];
+const DIRECTION_ROW: Record<Direction, number> = {
+  down: 0,
+  left: 1,
+  right: 2,
+  up: 3,
+};
+
+const KEY_DIRECTION: Record<string, Direction | undefined> = {
+  ArrowDown: 'down', s: 'down',
+  ArrowLeft: 'left', a: 'left',
+  ArrowRight: 'right', d: 'right',
+  ArrowUp: 'up', w: 'up',
+};
 
 type SandboxDebug = {
   ready: boolean;
   x: number;
   y: number;
   character: CharacterId;
+  direction: Direction;
   held: string[];
 };
 
@@ -32,9 +43,10 @@ if (!maybeContext) throw new Error('Canvas 2D is unavailable');
 const ctx: CanvasRenderingContext2D = maybeContext;
 ctx.imageSmoothingEnabled = false;
 
-const images = new Map<CharacterId, HTMLImageElement>();
+const atlas = new Image();
 const held = new Set<string>();
 let characterIndex = 0;
+let direction: Direction = 'down';
 let x = window.innerWidth / 2;
 let y = window.innerHeight / 2 + (FRAME_HEIGHT * DISPLAY_SCALE) / 2;
 let previousTime = performance.now();
@@ -43,7 +55,8 @@ const debug: SandboxDebug = {
   ready: false,
   x,
   y,
-  character: CHARACTERS[characterIndex].id,
+  character: CHARACTERS[characterIndex],
+  direction,
   held: [],
 };
 (globalThis as typeof globalThis & { __SPLICEPIT_SANDBOX__?: SandboxDebug }).__SPLICEPIT_SANDBOX__ = debug;
@@ -76,19 +89,19 @@ function normaliseKey(event: KeyboardEvent): string {
   return event.key.length === 1 ? event.key.toLowerCase() : event.key;
 }
 
-const movementKeys = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'w', 'a', 's', 'd']);
+const movementKeys = new Set(Object.keys(KEY_DIRECTION));
 
 window.addEventListener('keydown', (event) => {
   const key = normaliseKey(event);
   if (movementKeys.has(key)) {
     event.preventDefault();
     held.add(key);
+    direction = KEY_DIRECTION[key] ?? direction;
     return;
   }
 
   if (!event.repeat && ['1', '2', '3', '4'].includes(key)) {
     characterIndex = Number(key) - 1;
-    debug.character = CHARACTERS[characterIndex].id;
     return;
   }
 
@@ -105,13 +118,6 @@ window.addEventListener('keyup', (event) => {
 
 window.addEventListener('blur', () => held.clear());
 window.addEventListener('resize', resize);
-
-async function loadCharacter(character: (typeof CHARACTERS)[number]): Promise<void> {
-  const image = new Image();
-  image.src = character.path;
-  await image.decode();
-  images.set(character.id, image);
-}
 
 function update(deltaSeconds: number): void {
   let dx = 0;
@@ -134,19 +140,17 @@ function draw(): void {
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
-  const character = CHARACTERS[characterIndex];
-  const image = images.get(character.id);
-  if (!image) return;
+  if (!debug.ready) return;
 
   const width = FRAME_WIDTH * DISPLAY_SCALE;
   const height = FRAME_HEIGHT * DISPLAY_SCALE;
+  const sourceX = characterIndex * FRAME_WIDTH;
+  const sourceY = DIRECTION_ROW[direction] * FRAME_HEIGHT;
 
-  // Deliberately draw the one known-good DOWN frame for every movement direction.
-  // This build isolates movement from all directional-frame logic.
   ctx.drawImage(
-    image,
-    0,
-    0,
+    atlas,
+    sourceX,
+    sourceY,
     FRAME_WIDTH,
     FRAME_HEIGHT,
     Math.round(x - width / 2),
@@ -157,7 +161,8 @@ function draw(): void {
 
   debug.x = x;
   debug.y = y;
-  debug.character = character.id;
+  debug.character = CHARACTERS[characterIndex];
+  debug.direction = direction;
   debug.held = [...held];
 }
 
@@ -169,9 +174,12 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
-resize();
-Promise.all(CHARACTERS.map(loadCharacter)).then(() => {
+atlas.src = ATLAS_PATH;
+atlas.decode().then(() => {
   debug.ready = true;
+  resize();
   previousTime = performance.now();
   requestAnimationFrame(frame);
+}).catch((error) => {
+  console.error('Failed to load protagonist atlas', error);
 });
