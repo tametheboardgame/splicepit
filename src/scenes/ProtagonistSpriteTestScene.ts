@@ -3,15 +3,13 @@ import { PALETTE, TEXT } from '../config.js';
 import {
   PROTAGONIST_DIRECTIONS,
   PROTAGONIST_IDS,
-  PROTAGONIST_SPRITE_DISPLAY_SCALE,
+  PROTAGONIST_REVIEW_SCALE,
   PROTAGONIST_SPRITES,
   type ProtagonistDirection,
 } from '../player/protagonists.js';
 import {
-  applyProtagonistNearestNeighbourFiltering,
-  createProtagonistAnimations,
-  preloadProtagonistSprites,
-  protagonistAnimationKey,
+  createProtagonistSprite,
+  playProtagonistAnimation,
 } from '../render/protagonistSprites.js';
 import { fadeIn } from '../ui/transitions.js';
 
@@ -23,43 +21,35 @@ export class ProtagonistSpriteTestScene extends Phaser.Scene {
     super('ProtagonistSpriteTest');
   }
 
-  preload(): void {
-    preloadProtagonistSprites(this);
-  }
-
   create(): void {
     this.cameras.main.setBackgroundColor(0x171a17);
-    applyProtagonistNearestNeighbourFiltering(this);
-    createProtagonistAnimations(this);
     fadeIn(this, 120);
 
-    this.add.text(480, 32, 'WP0.4D — RUNTIME PROTAGONIST SPRITE TEST', {
+    this.add.text(480, 30, 'WP0.4D — APPROVED PROTAGONIST RUNTIME TEST', {
       ...TEXT.mono,
       fontSize: '18px',
     }).setOrigin(0.5);
 
-    this.add.text(480, 60, '24×32 frames • 4× display • fixed grid • nearest-neighbour', {
+    this.add.text(480, 57, '64×96 frames • 1× gameplay • 2× review • fixed grid • nearest-neighbour', {
       ...TEXT.mono,
       color: '#c6c9b3',
-      fontSize: '12px',
+      fontSize: '11px',
     }).setOrigin(0.5);
 
-    const xPositions = [120, 360, 600, 840];
+    const xPositions = [125, 365, 595, 835];
 
     PROTAGONIST_IDS.forEach((id, index) => {
       const definition = PROTAGONIST_SPRITES[id];
       const x = xPositions[index];
 
-      this.add.rectangle(x, 238, 176, 300, 0x222720)
+      this.add.rectangle(x, 240, 190, 330, 0x222720)
         .setStrokeStyle(2, PALETTE.mossDark, 0.9);
 
-      const sprite = this.add.sprite(x, 294, definition.textureKey, 0)
-        .setOrigin(0.5, 1)
-        .setScale(PROTAGONIST_SPRITE_DISPLAY_SCALE);
-      sprite.play(protagonistAnimationKey(id, 'down', 'walk'));
+      const sprite = createProtagonistSprite(this, id, x, 330, 'down', PROTAGONIST_REVIEW_SCALE);
+      playProtagonistAnimation(sprite, id, 'down', 'walk');
       this.sprites.push(sprite);
 
-      this.add.text(x, 330, definition.name, {
+      this.add.text(x, 352, definition.name, {
         ...TEXT.body,
         color: '#f0ead8',
         fontSize: '22px',
@@ -82,7 +72,7 @@ export class ProtagonistSpriteTestScene extends Phaser.Scene {
     updateDirection();
     this.time.addEvent({ delay: 1800, loop: true, callback: updateDirection });
 
-    this.add.text(480, 486, 'Human gate: silhouette, identity, foot lock and animation cleanliness at play scale', {
+    this.add.text(480, 486, 'Approved art gate: identity, animation cleanliness and stable feet at actual runtime scale', {
       ...TEXT.mono,
       color: '#9da28d',
       fontSize: '11px',
@@ -91,8 +81,7 @@ export class ProtagonistSpriteTestScene extends Phaser.Scene {
 
   private playDirection(direction: ProtagonistDirection): void {
     this.sprites.forEach((sprite, index) => {
-      const id = PROTAGONIST_IDS[index];
-      sprite.play(protagonistAnimationKey(id, direction, 'walk'), true);
+      playProtagonistAnimation(sprite, PROTAGONIST_IDS[index], direction, 'walk');
     });
   }
 }

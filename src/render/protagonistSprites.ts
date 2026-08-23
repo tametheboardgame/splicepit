@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   PROTAGONIST_DIRECTIONS,
   PROTAGONIST_FRAME_LAYOUT,
+  PROTAGONIST_GAMEPLAY_SCALE,
   PROTAGONIST_IDS,
   PROTAGONIST_SPRITE_FRAME_HEIGHT,
   PROTAGONIST_SPRITE_FRAME_WIDTH,
@@ -23,6 +24,7 @@ export function protagonistAnimationKey(
 export function preloadProtagonistSprites(scene: Phaser.Scene): void {
   for (const id of PROTAGONIST_IDS) {
     const definition = PROTAGONIST_SPRITES[id];
+    if (scene.textures.exists(definition.textureKey)) continue;
     scene.load.spritesheet(definition.textureKey, definition.assetPath, {
       frameWidth: PROTAGONIST_SPRITE_FRAME_WIDTH,
       frameHeight: PROTAGONIST_SPRITE_FRAME_HEIGHT,
@@ -32,7 +34,10 @@ export function preloadProtagonistSprites(scene: Phaser.Scene): void {
 
 export function applyProtagonistNearestNeighbourFiltering(scene: Phaser.Scene): void {
   for (const id of PROTAGONIST_IDS) {
-    scene.textures.get(PROTAGONIST_SPRITES[id].textureKey).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    const textureKey = PROTAGONIST_SPRITES[id].textureKey;
+    if (scene.textures.exists(textureKey)) {
+      scene.textures.get(textureKey).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
   }
 }
 
@@ -66,4 +71,29 @@ export function createProtagonistAnimations(scene: Phaser.Scene): void {
       }
     }
   }
+}
+
+export function playProtagonistAnimation(
+  sprite: Phaser.GameObjects.Sprite,
+  id: ProtagonistId,
+  direction: ProtagonistDirection,
+  state: ProtagonistAnimationState,
+): void {
+  const key = protagonistAnimationKey(id, direction, state);
+  if (sprite.anims.currentAnim?.key !== key) sprite.play(key, true);
+}
+
+export function createProtagonistSprite(
+  scene: Phaser.Scene,
+  id: ProtagonistId,
+  x: number,
+  y: number,
+  direction: ProtagonistDirection = 'down',
+  scale = PROTAGONIST_GAMEPLAY_SCALE,
+): Phaser.GameObjects.Sprite {
+  const sprite = scene.add.sprite(x, y, PROTAGONIST_SPRITES[id].textureKey, PROTAGONIST_FRAME_LAYOUT[direction].idle)
+    .setOrigin(0.5, 1)
+    .setScale(scale);
+  playProtagonistAnimation(sprite, id, direction, 'idle');
+  return sprite;
 }

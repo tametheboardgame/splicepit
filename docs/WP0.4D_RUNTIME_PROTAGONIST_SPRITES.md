@@ -1,63 +1,61 @@
 # WP0.4D — Runtime Protagonist Sprite Production
 
-**Status:** IMPLEMENTATION CANDIDATE — HUMAN VISUAL GATE PENDING
+**Status:** APPROVED ART INTEGRATION CANDIDATE
 
-This package converts the four approved SpliceApprentice concepts into fixed-grid runtime pixel assets. It does not implement character selection or the Apprentice Splicer Yard.
+WP0.4D converts the four approved protagonist sheets into real runtime assets and replaces the rejected ultra-minimal 24×32 pass.
 
-## Runtime asset contract
+## Approved runtime asset contract
 
 Each protagonist has one PNG spritesheet at `public/assets/protagonists/<id>.png`.
 
-- frame size: 24 × 32 px;
-- sheet size: 96 × 128 px;
+- protagonists: Milo, Theo, Ada and Pip;
+- frame size: 64 × 96 px;
+- sheet size: 256 × 384 px;
 - columns: idle, walk 1, walk 2, walk 3;
 - rows: down, left, right, up;
 - frame indices: 0–15 in row-major order;
-- runtime review scale: 4×;
-- feet share a consistent bottom origin across frames and protagonists;
-- Phaser textures explicitly use nearest-neighbour filtering.
+- gameplay scale: 1×;
+- review scale: 2×;
+- nearest-neighbour texture filtering;
+- bottom-centre sprite origin so feet remain anchored during movement.
 
-Stable protagonist IDs are `milo`, `theo`, `ada` and `pip`. Runtime texture keys are `protagonist-<id>`.
+Stable protagonist IDs are `milo`, `theo`, `ada` and `pip`. Runtime texture keys are `protagonist-<id>` and animation keys are `protagonist-<id>-<direction>-<idle|walk>`.
 
-Animation keys follow:
+## Actual game integration
 
-`protagonist-<id>-<direction>-<idle|walk>`
+The existing Lab gameplay remains mechanically unchanged, but its temporary procedural figure is replaced at runtime with the approved protagonist renderer. Milo is the default until WP0.4E implements character selection and persistence.
 
-The shared metadata and animation helpers live in `src/player/protagonists.ts` and `src/render/protagonistSprites.ts` so WP0.4E can consume the same assets without re-declaring frame numbers.
+For WP0.4D branch testing only, the protagonist can be changed with:
 
-## In-engine review route
+- `?protagonist=milo`
+- `?protagonist=theo`
+- `?protagonist=ada`
+- `?protagonist=pip`
 
-Open the build with:
+The isolated visual review route remains available with `?spriteTest=1`.
 
-`?spriteTest=1`
+## Cosmetic extension boundary
 
-The isolated `ProtagonistSpriteTestScene` loads the real runtime PNGs, displays all four at the locked 4× scale and automatically cycles down/left/right/up walking animations.
+WP0.4D does not implement a character creator, but the protagonist definition now separates authored identity from future cosmetic choices.
 
-The review is deliberately neutral. It does not introduce character-selection UX, environment art or a new UI system.
+WP0.4E may add a small set of controlled options, particularly skin tone and limited authored accent/accessory variants. Do not apply whole-sprite tinting because that would recolour clothes, hair and biotech equipment. Use targeted masks, authored palette variants or overlays instead.
+
+The protagonists must remain recognisably Milo, Theo, Ada and Pip rather than becoming fully modular avatars.
 
 ## Automated checks
 
 `tests/protagonist-sprites.test.mjs` verifies:
 
 - the exact four protagonist IDs;
-- the 24 × 32 frame contract;
+- 64 × 96 frame dimensions;
 - four rows and four columns;
 - deterministic direction/frame ordering;
-- exact 96 × 128 dimensions for every PNG.
+- exact 256 × 384 PNG dimensions;
+- the lightweight appearance boundary;
+- removal of the failed base64-in-TypeScript asset experiment.
 
 Existing typecheck, content, RNG, domain/save tests, production build and browser smoke remain required.
 
 ## Save/schema impact
 
-None. WP0.4D introduces presentation assets and runtime animation metadata only.
-
-## Human gate
-
-Before WP0.4E begins, human review must confirm that all four protagonists:
-
-1. remain individually recognisable at play scale;
-2. preserve their approved silhouette, hair and major colour identity;
-3. retain at least one readable biotech/scavenger accessory cue;
-4. animate cleanly in all four directions;
-5. keep their feet visually locked instead of bobbing or sliding incorrectly;
-6. look deliberate rather than like enlarged concept-art fragments or procedural placeholders.
+None. WP0.4D changes presentation/runtime rendering only. Character choice and cosmetic persistence belong to WP0.4E.

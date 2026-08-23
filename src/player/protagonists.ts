@@ -4,11 +4,12 @@ export type ProtagonistId = (typeof PROTAGONIST_IDS)[number];
 export const PROTAGONIST_DIRECTIONS = ['down', 'left', 'right', 'up'] as const;
 export type ProtagonistDirection = (typeof PROTAGONIST_DIRECTIONS)[number];
 
-export const PROTAGONIST_SPRITE_FRAME_WIDTH = 24;
-export const PROTAGONIST_SPRITE_FRAME_HEIGHT = 32;
+export const PROTAGONIST_SPRITE_FRAME_WIDTH = 64;
+export const PROTAGONIST_SPRITE_FRAME_HEIGHT = 96;
 export const PROTAGONIST_SPRITE_COLUMNS = 4;
 export const PROTAGONIST_SPRITE_ROWS = 4;
-export const PROTAGONIST_SPRITE_DISPLAY_SCALE = 4;
+export const PROTAGONIST_GAMEPLAY_SCALE = 1;
+export const PROTAGONIST_REVIEW_SCALE = 2;
 
 export interface ProtagonistFrameRow {
   readonly idle: number;
@@ -55,3 +56,25 @@ export const PROTAGONIST_SPRITES: Record<ProtagonistId, ProtagonistSpriteDefinit
     assetPath: 'assets/protagonists/pip.png',
   },
 };
+
+// WP0.4E may expand these IDs into authored palette/mask variants. Keeping the
+// appearance contract separate now prevents character customisation from
+// leaking into movement or animation code.
+export type ProtagonistSkinToneId = 'base';
+export type ProtagonistAccentVariantId = 'base';
+
+export interface ProtagonistAppearance {
+  readonly id: ProtagonistId;
+  readonly skinToneId: ProtagonistSkinToneId;
+  readonly accentVariantId: ProtagonistAccentVariantId;
+}
+
+export const DEFAULT_PROTAGONIST_APPEARANCE: ProtagonistAppearance = {
+  id: 'milo',
+  skinToneId: 'base',
+  accentVariantId: 'base',
+};
+
+export function isProtagonistId(value: string | null | undefined): value is ProtagonistId {
+  return PROTAGONIST_IDS.includes(value as ProtagonistId);
+}
