@@ -1,0 +1,1 @@
+Approved runtime exports: milo.png, theo.png, ada.png, pip.png. 256×384 sheets, 64×96 cells.
