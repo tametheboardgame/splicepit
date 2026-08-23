@@ -5,20 +5,24 @@ const FRAME_HEIGHT = 96;
 const SPEED = 190;
 
 const CHARACTERS = [
-  { id: 'milo', texture: 'sandbox-milo', path: 'assets/protagonists/milo-hd-v2.png' },
-  { id: 'theo', texture: 'sandbox-theo', path: 'assets/protagonists/theo-hd-v2.png' },
-  { id: 'ada', texture: 'sandbox-ada', path: 'assets/protagonists/ada-hd-v2.png' },
-  { id: 'pip', texture: 'sandbox-pip', path: 'assets/protagonists/pip-hd-v2.png' },
+  { id: 'milo', sheetTexture: 'sandbox-sheet-milo', path: 'assets/protagonists/milo-hd-v2.png' },
+  { id: 'theo', sheetTexture: 'sandbox-sheet-theo', path: 'assets/protagonists/theo-hd-v2.png' },
+  { id: 'ada', sheetTexture: 'sandbox-sheet-ada', path: 'assets/protagonists/ada-hd-v2.png' },
+  { id: 'pip', sheetTexture: 'sandbox-sheet-pip', path: 'assets/protagonists/pip-hd-v2.png' },
 ] as const;
 
 type Direction = 'down' | 'left' | 'right' | 'up';
 
-const IDLE_FRAME: Record<Direction, number> = {
+const DIRECTION_ROW: Record<Direction, number> = {
   down: 0,
-  left: 4,
-  right: 8,
-  up: 12,
+  left: 1,
+  right: 2,
+  up: 3,
 };
+
+function directionTextureKey(characterId: string, direction: Direction): string {
+  return `sandbox-${characterId}-${direction}`;
+}
 
 export class SpriteSandboxScene extends Phaser.Scene {
   player!: Phaser.GameObjects.Sprite;
@@ -44,19 +48,15 @@ export class SpriteSandboxScene extends Phaser.Scene {
 
   preload(): void {
     for (const character of CHARACTERS) {
-      this.load.spritesheet(character.texture, character.path, {
-        frameWidth: FRAME_WIDTH,
-        frameHeight: FRAME_HEIGHT,
-      });
+      // Load each approved sheet as a plain image. No spritesheet parser is used.
+      this.load.image(character.sheetTexture, character.path);
     }
   }
 
   create(): void {
     this.cameras.main.setBackgroundColor('#000000');
 
-    for (const character of CHARACTERS) {
-      this.textures.get(character.texture).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    }
+    this.createStandaloneDirectionalTextures();
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.keys = {
@@ -75,8 +75,7 @@ export class SpriteSandboxScene extends Phaser.Scene {
     this.player = this.add.sprite(
       centre.x,
       centre.y + FRAME_HEIGHT / 2,
-      CHARACTERS[0].texture,
-      IDLE_FRAME.down,
+      directionTextureKey(CHARACTERS[0].id, 'down'),
     ).setOrigin(0.5, 1);
   }
 
@@ -107,8 +106,10 @@ export class SpriteSandboxScene extends Phaser.Scene {
     }
 
     if (nextDirection) {
-      this.direction = nextDirection;
-      this.player.setFrame(IDLE_FRAME[this.direction]);
+      if (nextDirection !== this.direction) {
+        this.direction = nextDirection;
+        this.applyCurrentTexture();
+      }
 
       const distance = SPEED * (delta / 1000);
       this.player.x += dx * distance;
@@ -118,6 +119,43 @@ export class SpriteSandboxScene extends Phaser.Scene {
       this.player.x = Phaser.Math.Clamp(this.player.x, halfWidth, this.scale.width - halfWidth);
       this.player.y = Phaser.Math.Clamp(this.player.y, FRAME_HEIGHT, this.scale.height);
     }
+  }
+
+  private createStandaloneDirectionalTextures(): void {
+    for (const character of CHARACTERS) {
+      const sourceTexture = this.textures.get(character.sheetTexture);
+      const sourceImage = sourceTexture.getSourceImage() as CanvasImageSource;
+
+      for (const direction of ['down', 'left', 'right', 'up'] as const) {
+        const key = directionTextureKey(character.id, direction);
+        if (this.textures.exists(key)) continue;
+
+        const canvasTexture = this.textures.createCanvas(key, FRAME_WIDTH, FRAME_HEIGHT);
+        if (!canvasTexture) throw new Error(`Could not create sandbox texture ${key}`);
+
+        const context = canvasTexture.context;
+        context.clearRect(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
+        context.imageSmoothingEnabled = false;
+        context.drawImage(
+          sourceImage,
+          0,
+          DIRECTION_ROW[direction] * FRAME_HEIGHT,
+          FRAME_WIDTH,
+          FRAME_HEIGHT,
+          0,
+          0,
+          FRAME_WIDTH,
+          FRAME_HEIGHT,
+        );
+        canvasTexture.refresh();
+        canvasTexture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      }
+    }
+  }
+
+  private applyCurrentTexture(): void {
+    const character = CHARACTERS[this.characterIndex];
+    this.player.setTexture(directionTextureKey(character.id, this.direction));
   }
 
   private handleCharacterSwitch(): void {
@@ -131,6 +169,6 @@ export class SpriteSandboxScene extends Phaser.Scene {
     if (requested < 0 || requested === this.characterIndex) return;
 
     this.characterIndex = requested;
-    this.player.setTexture(CHARACTERS[this.characterIndex].texture, IDLE_FRAME[this.direction]);
+    this.applyCurrentTexture();
   }
 }
