@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {
   DEFAULT_PROTAGONIST_APPEARANCE,
+  PROTAGONIST_FRAME_LAYOUT,
   PROTAGONIST_GAMEPLAY_SCALE,
   isProtagonistId,
   type ProtagonistDirection,
@@ -8,15 +9,19 @@ import {
 import {
   createProtagonistSprite,
   playProtagonistAnimation,
+  protagonistFrameName,
 } from '../render/protagonistSprites.js';
 import { LabScene } from '../scenes/LabScene.js';
 
 let installed = false;
 
-// WP0.4D keeps the existing lab/gameplay logic intact while replacing its
-// temporary procedural figure with the approved authored protagonist art.
-// WP0.4E can move protagonist choice into persistent game state without
-// changing this renderer contract.
+function directionForMove(dx: number, dy: number): ProtagonistDirection {
+  if (dx < 0) return 'left';
+  if (dx > 0) return 'right';
+  if (dy < 0) return 'up';
+  return 'down';
+}
+
 export function installLabProtagonistRuntime(): void {
   if (installed) return;
   installed = true;
@@ -29,7 +34,9 @@ export function installLabProtagonistRuntime(): void {
     const runtime = this as unknown as {
       player: Phaser.GameObjects.Container | Phaser.GameObjects.Sprite;
       moving: boolean;
+      move: (dx: number, dy: number) => void;
     };
+
     const oldPlayer = runtime.player;
     const { x, y } = oldPlayer;
     oldPlayer.destroy();
@@ -51,29 +58,30 @@ export function installLabProtagonistRuntime(): void {
     );
     runtime.player = sprite;
 
-    let direction: ProtagonistDirection = 'down';
-    let walking = false;
-    let lastX = sprite.x;
-    let lastY = sprite.y;
+    const originalMove = runtime.move.bind(this);
+    let facing: ProtagonistDirection = 'down';
 
-    this.events.on(Phaser.Scenes.Events.UPDATE, () => {
-      const dx = sprite.x - lastX;
-      const dy = sprite.y - lastY;
-      const translated = Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01;
+    const setIdleFrame = (direction: ProtagonistDirection): void => {
+      sprite.anims.stop();
+      sprite.setFrame(protagonistFrameName(PROTAGONIST_FRAME_LAYOUT[direction].idle));
+    };
 
-      if (translated) {
-        if (Math.abs(dx) >= Math.abs(dy)) direction = dx < 0 ? 'left' : 'right';
-        else direction = dy < 0 ? 'up' : 'down';
+    runtime.move = (dx: number, dy: number): void => {
+      facing = directionForMove(dx, dy);
+
+      if (facing === 'down') {
+        playProtagonistAnimation(sprite, protagonistId, 'down', 'walk');
+      } else {
+        setIdleFrame(facing);
       }
 
-      const shouldWalk = translated || runtime.moving;
-      if (shouldWalk !== walking || translated) {
-        playProtagonistAnimation(sprite, protagonistId, direction, shouldWalk ? 'walk' : 'idle');
-        walking = shouldWalk;
-      }
+      originalMove(dx, dy);
 
-      lastX = sprite.x;
-      lastY = sprite.y;
-    });
+      this.time.delayedCall(110, () => {
+        if (!runtime.moving) setIdleFrame(facing);
+      });
+    };
+
+    setIdleFrame('down');
   };
 }
