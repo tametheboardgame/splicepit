@@ -1,213 +1,279 @@
-# SplicePit Work Packages — Visual-First R0 Rebase
+# SplicePit Work Packages — Graphics-First R0 Rebase
 
 **Status:** AUTHORITATIVE from WP0.4C onward
 
-**Effective:** 18 August 2026
+**Effective:** 23 August 2026
 
-This file replaces the pre-reset WP0.4C+ contracts. The reset exists because human review rejected the direction of the first splice-bench UX, battle prototype and oversized/high-saturation visual pass.
+This file replaces all earlier WP0.4C+ contracts where they conflict with the 23 August graphics-first reset.
 
-The execution order is intentionally visual-first. Do not resume splice or combat mechanic work until WP0.4J has passed its explicit human gate.
+The active visual source of truth is:
+
+- `docs/VISUAL_DIRECTION_2026-08-23.md`
+- `docs/visual-reference/splicepit-protagonists-biotech-v2.webp`
+
+The immediate objective is not to rebuild the whole game. It is to prove that choosing one of four protagonists and walking around a small SplicePit environment already feels good.
+
+Do not resume splice or combat mechanic development until WP0.4J has passed its explicit human gate.
 
 ## WP completion rule
 
 For every WP:
 
 - implement only the stated scope;
-- preserve useful technical infrastructure where it does not constrain the new design;
-- do not preserve rejected interaction/presentation simply because it already exists;
+- preserve technical infrastructure only where it is genuinely presentation-independent;
+- do not preserve rejected interaction/presentation because code already exists;
 - run relevant automated checks;
 - record save/schema impact;
-- keep tunable assumptions provisional unless the WP explicitly locks them;
-- stop at human gates rather than self-approving subjective direction.
+- stop at human gates rather than self-approving subjective art/game-feel decisions;
+- do not pull future-system work forward into the active graphics-first milestone.
 
 ---
 
-# R0.4 — Visual Identity, Player and Workshop Foundation
+# R0.4 — Graphics-First Player and World Foundation
 
-## WP0.4C — Visual Direction Reset
+## WP0.4C — Visual Direction and Protagonist Lock — COMPLETE
 
-**Depends on:** existing R0.2/R0.3 technical foundation. WP0.4A/B are reference experiments only.
+**Depends on:** existing R0.2/R0.3 technical foundation. WP0.4A/B remain reference experiments only.
 
-**Purpose:** establish a new visual target before more mechanics are built.
+**Purpose:** establish the visual target and protagonist set before further player-facing development.
 
-**Direction to explore:**
-- cartoony/animated rather than painterly;
-- smaller, more intimate scale;
-- high-quality small sprites;
-- controlled, slightly darker palette;
-- colour used as accent rather than blanket saturation;
-- workshop/mad-science atmosphere;
-- polished game-animation feel rather than giant illustrated UI cards;
-- unsettling biological details embedded in props/creatures/world rather than making every surface horror-themed.
+**Locked result:**
+
+- premium original GBA-era top-down RPG readability;
+- biotech-apprentice art direction described as **cute but concerning**;
+- four authored protagonists: Milo, Theo, Ada and Pip;
+- no mechanical class differences between the four;
+- warm attractive environments with biological wrongness embedded in props and details;
+- compact world-first UI rather than giant panels;
+- 24 × 32 px player frames;
+- four directions;
+- one idle plus three walk frames per direction;
+- nearest-neighbour scaling;
+- broader modular character customisation deferred.
+
+**Authoritative artefacts:**
+
+- `docs/VISUAL_DIRECTION_2026-08-23.md`
+- `docs/visual-reference/splicepit-protagonists-biotech-v2.webp`
+
+**Superseded:** previous WP0.4C reference boards and earlier visual prototype treatments.
+
+---
+
+## WP0.4D — Runtime Protagonist Sprite Production — READY
+
+**Depends on:** WP0.4C complete.
+
+**Purpose:** turn the approved concepts into clean production-shaped runtime assets before building more screens.
 
 **Deliverables:**
-- concise visual-direction specification;
-- reference board translated into original visual principles, not direct imitation;
-- palette families and contrast rules;
-- proposed camera/world scale;
-- proposed player/creature sprite scale;
-- UI density/spacing target;
-- workshop mood/composition sketches or prototype scene treatment;
-- explicit list of rejected WP0.4C-v1 traits so they do not creep back in.
 
-**Out of scope:** new splice mechanics, battle mechanics, world progression, production asset volume.
+- clean runtime sprite sheet for Milo;
+- clean runtime sprite sheet for Theo;
+- clean runtime sprite sheet for Ada;
+- clean runtime sprite sheet for Pip;
+- fixed frame grid and naming convention;
+- consistent foot/origin position across all frames and protagonists;
+- down/left/right/up rows or equivalent deterministic runtime layout;
+- one idle + three walk frames per direction;
+- nearest-neighbour asset loading;
+- Phaser animation definitions or asset metadata needed by the next WP;
+- in-engine sprite test proving each character at actual play size.
 
-**Human gate:** user chooses/approves the new direction before WP0.4D begins.
+**Asset contract:**
 
-**Acceptance:** the prototype no longer reads as oversized, over-saturated or dominated by UI; it clearly points towards a restrained high-quality animated mad-science game.
+- frame size: 24 × 32 px;
+- four directions;
+- four frames per direction when idle is included;
+- concept sheets are references only and must not be treated as directly sliceable runtime sheets;
+- no painterly scaling/filtering;
+- silhouettes, hair shape, major colour blocks and key biotech accessories must remain identifiable at actual size.
+
+**Out of scope:** character-selection UX, environment art, creature sprites, splice/battle UI, broad UI style system.
+
+**Gate:** all four protagonists look deliberate, animate cleanly and remain recognisable at actual in-game scale.
 
 ---
 
-## WP0.4D — Interface Style System
+## WP0.4E — Character Selection and Identity Persistence
 
-**Depends on:** WP0.4C approved.
+**Depends on:** WP0.4D.
 
-**Purpose:** define how information appears without making the interface the visual subject of the game.
+**Purpose:** let the player choose one of the four authored protagonists and persist that identity.
 
 **Deliverables:**
-- typography hierarchy;
-- compact panel/card treatment;
-- buttons, prompts, tooltips, dialogue and selection states;
-- HUD conventions;
-- spacing/grid rules;
-- colour-use rules inherited from WP0.4C;
-- world-integrated versus overlay UI rules;
-- desktop scaling baseline and future controller/touch compatibility;
-- short-height viewport checks.
 
-**Out of scope:** detailed splice/battle interaction design.
+- minimal character-selection scene;
+- Milo / Theo / Ada / Pip choices;
+- live small-sprite preview using the actual runtime asset;
+- player name entry;
+- persisted `avatarId` and player name in game state/save data;
+- load/continue returns the same protagonist;
+- keyboard-safe text entry with no movement/control-key interception;
+- simple mouse/touch-ready selection architecture where practical;
+- no protagonist-specific mechanical bonuses.
 
-**Gate:** title/workshop/mock dialogue/inventory-style samples feel like one interface, remain readable and do not recreate the giant-box problem.
+**Deliberately deferred:**
 
----
+- generic gender selector;
+- modular hair/clothes/face builder;
+- large wardrobe/customisation system;
+- complex biography/class selection.
 
-## WP0.4E — Creature and Player Sprite Design Pipeline
+**Out of scope:** workshop mechanics, splicing, combat, quests, economy.
 
-**Depends on:** WP0.4C–D.
-
-**Purpose:** lock the small-sprite visual language before content volume grows.
-
-**Deliverables:**
-- player sprite proportions and silhouette rules;
-- creature sprite proportions and readability rules;
-- direction count and animation-state proposal;
-- pixel/vector/raster rendering decision appropriate to the target look;
-- modular component rules where customisation requires them;
-- shading/outline/material rules;
-- representative player sprite;
-- representative Rabbit, Goat and Pig or equivalent test creature sprites;
-- at least one weird biological variation proving the style can remain readable after mutation/splicing;
-- export/naming/runtime asset contract.
-
-**Gate:** sprites look intentional and high quality at actual in-game size, not merely when enlarged.
+**Gate:** a player can choose one of the four, enter a name, save/reload and reliably see the same selected protagonist.
 
 ---
 
-## WP0.4F — Player Character Creation Prototype
+## WP0.4F — Apprentice Splicer Yard Rebuild
 
 **Depends on:** WP0.4E.
 
-**Purpose:** let the player establish a personal on-screen identity and prove that customisation can resolve into a coherent sprite.
+**Purpose:** create a completely fresh small environment that embodies the approved visual direction and exists solely to prove exploration feel.
+
+**Implementation rule:** this is not a reskin of the existing Lab scene. Reuse technical helpers only where they do not dictate old layout or presentation.
 
 **Deliverables:**
-- limited but meaningful appearance choices;
-- player naming flow;
-- live preview;
-- deterministic mapping from selected options to sprite presentation;
-- save/load persistence;
-- no control-key interception while entering text;
-- clear limits preventing incompatible visual combinations;
-- final small sprite used in the workshop scene.
 
-**Open design inside WP:** exact categories/options. Keep scope deliberately modest until the sprite pipeline proves itself.
+- new Apprentice Splicer Yard scene/map;
+- compact workshop/lab building;
+- grass and dirt path structure;
+- trees, shrubs, flowers and strange plants;
+- water feature/stream/pond and small bridge where suitable;
+- crates, barrels and specimen tables;
+- fenced pens/cages and containment details;
+- improvised biotech props, tubes, tanks or workshop clutter;
+- readable collision geometry prepared for WP0.4G;
+- layered foreground/background art suitable for player depth sorting;
+- enough open walking space to evaluate movement cleanly.
 
-**Gate:** a new player can create a recognisable character, name them naturally and see the same high-quality sprite after save/load.
+**Visual tone:**
+
+- charming and inviting at first glance;
+- increasingly questionable on inspection;
+- clear evidence that irresponsible apprentice gene-splicing happens here;
+- no realistic gore or horror-scene treatment.
+
+**Out of scope:** splice bench mechanics, battle access, inventory/economy, quests, NPC systems, large menus.
+
+**Gate:** a static screenshot of the yard already reads as a specific SplicePit place rather than generic RPG scenery.
 
 ---
 
-## WP0.4G — Workshop Scene Rebuild
+## WP0.4G — Movement, Collision, Depth and Camera Polish
 
-**Depends on:** WP0.4C–F.
+**Depends on:** WP0.4F.
 
-**Purpose:** make the inherited workshop/pit the visual home of the game before the systems inside it are redesigned.
+**Purpose:** make simply moving the chosen protagonist through the yard feel good.
 
 **Deliverables:**
-- rebuilt workshop layout at the approved scale;
-- player movement using the approved sprite;
-- layered environment art/prototype assets;
-- coherent lighting/palette treatment;
-- mad-science props, specimen storage, machinery and biological oddities;
-- clear future interaction zones without implementing final splice/battle mechanics;
-- readable depth/collision/navigation;
-- compact contextual prompts using WP0.4D UI;
-- ambient animation sufficient to make the workshop feel alive.
 
-**Out of scope:** final splice-bench interaction, final battle access/progression.
+- responsive four-direction movement;
+- correct directional animation switching;
+- correct idle facing when movement stops;
+- collision against buildings, fences, trees, water and props;
+- sensible feet-based hitbox/origin;
+- depth ordering so the player passes behind canopies, awnings and tall props where appropriate;
+- smooth camera follow;
+- nearest-neighbour rendering without blur/shimmer;
+- keyboard baseline through the existing semantic input architecture;
+- viewport behaviour suitable for common desktop browser sizes;
+- removal/bypass of old visual routes so the test build reaches the new graphics-first flow cleanly.
 
-**Gate:** walking around the workshop feels like the intended game even with major mechanics temporarily disabled/placeheld.
+**Movement direction:** use free top-down movement unless playtest proves strict tile-step movement is preferable. Visual animation remains four-directional.
+
+**Out of scope:** interactions beyond minimal test/debug hooks, final touch controls, final controller implementation, gameplay systems.
+
+**Gate:** movement itself feels responsive, readable and pleasant.
 
 ---
 
-## WP0.4H — Opening Scene Rebuild
+## WP0.4H — Graphics-First Playable Gate — HUMAN GATE
 
-**Depends on:** WP0.4C–G.
+**Depends on:** WP0.4D–G.
 
-**Purpose:** introduce the tone and hand the player into character creation/workshop without the old prototype presentation style.
+**Purpose:** deliberately stop development and judge the player/world foundation before adding more game.
 
-**Deliverables:**
-- revised opening composition;
-- restrained narrative text/dialogue presentation;
-- opening disaster context retained/revised only as already authorised by product direction;
-- transition into character creation;
-- transition into first workshop control;
-- visual continuity with workshop/sprite/UI language;
-- no dependence on final splice/battle systems.
+**Required playable flow:**
 
-**Gate:** opening communicates tone, stakes and world cleanly and feels visually part of the same game as the workshop.
+`Boot → Character Select → Apprentice Splicer Yard`
 
----
+The player must be able to:
 
-## WP0.4I — Opening Flow and Presentation Integration
+1. choose Milo, Theo, Ada or Pip;
+2. enter a name;
+3. enter the yard as that protagonist;
+4. walk around smoothly;
+5. collide with the world correctly;
+6. pass behind/in front of layered scenery correctly;
+7. experience stable camera behaviour;
+8. save/reload the selected identity where applicable.
 
-**Depends on:** WP0.4D–H.
+**Human review questions:**
 
-**Purpose:** turn separate visual prototypes into one coherent first-ten-minutes experience.
+- are the characters the correct size?
+- do they look good at actual play scale?
+- does selection feel like choosing a real protagonist?
+- does walking feel good?
+- do the animations have enough personality?
+- is the environment attractive enough to explore without objectives?
+- is there enough biotech wrongness to feel specifically like SplicePit?
+- does collision/depth make the character feel embedded in the environment?
+- does the result make the user want to keep building from it?
 
-**Deliverables:**
-- title refinement;
-- title → opening → creation → workshop flow;
-- transition timing;
-- consistent UI and input behaviour;
-- loading/startup presentation;
-- save/continue flow through the new opening state;
-- cleanup of old visual artefacts that remain reachable;
-- basic presentation QA across common desktop viewport sizes.
-
-**Gate:** no early screen feels like it belongs to the rejected bright prototype or old dark terminal prototype.
+**HARD STOP:** if the answer is not clearly yes, return to WP0.4D–G. Do not add systems to hide a weak foundation.
 
 ---
 
-## WP0.4J — Visual Direction Lock
+## WP0.4I — Post-Gate Presentation Expansion
+
+**Depends on:** explicit human approval of WP0.4H.
+
+**Purpose:** only after movement/world feel is accepted, expand enough presentation to prove the same language can support the beginning of the actual game.
+
+**Important:** exact scope must be revalidated after WP0.4H rather than blindly inherited from older plans.
+
+**Candidate deliverables, subject to post-gate confirmation:**
+
+- minimal title/start presentation;
+- restrained opening/dialogue treatment;
+- compact interface samples that do not dominate the world;
+- first creature visual proof at the accepted scale/style;
+- save/continue presentation cleanup;
+- removal of old reachable presentation artefacts.
+
+**Not automatically included:** full opening production, broad inventory UI, final splice UI, battle UI, mass creature/NPC asset production.
+
+**Gate:** all added presentation still feels like the same game as the accepted yard rather than reintroducing giant-box/web-app presentation.
+
+---
+
+## WP0.4J — Visual Direction Lock for Mechanic Re-entry — HUMAN GATE
 
 **Depends on:** WP0.4I.
 
-**Purpose:** explicitly approve the game’s visual baseline before system design resumes.
+**Purpose:** explicitly confirm that the visual/game-feel baseline is strong enough for splice-mechanic redesign to resume.
 
 **Human review must cover:**
-1. title/opening tone;
-2. player sprite/customisation;
-3. workshop composition and scale;
-4. creature sprite direction;
+
+1. protagonist sprite quality;
+2. character-selection identity;
+3. yard/world composition and scale;
+4. movement/camera/depth feel;
 5. palette and animation feel;
-6. UI density and framing;
-7. mad-science/weirdness balance.
+6. compact interface language where introduced;
+7. creature visual proof where introduced;
+8. mad-science/weirdness balance;
+9. absence of rejected legacy presentation.
 
 **Deliverables:**
-- final prototype visual brief;
+
+- final R0.4 visual brief;
 - approved sprite metrics;
-- approved UI rules;
-- approved workshop/camera scale;
-- recorded unresolved production-art questions for R0.7 rather than blocking mechanic design.
+- approved movement/camera/world scale;
+- approved minimum UI rules;
+- recorded production-art questions deferred to R0.7.
 
 **HARD GATE:** do not begin WP0.5A until explicit human approval.
 
@@ -224,6 +290,7 @@ For every WP:
 **Method:** design conversation/specification first, implementation second.
 
 **Questions to resolve:**
+
 - what exactly the player chooses before an attempt;
 - what a disposable test tells the player;
 - whether/when repeated tests are useful;
@@ -237,6 +304,7 @@ For every WP:
 - what information belongs in-world versus in UI.
 
 **Deliverables:**
+
 - approved player loop;
 - state diagram;
 - resource/knowledge rules;
@@ -256,6 +324,7 @@ For every WP:
 **Purpose:** build the newly approved splice experience, not repair the rejected one.
 
 **Deliverables:**
+
 - workshop-integrated bench interaction;
 - approved test/main loop;
 - correct material/knowledge behaviour;
@@ -279,19 +348,21 @@ For every WP:
 **No current cadence is sacred.** WP0.4A/B output is reference evidence only.
 
 **Questions to resolve:**
+
 - turn-based versus any revised cadence still desired;
 - how position/arena space is represented;
 - how capability-derived actions appear to the player;
 - how speed/initiative/reactions work;
 - how resource pressure prevents obvious spam;
 - how much state is visible at once;
-- what makes a creature’s body/build tactically meaningful;
+- what makes a creature's body/build tactically meaningful;
 - how environmental capability affects battles;
 - battle duration and pacing;
 - injury/defeat/death stakes;
 - 1v1 baseline and later roster/multi-creature implications.
 
 **Deliverables:**
+
 - approved battle loop;
 - battle-state model/wireflow;
 - action/resource/cadence specification;
@@ -309,13 +380,14 @@ For every WP:
 **Purpose:** build the accepted battle model at prototype depth.
 
 **Deliverables:**
+
 - workshop/world entry into a test bout;
 - approved cadence/action/resource interaction;
 - player and opponent creature sprites in the accepted arena presentation;
 - readable feedback/log/state;
 - deterministic resolution test mode;
 - representative capability differences;
-- browser smoke for all required controls;
+- browser smoke for required controls;
 - post-bout return flow.
 
 **Gate:** human playtest accepts the battle loop as readable and enjoyable enough for progression/world content to be built around it.
@@ -411,9 +483,25 @@ Run fresh-player playtests, fix blockers/confusion/exploits and record remaining
 
 The rejected branches/PRs remain useful forensic evidence but are not active implementation targets.
 
-- Do not merge a superseded PR merely to preserve work.
-- If useful code is needed later, cherry-pick/reimplement the smallest relevant portion into the current WP.
-- Do not infer mechanic approval from existing tests.
-- Automated tests for technical invariants may be retained; tests that enforce rejected UX/mechanics must be rewritten when the corresponding redesign WP begins.
+The following specific R0.4 contracts are deleted from the active plan:
 
-This policy exists specifically to prevent later development from accidentally drifting back to the rejected splice, battle or oversized bright visual prototypes.
+- Interface Style System before player movement proof;
+- combined Creature and Player Sprite Design Pipeline before player movement proof;
+- modular Player Character Creation Prototype;
+- Workshop Scene Rebuild that assumes the existing Lab presentation should be preserved;
+- Opening Scene Rebuild before the walking-around gate;
+- Opening Flow Integration before the walking-around gate.
+
+Their useful goals may reappear later only after WP0.4H proves the player/world foundation.
+
+General rules:
+
+- do not merge a superseded PR merely to preserve work;
+- remove/bypass old visual routes as the new playable replaces them;
+- if useful code is needed later, cherry-pick/reimplement the smallest presentation-independent portion;
+- do not infer mechanic or visual approval from existing tests;
+- retain automated tests for technical invariants;
+- rewrite/delete tests that enforce rejected presentation behaviour when touched by the active WP;
+- never use sunk cost as a reason to preserve a visual design the user has rejected.
+
+The graphics-first milestone succeeds when the player can choose Milo, Theo, Ada or Pip and simply walking around the Apprentice Splicer Yard already feels like the right game.
