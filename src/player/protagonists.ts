@@ -30,30 +30,34 @@ export interface ProtagonistSpriteDefinition {
   readonly assetPath: string;
 }
 
+// The HD filenames are deliberately versioned. WP0.4D replaced an earlier
+// 24x32 sheet at the same URL and browsers/CDNs could retain that old PNG while
+// the runtime attempted to slice it as 64x96, which corrupts every frame after
+// the first. Never reuse a protagonist asset URL for a different sheet grid.
 export const PROTAGONIST_SPRITES: Record<ProtagonistId, ProtagonistSpriteDefinition> = {
   milo: {
     id: 'milo',
     name: 'Milo',
     textureKey: 'protagonist-milo',
-    assetPath: 'assets/protagonists/milo.png',
+    assetPath: 'assets/protagonists/milo-hd-v2.png',
   },
   theo: {
     id: 'theo',
     name: 'Theo',
     textureKey: 'protagonist-theo',
-    assetPath: 'assets/protagonists/theo.png',
+    assetPath: 'assets/protagonists/theo-hd-v2.png',
   },
   ada: {
     id: 'ada',
     name: 'Ada',
     textureKey: 'protagonist-ada',
-    assetPath: 'assets/protagonists/ada.png',
+    assetPath: 'assets/protagonists/ada-hd-v2.png',
   },
   pip: {
     id: 'pip',
     name: 'Pip',
     textureKey: 'protagonist-pip',
-    assetPath: 'assets/protagonists/pip.png',
+    assetPath: 'assets/protagonists/pip-hd-v2.png',
   },
 };
 

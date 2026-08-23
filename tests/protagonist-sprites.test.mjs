@@ -44,12 +44,12 @@ test('each direction owns one idle frame and three deterministic walk frames', (
   assert.deepEqual(frames, Array.from({ length: 16 }, (_, index) => index));
 });
 
-test('all four approved runtime sheets are exact 256-by-384 fixed grids', () => {
+test('all four approved runtime sheets are exact 256-by-384 fixed grids with versioned URLs', () => {
   for (const id of PROTAGONIST_IDS) {
     const definition = PROTAGONIST_SPRITES[id];
     assert.equal(definition.id, id);
     assert.match(definition.textureKey, /^protagonist-/);
-    assert.equal(definition.assetPath, `assets/protagonists/${id}.png`);
+    assert.equal(definition.assetPath, `assets/protagonists/${id}-hd-v2.png`);
 
     const { width, height } = pngDimensions(`public/${definition.assetPath}`);
     assert.equal(width, PROTAGONIST_SPRITE_FRAME_WIDTH * PROTAGONIST_SPRITE_COLUMNS);
