@@ -77,7 +77,7 @@ try {
   });
 
   async function keyDown(key, code, windowsVirtualKeyCode) {
-    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...keyParams(key, code, windowsVirtualKeyCode) });
+    await cdp('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...keyParams(key, code, windowsVirtualKeyCode) });
   }
 
   async function keyUp(key, code, windowsVirtualKeyCode) {
@@ -169,6 +169,14 @@ try {
     if (snapshot?.error) throw new Error(`Sandbox failed to start: ${snapshot.error}`);
     return snapshot?.ready;
   }, 20000);
+
+  await cdp('Page.bringToFront');
+  await evaluate(`(() => {
+    window.focus();
+    const canvas = document.querySelector('#game canvas');
+    canvas?.focus({ preventScroll: true });
+    return document.activeElement === canvas;
+  })()`);
 
   const characters = [
     ['1', 'Milo'],
