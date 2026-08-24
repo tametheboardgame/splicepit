@@ -67,16 +67,18 @@ root.innerHTML = `
   />
 `;
 
-const canvas = root.querySelector<HTMLCanvasElement>('#visual-reset-stage');
-const nameInput = root.querySelector<HTMLInputElement>('#player-name-capture');
+const canvas = root.querySelector<HTMLCanvasElement>('#visual-reset-stage') as HTMLCanvasElement | null;
+const nameInput = root.querySelector<HTMLInputElement>('#player-name-capture') as HTMLInputElement | null;
 if (!canvas || !nameInput) throw new Error('Visual reset stage failed to mount');
+const stageCanvas: HTMLCanvasElement = canvas;
+const playerNameInput: HTMLInputElement = nameInput;
 
-const maybeContext = canvas.getContext('2d', { alpha: false });
+const maybeContext = stageCanvas.getContext('2d', { alpha: false });
 if (!maybeContext) throw new Error('Canvas 2D context unavailable');
 const context: CanvasRenderingContext2D = maybeContext;
 context.imageSmoothingEnabled = false;
 
-nameInput.value = gameState.playerName ?? '';
+playerNameInput.value = gameState.playerName ?? '';
 
 const frames = {} as Record<ProtagonistId, HTMLImageElement>;
 const debug: VisualResetDebug = {
@@ -84,7 +86,7 @@ const debug: VisualResetDebug = {
   error: null,
   phase,
   selectedAvatarId,
-  playerName: nameInput.value,
+  playerName: playerNameInput.value,
   loadedFromSave: saved,
   saved,
   frame: 0,
@@ -104,7 +106,7 @@ function drawBackground(): void {
   drawPixelRect(0, 172, VIEW_WIDTH, VIEW_HEIGHT - 172, '#d7c691');
 
   for (let y = 188; y < VIEW_HEIGHT; y += 28) {
-    drawPixelRect(0, y, VIEW_WIDTH, 2, y % 56 === 20 ? '#c7b681' : '#cebE88');
+    drawPixelRect(0, y, VIEW_WIDTH, 2, y % 56 === 20 ? '#c7b681' : '#cebe88');
   }
 
   for (let x = 24; x < VIEW_WIDTH; x += 74) {
@@ -255,7 +257,7 @@ function drawFooter(now: number): void {
     context.fillText(`Name ${PROTAGONIST_SPRITES[selectedAvatarId].name}`, VIEW_WIDTH / 2, 487);
     const caret = Math.floor(now / 450) % 2 === 0 ? '▌' : '';
     context.font = '800 18px "Trebuchet MS", "Segoe UI", sans-serif';
-    context.fillText(`${nameInput.value}${caret}`, VIEW_WIDTH / 2, 505);
+    context.fillText(`${playerNameInput.value}${caret}`, VIEW_WIDTH / 2, 505);
     return;
   }
 
@@ -290,16 +292,16 @@ function moveSelection(delta: number): void {
 function beginNaming(): void {
   phase = 'name';
   debug.phase = phase;
-  nameInput.value = gameState.avatarId === selectedAvatarId && gameState.playerName ? gameState.playerName : '';
-  debug.playerName = nameInput.value;
-  nameInput.focus({ preventScroll: true });
+  playerNameInput.value = gameState.avatarId === selectedAvatarId && gameState.playerName ? gameState.playerName : '';
+  debug.playerName = playerNameInput.value;
+  playerNameInput.focus({ preventScroll: true });
 }
 
 function finishNaming(): void {
-  const playerName = normalisePlayerName(nameInput.value);
+  const playerName = normalisePlayerName(playerNameInput.value);
   if (!playerName) return;
 
-  nameInput.value = playerName;
+  playerNameInput.value = playerName;
   if (!gameState.setPlayerIdentity(selectedAvatarId, playerName)) return;
   if (!saveGame()) return;
 
@@ -308,7 +310,7 @@ function finishNaming(): void {
   debug.phase = phase;
   debug.playerName = playerName;
   debug.saved = true;
-  nameInput.blur();
+  playerNameInput.blur();
 }
 
 window.addEventListener('keydown', (event) => {
@@ -326,12 +328,12 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-nameInput.addEventListener('input', () => {
-  debug.playerName = nameInput.value;
+playerNameInput.addEventListener('input', () => {
+  debug.playerName = playerNameInput.value;
   debug.saved = false;
 });
 
-nameInput.addEventListener('keydown', (event) => {
+playerNameInput.addEventListener('keydown', (event) => {
   if (event.code === 'Enter') {
     event.preventDefault();
     finishNaming();
@@ -339,18 +341,18 @@ nameInput.addEventListener('keydown', (event) => {
     event.preventDefault();
     phase = 'select';
     debug.phase = phase;
-    nameInput.blur();
+    playerNameInput.blur();
   }
 });
 
-canvas.addEventListener('pointerdown', (event) => {
+stageCanvas.addEventListener('pointerdown', (event) => {
   if (!debug.ready) return;
   if (phase === 'name') {
-    nameInput.focus({ preventScroll: true });
+    playerNameInput.focus({ preventScroll: true });
     return;
   }
 
-  const rect = canvas.getBoundingClientRect();
+  const rect = stageCanvas.getBoundingClientRect();
   const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
   const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
   if (y < 190 || y > 462) return;
