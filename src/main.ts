@@ -50,6 +50,7 @@ if (!root) throw new Error('Missing #game root');
 
 const canvas = document.createElement('canvas');
 canvas.setAttribute('aria-label', 'SplicePit animated protagonist movement sandbox');
+canvas.tabIndex = 0;
 root.replaceChildren(canvas);
 
 const maybeContext = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
@@ -139,6 +140,7 @@ window.addEventListener('keyup', (event) => {
 
 window.addEventListener('blur', () => held.clear());
 window.addEventListener('resize', resize);
+canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }));
 
 function update(deltaSeconds: number): void {
   let dx = 0;
@@ -232,6 +234,7 @@ async function start(): Promise<void> {
 
     debug.ready = true;
     resize();
+    canvas.focus({ preventScroll: true });
     previousTime = performance.now();
     requestAnimationFrame(frame);
   } catch (error) {
