@@ -87,8 +87,8 @@ gameRoot.innerHTML = `
         </section>
 
         <section class="identity-column" aria-label="Player identity">
-          <div class="character-tabs" role="listbox" aria-label="Choose an apprentice">
-            ${PROTAGONIST_IDS.map((id) => `<button type="button" class="character-tab" data-avatar="${id}" role="option">${PROTAGONIST_SPRITES[id].name}</button>`).join('')}
+          <div class="character-tabs" role="group" aria-label="Choose an apprentice">
+            ${PROTAGONIST_IDS.map((id) => `<button type="button" class="character-tab" data-avatar="${id}">${PROTAGONIST_SPRITES[id].name}</button>`).join('')}
           </div>
 
           <form id="identity-form" novalidate>
@@ -160,8 +160,7 @@ function setSelection(id: ProtagonistId, announce = true): void {
   for (const button of characterButtons) {
     const active = button.dataset.avatar === id;
     button.classList.toggle('is-selected', active);
-    button.setAttribute('aria-selected', String(active));
-    button.tabIndex = active ? 0 : -1;
+    button.setAttribute('aria-pressed', String(active));
   }
 
   if (announce) setStatus(`${PROTAGONIST_SPRITES[id].name} selected.`);
