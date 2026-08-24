@@ -1,16 +1,18 @@
-# SplicePit Visual Direction — LOCKED 23 August 2026
+# SplicePit Visual Direction — LOCKED 23 August 2026, corrected 24 August 2026
 
 ## Status
 
 **LOCKED SOURCE OF TRUTH FOR CURRENT VISUAL DEVELOPMENT**
 
-Human review explicitly approved the biotech-apprentice protagonist/environment concept board and the graphics-first rebuild sequence.
+Human review approved the biotech-apprentice protagonist/environment concept board and the graphics-first rebuild sequence on 23 August 2026.
+
+Human review on 24 August 2026 then explicitly rejected the first visible WP0.4E character-selection implementation. That rejection is recorded in `docs/VISUAL_RESET_CORRECTION_2026-08-24.md` and supersedes any earlier wording that could be read as visual acceptance of that screen.
 
 Primary visual reference:
 
 - `docs/visual-reference/splicepit-protagonists-biotech-v2.webp`
 
-This is the sole active visual reference for the current build. Earlier visual-reference boards, prototype UI treatments and player-facing visual implementations are superseded where they conflict with this document.
+This remains the sole active visual reference for the current build. Earlier visual-reference boards, prototype UI treatments and player-facing visual implementations are superseded where they conflict with this document or the 24 August correction.
 
 ## Core visual target
 
@@ -70,31 +72,35 @@ Across all four, visual motifs may include stitches, feather/tooth/bone charms, 
 
 ## Character-selection scope
 
-For the current graphics-first milestone:
+The technical identity contract is retained:
 
 - the player chooses **Milo, Theo, Ada or Pip**;
 - the chosen protagonist has no mechanical class/stat advantage;
 - the player may enter their own character name;
-- broader appearance customisation is deliberately deferred;
-- do not introduce a generic gender selector, modular wardrobe builder or combinatorial character creator before the four authored sprites are proven in-engine.
+- `avatarId` and player name persist through the normal save system;
+- broader appearance customisation is deliberately deferred.
 
-The first goal is four excellent coherent characters, not hundreds of mediocre combinations.
+The **presentation** of that choice is not yet locked.
+
+The rejected WP0.4E screen used a dark monospace registration form, character tabs and a boxed preview. It must not be restored or polished. Final character-choice presentation is deliberately revisited only after the Yard and in-world movement language exist, so the interface can feel native to the game rather than like a web form placed in front of it.
+
+Candidate future approaches may be in-world, scene-based, spatial or otherwise game-native. No candidate is canon until human review accepts it.
 
 ## Player sprite specification
 
-Initial production contract:
+The current accepted runtime foundation is the WP0.4D human-approved **64 × 96 directional protagonist source art** with the integer-pixel movement treatment.
 
-- **24 × 32 px per frame**;
+Locked current facts:
+
+- Milo, Theo, Ada and Pip use the accepted directional source art;
 - four directions: down, left, right, up;
-- one idle frame plus three walk frames per direction;
-- fixed clean grid suitable for Phaser animation slicing;
-- nearest-neighbour scaling;
-- test at **4× display scale**;
-- strong silhouette and palette separation at actual game size;
-- no reliance on enlarged concept-sheet detail that disappears in play;
-- consistent foot position/origin across every frame and every protagonist.
+- nearest-neighbour presentation;
+- consistent feet/origin treatment is required when integrated into the world;
+- the black movement sandbox and its 2× review display were test harness choices, not final world-scale decisions;
+- the generated `*-hd-v2.png` secondary walk cells are rejected as runtime animation sources;
+- final **in-world display scale** remains unresolved until the accepted protagonist is judged inside the Yard.
 
-The concept board is an art-direction reference, **not a production-ready sprite sheet**. Runtime sheets must be produced as clean pixel assets and judged in-engine at actual play scale.
+The earlier 24 × 32 production assumption is superseded for the accepted prototype. Do not redraw or shrink the accepted protagonists merely to satisfy that old numeric assumption.
 
 ## Initial environment target — Apprentice Splicer Yard
 
@@ -114,9 +120,11 @@ Include:
 
 Do **not** add splice UI, combat UI, economy UI, quest systems or large information panels to this first test scene.
 
+The accepted protagonist must be visibly present in the Yard at provisional gameplay scale during visual review. The environment is designed around the actual character, not around an empty map.
+
 ## Existing visual implementation policy
 
-The current player-facing visual implementation is disposable prototype material.
+The current player-facing visual implementation remains disposable prototype material unless explicitly accepted by human review.
 
 Do not preserve a scene, layout, procedural graphic, UI panel or colour treatment merely because it already exists. The following are superseded and must be removed, bypassed or rewritten as the new playable replaces them:
 
@@ -124,25 +132,31 @@ Do not preserve a scene, layout, procedural graphic, UI panel or colour treatmen
 - existing player-facing Lab/Splice/Battle scene presentation;
 - oversized/high-saturation visual treatments;
 - old dark-terminal presentation language;
+- the rejected 24 August `APPRENTICE REGISTRATION` WP0.4E screen;
+- dark brown/olive form-style character-selection presentation;
 - prototype procedural artwork that conflicts with this direction;
 - old visual-reference boards that conflict with the approved biotech-apprentice concept;
 - tests whose only purpose is to enforce rejected presentation behaviour.
 
 Useful domain logic, deterministic systems, data models, save infrastructure, input abstractions and technical tests should be retained where they are genuinely presentation-independent.
 
-## Immediate graphics-first milestone
+## Immediate graphics-first milestone — corrected order
 
 The next work is intentionally narrow and sequential:
 
-1. **Runtime Sprite Production** — produce clean Milo, Theo, Ada and Pip directional sprite sheets.
-2. **Character Select** — create a minimal four-character chooser, name entry and persisted `avatarId`/player identity.
-3. **Apprentice Splicer Yard** — build a completely fresh small environment based on this visual direction, not a reskin of the old lab.
-4. **Movement Polish** — four-direction movement/animation, collision, depth ordering and camera behaviour.
-5. **STOP FOR HUMAN PLAYTEST** — do not add major systems until simply choosing a protagonist and walking around feels good.
+1. **Runtime Sprite Production — COMPLETE**: accepted Milo, Theo, Ada and Pip runtime protagonist foundation.
+2. **Identity Persistence — TECHNICALLY COMPLETE**: `avatarId` and player name survive normal save/load. The first visible character-select implementation is rejected.
+3. **Visual Reset — ACTIVE CORRECTION**: old terminal/form boot is removed and may be replaced temporarily by a disposable canvas-only protagonist harness.
+4. **Apprentice Splicer Yard — NEXT REAL VISUAL BUILD**: completely fresh environment based on this visual direction, not a reskin of the old Lab.
+5. **Movement / Scale / Camera Polish**: make the accepted protagonist genuinely inhabit the Yard.
+6. **Character Select Presentation Redesign**: only after the world language is visible, create a game-native way to choose Milo/Theo/Ada/Pip and enter a name.
+7. **STOP FOR HUMAN PLAYTEST**: do not add major systems until the complete choose-and-walk experience feels good.
 
-The test build should effectively be:
+The eventual test build should still effectively be:
 
 `Boot → Character Select → Apprentice Splicer Yard`
+
+But development order is now intentionally **world before final character-select presentation**, because the first attempt proved that designing the interface in isolation pulled the project back toward rejected web/admin presentation.
 
 No splice system, battle system, economy, quest flow or large menu layer is required for this gate.
 
@@ -151,13 +165,14 @@ No splice system, battle system, economy, quest flow or large menu layer is requ
 Before proceeding, human review must answer yes to the following:
 
 - do the four characters look good at actual in-game size?
-- does choosing one feel like choosing a proper protagonist rather than a placeholder?
+- does choosing one feel like choosing a proper protagonist rather than filling in a form?
 - does walking feel responsive and pleasant?
 - is the sprite/world scale correct?
 - does the yard look attractive enough to invite exploration?
 - does the environment contain enough biological wrongness to feel specifically like SplicePit?
 - do collision, depth and camera make the character feel embedded in the world rather than pasted over it?
+- is the rejected terminal/web-form presentation absent from the player-facing path?
 
-If this gate fails, fix the graphics/movement foundation. Do not hide the problem under more systems.
+If this gate fails, fix the graphics/movement/interface foundation. Do not hide the problem under more systems.
 
 Success means choosing one of four questionable little gene-splicing apprentices and walking around their equally questionable yard already feels like a game worth building on.
