@@ -131,8 +131,11 @@ try {
   await waitReady();
   await cdp('Page.bringToFront');
 
-  const initial = await state();
-  if (initial.selectionPresentation !== 'yard-arrival' || !initial.selectionRendered || initial.viewportWidth !== 1280 || initial.viewportHeight !== 720) {
+  const initial = await waitFor(async () => {
+    const current = await state();
+    return current?.ready && current?.selectionRendered ? current : null;
+  });
+  if (initial.selectionPresentation !== 'yard-arrival' || initial.viewportWidth !== 1280 || initial.viewportHeight !== 720) {
     throw new Error(`In-world selector was not active: ${JSON.stringify(initial)}`);
   }
 
