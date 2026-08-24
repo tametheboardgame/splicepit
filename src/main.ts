@@ -1,38 +1,29 @@
-import miloDown from './assets/frames/milo-down.txt?raw';
-import miloLeft from './assets/frames/milo-left.txt?raw';
-import miloRight from './assets/frames/milo-right.txt?raw';
-import miloUp from './assets/frames/milo-up.txt?raw';
-import theoDown from './assets/frames/theo-down.txt?raw';
-import theoLeft from './assets/frames/theo-left.txt?raw';
-import theoRight from './assets/frames/theo-right.txt?raw';
-import theoUp from './assets/frames/theo-up.txt?raw';
-import adaDown from './assets/frames/ada-down.txt?raw';
-import adaLeft from './assets/frames/ada-left.txt?raw';
-import adaRight from './assets/frames/ada-right.txt?raw';
-import adaUp from './assets/frames/ada-up.txt?raw';
-import pipDown from './assets/frames/pip-down.txt?raw';
-import pipLeft from './assets/frames/pip-left.txt?raw';
-import pipRight from './assets/frames/pip-right.txt?raw';
-import pipUp from './assets/frames/pip-up.txt?raw';
-
 const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
+const SHEET_WIDTH = FRAME_WIDTH * 4;
+const SHEET_HEIGHT = FRAME_HEIGHT * 4;
 const DISPLAY_SCALE = 2;
 const SPEED = 180;
+const WALK_FRAME_MS = 125;
+const WALK_SEQUENCE = [1, 2, 3, 2] as const;
 
 const CHARACTERS = ['milo', 'theo', 'ada', 'pip'] as const;
 const DIRECTIONS = ['down', 'left', 'right', 'up'] as const;
 type CharacterId = (typeof CHARACTERS)[number];
 type Direction = (typeof DIRECTIONS)[number];
 
-type FrameSources = Record<CharacterId, Record<Direction, string>>;
-type FrameImages = Record<CharacterId, Record<Direction, HTMLImageElement>>;
+const SHEET_PATHS: Record<CharacterId, string> = {
+  milo: '/assets/protagonists/milo-hd-v2.png',
+  theo: '/assets/protagonists/theo-hd-v2.png',
+  ada: '/assets/protagonists/ada-hd-v2.png',
+  pip: '/assets/protagonists/pip-hd-v2.png',
+};
 
-const FRAME_SOURCES: FrameSources = {
-  milo: { down: miloDown, left: miloLeft, right: miloRight, up: miloUp },
-  theo: { down: theoDown, left: theoLeft, right: theoRight, up: theoUp },
-  ada: { down: adaDown, left: adaLeft, right: adaRight, up: adaUp },
-  pip: { down: pipDown, left: pipLeft, right: pipRight, up: pipUp },
+const DIRECTION_ROW: Record<Direction, number> = {
+  down: 0,
+  left: 1,
+  right: 2,
+  up: 3,
 };
 
 const KEY_DIRECTION: Record<string, Direction | undefined> = {
@@ -50,13 +41,15 @@ type SandboxDebug = {
   character: CharacterId;
   direction: Direction;
   held: string[];
+  moving: boolean;
+  animationFrame: number;
 };
 
 const root = document.getElementById('game');
 if (!root) throw new Error('Missing #game root');
 
 const canvas = document.createElement('canvas');
-canvas.setAttribute('aria-label', 'SplicePit bare sprite movement sandbox');
+canvas.setAttribute('aria-label', 'SplicePit animated protagonist movement sandbox');
 root.replaceChildren(canvas);
 
 const maybeContext = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
@@ -65,12 +58,15 @@ const ctx: CanvasRenderingContext2D = maybeContext;
 ctx.imageSmoothingEnabled = false;
 
 const held = new Set<string>();
-const images = {} as FrameImages;
+const sheets = {} as Record<CharacterId, HTMLImageElement>;
 let characterIndex = 0;
 let direction: Direction = 'down';
 let x = window.innerWidth / 2;
 let y = window.innerHeight / 2 + (FRAME_HEIGHT * DISPLAY_SCALE) / 2;
 let previousTime = performance.now();
+let moving = false;
+let animationElapsedMs = 0;
+let animationFrame = 0;
 
 const debug: SandboxDebug = {
   ready: false,
@@ -80,6 +76,8 @@ const debug: SandboxDebug = {
   character: CHARACTERS[characterIndex],
   direction,
   held: [],
+  moving,
+  animationFrame,
 };
 (globalThis as typeof globalThis & { __SPLICEPIT_SANDBOX__?: SandboxDebug }).__SPLICEPIT_SANDBOX__ = debug;
 
@@ -151,11 +149,20 @@ function update(deltaSeconds: number): void {
   if (held.has('ArrowUp') || held.has('w')) dy -= 1;
   if (held.has('ArrowDown') || held.has('s')) dy += 1;
 
-  if (dx !== 0 || dy !== 0) {
+  moving = dx !== 0 || dy !== 0;
+
+  if (moving) {
     const length = Math.hypot(dx, dy) || 1;
     x += (dx / length) * SPEED * deltaSeconds;
     y += (dy / length) * SPEED * deltaSeconds;
     clampPosition();
+
+    animationElapsedMs += deltaSeconds * 1000;
+    const sequenceIndex = Math.floor(animationElapsedMs / WALK_FRAME_MS) % WALK_SEQUENCE.length;
+    animationFrame = WALK_SEQUENCE[sequenceIndex];
+  } else {
+    animationElapsedMs = 0;
+    animationFrame = 0;
   }
 }
 
@@ -166,12 +173,18 @@ function draw(): void {
   if (!debug.ready) return;
 
   const character = CHARACTERS[characterIndex];
-  const image = images[character][direction];
+  const sheet = sheets[character];
   const width = FRAME_WIDTH * DISPLAY_SCALE;
   const height = FRAME_HEIGHT * DISPLAY_SCALE;
+  const sourceX = animationFrame * FRAME_WIDTH;
+  const sourceY = DIRECTION_ROW[direction] * FRAME_HEIGHT;
 
   ctx.drawImage(
-    image,
+    sheet,
+    sourceX,
+    sourceY,
+    FRAME_WIDTH,
+    FRAME_HEIGHT,
     Math.round(x - width / 2),
     Math.round(y - height),
     width,
@@ -183,6 +196,8 @@ function draw(): void {
   debug.character = character;
   debug.direction = direction;
   debug.held = [...held];
+  debug.moving = moving;
+  debug.animationFrame = animationFrame;
 }
 
 function frame(now: number): void {
@@ -193,19 +208,14 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
-async function decodeFrame(character: CharacterId, frameDirection: Direction): Promise<HTMLImageElement> {
-  const base64 = FRAME_SOURCES[character][frameDirection].trim();
-  if (!base64.startsWith('iVBORw0KGgo')) {
-    throw new Error(`${character}-${frameDirection} frame payload is invalid`);
-  }
-
+async function decodeSheet(character: CharacterId): Promise<HTMLImageElement> {
   const image = new Image();
-  image.src = `data:image/png;base64,${base64}`;
+  image.src = SHEET_PATHS[character];
   await image.decode();
 
-  if (image.naturalWidth !== FRAME_WIDTH || image.naturalHeight !== FRAME_HEIGHT) {
+  if (image.naturalWidth !== SHEET_WIDTH || image.naturalHeight !== SHEET_HEIGHT) {
     throw new Error(
-      `${character}-${frameDirection} has unexpected dimensions ${image.naturalWidth}x${image.naturalHeight}`,
+      `${character} sheet has unexpected dimensions ${image.naturalWidth}x${image.naturalHeight}`,
     );
   }
 
@@ -214,16 +224,11 @@ async function decodeFrame(character: CharacterId, frameDirection: Direction): P
 
 async function start(): Promise<void> {
   try {
-    for (const character of CHARACTERS) {
-      const characterImages = {} as Record<Direction, HTMLImageElement>;
-      images[character] = characterImages;
-
-      await Promise.all(
-        DIRECTIONS.map(async (frameDirection) => {
-          characterImages[frameDirection] = await decodeFrame(character, frameDirection);
-        }),
-      );
-    }
+    await Promise.all(
+      CHARACTERS.map(async (character) => {
+        sheets[character] = await decodeSheet(character);
+      }),
+    );
 
     debug.ready = true;
     resize();
@@ -231,7 +236,7 @@ async function start(): Promise<void> {
     requestAnimationFrame(frame);
   } catch (error) {
     debug.error = error instanceof Error ? error.message : String(error);
-    console.error('Failed to load standalone protagonist frames', error);
+    console.error('Failed to load protagonist walk sheets', error);
   }
 }
 
