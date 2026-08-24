@@ -4,7 +4,7 @@
 
 This is the canonical execution order for SplicePit. It answers **what gets built next, what is deliberately deferred, and what must be approved before later systems proceed**.
 
-`DECISION_LOG.md` remains the authority for locked product decisions. This roadmap controls development sequence. `docs/VISUAL_DIRECTION_2026-08-23.md` is the authority for the currently locked visual target.
+`DECISION_LOG.md` remains the authority for locked product decisions. This roadmap controls development sequence. `docs/VISUAL_DIRECTION_2026-08-23.md` is the authority for the currently locked visual target, except where a later explicit human acceptance recorded in this roadmap supersedes an earlier provisional production assumption.
 
 Where older documents, prototype scenes, tests or work-package descriptions conflict with this roadmap after the 23 August 2026 graphics-first reset, **this roadmap wins**.
 
@@ -23,7 +23,7 @@ The approved direction is now anchored by:
 
 The immediate development order is:
 
-**approved protagonist art direction → production-ready player sprite sheets → four-character selection → Apprentice Splicer Yard → movement/collision/depth/camera polish → HUMAN PLAYTEST STOP → only then expand presentation/systems**
+**approved protagonist art direction → accepted runtime protagonists/movement → four-character selection → brand-new concept-derived Apprentice Splicer Yard → in-world scale/collision/depth/camera polish → HUMAN PLAYTEST STOP → only then expand presentation/systems**
 
 The first successful playable is intentionally tiny:
 
@@ -47,6 +47,7 @@ The following are not target designs and must not be extended:
 - the prior WP0.4D Interface Style System contract;
 - the prior WP0.4E combined Creature and Player Sprite Design Pipeline contract;
 - the prior WP0.4F modular Character Creation Prototype contract;
+- the earlier provisional assumption that the accepted protagonist runtime must be redrawn to 24 × 32 px before world integration;
 - any assumption that existing player-facing code must survive because it already exists.
 
 Useful domain logic, deterministic systems, save infrastructure, content models, input abstractions and technical tests may be reused when genuinely presentation-independent. Reuse does **not** imply visual or gameplay approval.
@@ -57,7 +58,7 @@ Useful domain logic, deterministic systems, save infrastructure, content models,
 
 A development conversation should begin with the next READY work package, currently:
 
-> Start WP0.4D
+> Start WP0.4E
 
 The execution process should then:
 
@@ -79,7 +80,7 @@ Prototype implementation must never silently become canon.
 # Work-package authority
 
 - `work-packages/R0_FOUNDATIONS.md` — historical/technical contracts through WP0.4B only.
-- `work-packages/R0_VISUAL_FIRST_REBASE.md` — **current authoritative contracts for WP0.4C through WP0.8H**.
+- `work-packages/R0_VISUAL_FIRST_REBASE.md` — **current authoritative contracts for WP0.4C through WP0.8H**, subject to later explicit human acceptance recorded in this roadmap.
 - `work-packages/R1_ACT1.md` — WP1A through WP1I.
 - `work-packages/R2_ACT2.md` — WP2A through WP2H.
 - `work-packages/R3_BETA.md` — WP3A through WP3G.
@@ -148,10 +149,10 @@ Historical experiments:
 Current authoritative graphics-first sequence:
 
 16. **WP0.4C — Visual Direction and Protagonist Lock** — **COMPLETE**
-17. **WP0.4D — Runtime Protagonist Sprite Production** — **READY**
-18. **WP0.4E — Character Selection and Identity Persistence** — **PLANNED**
+17. **WP0.4D — Runtime Protagonist Sprite Production** — **COMPLETE**
+18. **WP0.4E — Character Selection and Identity Persistence** — **READY**
 19. **WP0.4F — Apprentice Splicer Yard Rebuild** — **PLANNED**
-20. **WP0.4G — Movement, Collision, Depth and Camera Polish** — **PLANNED**
+20. **WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish** — **PLANNED**
 21. **WP0.4H — Graphics-First Playable Gate** — **HUMAN GATE**
 22. **WP0.4I — Post-Gate Presentation Expansion** — **PLANNED, MUST NOT START BEFORE WP0.4H APPROVAL**
 23. **WP0.4J — Visual Direction Lock for Mechanic Re-entry** — **HUMAN GATE**
@@ -163,74 +164,108 @@ The approved visual target is documented in `docs/VISUAL_DIRECTION_2026-08-23.md
 Locked player-facing direction:
 
 - premium original GBA-era top-down RPG readability;
-- 24 × 32 px protagonist frames;
-- nearest-neighbour scaling;
+- nearest-neighbour pixel presentation;
 - four directions;
-- one idle + three walk frames per direction;
 - four authored protagonists: Milo, Theo, Ada and Pip;
 - cute-but-concerning apprentice gene-splicer styling;
 - warm attractive environments containing increasingly questionable biotech detail;
 - compact UI that does not dominate the world;
 - no return to the removed earlier visual reference.
 
-## WP0.4D–H immediate milestone
+The earlier 24 × 32 frame target was a **provisional production assumption**, not a reason to discard accepted art. WP0.4D human acceptance now controls the current protagonist runtime.
 
-### WP0.4D — Runtime Protagonist Sprite Production
+## WP0.4D result — ACCEPTED AND MERGED 24 AUGUST 2026
 
-Produce clean runtime sheets for Milo, Theo, Ada and Pip on a fixed grid. The generated concept sheets are references only, not directly sliced runtime assets.
+Human visual review accepted the current Milo, Theo, Ada and Pip movement presentation as the player foundation to carry forward.
 
-**Gate:** all four characters animate cleanly at actual in-game size and remain recognisable without enlarged concept-art detail.
+Accepted implementation facts:
+
+- the runtime uses the approved **64 × 96 directional protagonist source art**;
+- Milo, Theo, Ada and Pip are all available and recognisable;
+- four-direction movement is accepted for the current foundation;
+- movement uses the current integer-pixel walk treatment built from the approved directional art;
+- the black movement sandbox was a temporary review harness only;
+- the sandbox's **2× display scale was a review scale, not a final world-scale lock**;
+- the small body/leg seam found during human review was corrected before acceptance;
+- the broken/generated `*-hd-v2.png` secondary walk cells remain rejected as runtime animation sources.
+
+**Do not redraw, shrink or replace the accepted protagonists merely to satisfy the earlier 24 × 32 planning assumption.** Any future sprite re-authoring must be justified by an actual visual/gameplay problem and pass human review.
+
+The next unresolved visual question is **how large these accepted protagonists should appear relative to the actual concept-derived world**. That is deliberately answered in WP0.4F/G by seeing them inside the real environment, not by choosing a number in isolation.
+
+## WP0.4E–H immediate milestone
 
 ### WP0.4E — Character Selection and Identity Persistence
 
-Build a minimal four-character chooser.
+Build a deliberately minimal four-character chooser before world integration.
 
 Required:
 
 - Milo / Theo / Ada / Pip selection;
-- simple live sprite preview;
+- simple live sprite preview using the accepted protagonists;
 - player name entry;
 - persisted `avatarId` and player name;
 - save/load returns the same protagonist;
 - no mechanical differences between protagonists;
-- no broad modular appearance creator yet.
+- no broad modular appearance creator yet;
+- no giant web-style cards, elaborate menus or unnecessary presentation layer.
 
-**Gate:** selecting and saving a protagonist is reliable and visually coherent.
+This package exists only to establish **who the player is** before they enter the world.
+
+**Gate:** selecting and saving a protagonist is reliable, quick and visually coherent.
 
 ### WP0.4F — Apprentice Splicer Yard Rebuild
 
-Build a completely new small top-down environment from the approved reference rather than reskinning the old Lab scene.
+Build a **completely new** small top-down environment from the approved concept work.
+
+This is the place previously referred to conversationally as the concept "Lab", but the implementation target is the broader **Apprentice Splicer Yard/workshop environment** shown by the approved visual direction. It is **not** the old Lab scene and must not become a reskin of it.
+
+Hard rules:
+
+- do not resurrect the old player-facing Lab layout;
+- do not reuse the old Lab presentation, colour treatment, procedural scenery or interface shell merely because it exists;
+- do not begin from the old Lab and "improve" it;
+- build the new location from the concept direction outward;
+- presentation-independent technical utilities may be reused only when they do not drag old visual assumptions back in.
 
 Required visual ingredients:
 
-- workshop/lab building;
+- an attractive compact workshop/lab building;
 - grass and dirt paths;
 - trees, shrubs, flowers and strange plants;
-- water feature and small bridge where appropriate;
-- crates/barrels/specimen tables;
+- a pond/stream or other water feature and a small bridge where composition supports it;
+- crates, barrels and specimen tables;
 - fenced test pens/cages;
-- creature-husbandry/containment details;
-- improvised biotech props;
-- enough clear walking space to judge movement.
+- creature-husbandry and containment details;
+- improvised biotech equipment and visibly questionable experiments;
+- warm, inviting scenery at first glance with increasingly concerning biological detail on inspection;
+- enough uncluttered walking space to judge the protagonist properly.
 
-No major gameplay systems are implemented here.
+The accepted protagonist must be placed into the scene during this package at a **provisional gameplay display scale** so environment proportions are designed around the actual character rather than around an empty map. This does not yet require final collision/depth/camera polish, but the first useful visual review of the Yard must show the real protagonist in it.
 
-**Gate:** the environment already looks like a specific SplicePit location rather than generic prototype scenery.
+No splice system, battle system, economy, quest system or major interaction layer is implemented here.
 
-### WP0.4G — Movement, Collision, Depth and Camera Polish
+**Gate:** with an accepted protagonist visibly present, the environment already looks like a specific SplicePit location derived from the concept work rather than generic prototype scenery or the discarded old Lab.
+
+### WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish
+
+Take the accepted protagonist movement from WP0.4D and make it belong inside the new Yard.
 
 Required:
 
-- responsive four-direction movement;
-- correct directional walk/idle animation;
+- determine and lock the **actual gameplay display scale** by judging protagonist/world proportion in the new environment;
+- the character must feel like a small apprentice inhabiting the space, neither an oversized review sprite nor a tiny unreadable marker;
+- responsive four-direction movement using the accepted character foundation;
+- correct directional walk/idle presentation;
 - collision against buildings, fences, trees, water and props;
 - sensible player hitbox/feet origin;
-- layered depth so the player can move behind canopies/awnings/tall props where appropriate;
+- layered depth so the player can move behind canopies, awnings and tall props where appropriate;
 - smooth camera follow;
 - nearest-neighbour pixel presentation without shimmer/blur;
-- keyboard baseline using existing semantic input architecture.
+- keyboard baseline using existing semantic input architecture;
+- preserve the accepted sprite identity and readability while scaling it into the world.
 
-**Gate:** moving around feels pleasant without needing another system to make it interesting.
+**Gate:** the protagonist looks correctly scaled, embedded in the Yard rather than pasted over it, and simply moving around feels pleasant without needing another system to make it interesting.
 
 ### WP0.4H — Graphics-First Playable Gate
 
@@ -242,15 +277,18 @@ The playable should effectively be:
 
 Human review must approve:
 
-1. protagonist size and readability;
+1. protagonist in-world size and readability;
 2. character choice presentation;
 3. walking responsiveness;
 4. animation personality;
 5. camera behaviour;
 6. collision/depth feeling;
 7. environment richness;
-8. biotech wrongness / SplicePit specificity;
-9. overall desire to keep moving around even when there is nothing else to do.
+8. fidelity to the approved concept-world direction;
+9. biotech wrongness / SplicePit specificity;
+10. overall desire to keep moving around even when there is nothing else to do.
+
+The target feeling is simple: **choose one of four questionable little gene-splicing apprentices, enter their attractive but increasingly dubious workshop yard, and already want to explore it even though there is almost nothing to do yet.**
 
 If this gate fails, return to WP0.4D–G. Do not compensate by adding systems.
 
@@ -391,9 +429,10 @@ These remain intentionally narrower and later than before the reset.
 
 # Current decision gates
 
-- **DG-GRAPHICS-FIRST-PLAYABLE:** immediate hard gate at WP0.4H. Choosing a protagonist and simply walking around must feel good before presentation or mechanics expand.
-- **DG-PLAYER-SPRITE:** 24 × 32 frame contract, four authored protagonists and four-direction idle/walk language are locked for the current prototype; production adjustments require explicit human approval.
+- **DG-GRAPHICS-FIRST-PLAYABLE:** immediate hard gate at WP0.4H. Choosing a protagonist and simply walking around the concept-derived Apprentice Splicer Yard must feel good before presentation or mechanics expand.
+- **DG-PLAYER-SPRITE:** Milo/Theo/Ada/Pip and their accepted WP0.4D runtime appearance/movement are locked for the current foundation. The earlier 24 × 32 planning assumption is superseded for the accepted prototype. Final **in-world display scale** is deliberately unresolved until WP0.4F/G and requires human visual approval.
 - **DG-PLAYER-CUSTOMISATION:** broad modular appearance customisation is deferred. Current choice is Milo/Theo/Ada/Pip plus player-entered name.
+- **DG-YARD-VISUAL:** the next environment is the approved concept-derived Apprentice Splicer Yard/workshop. The discarded old Lab scene is not a base asset, not a layout reference and not a reskin target.
 - **DG-VISUAL-DIRECTION:** final mechanic-re-entry lock occurs at WP0.4J after the graphics-first playable is accepted.
 - **DG-SPLICE-PLAY:** current bench is superseded; player-facing splice loop must be redesigned in WP0.5A and accepted in WP0.5B.
 - **DG-BATTLE-PLAY:** current battle/cadence implementation is superseded; battle must be redesigned in WP0.5C and accepted in WP0.5D.
@@ -411,7 +450,8 @@ Do not parallelise work that is still defining the contract consumed by the next
 
 In particular:
 
-- WP0.4D → E → F → G are sequential;
+- WP0.4E → F → G are sequential;
+- WP0.4F and WP0.4G form one continuous visual goal: accepted protagonist visibly inhabiting the concept-derived Yard at the correct gameplay scale;
 - WP0.4H is a hard human stop;
 - do not build WP0.4I or later presentation work before WP0.4H approval;
 - do not build more splice mechanics during WP0.4C–J;
@@ -427,4 +467,4 @@ Technical cleanup that does not constrain design may continue only when required
 
 Playtest rejection is evidence, not failure. When a prototype reveals that the direction is wrong, stop extending it, record what was learned, supersede it explicitly and move the roadmap back to the earliest unresolved design contract.
 
-The 23 August 2026 graphics-first reset deliberately removes prior visual planning that could pull implementation back toward the rejected presentation. The approved biotech-apprentice reference and walking-around milestone are now the path forward.
+The 23 August 2026 graphics-first reset deliberately removes prior visual planning that could pull implementation back toward the rejected presentation. The accepted protagonists, the approved biotech-apprentice concept direction and the concept-derived walking-around milestone are now the path forward.
