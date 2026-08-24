@@ -72,13 +72,26 @@ try {
     return result.result?.value;
   }
 
-  async function holdKey(key, code, windowsVirtualKeyCode, durationMs = 250) {
-    const params = { key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode };
-    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
-    await sleep(durationMs);
-    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
-    await sleep(100);
+  const keyParams = (key, code, windowsVirtualKeyCode) => ({
+    key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode,
+  });
+
+  async function keyDown(key, code, windowsVirtualKeyCode) {
+    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...keyParams(key, code, windowsVirtualKeyCode) });
   }
+
+  async function keyUp(key, code, windowsVirtualKeyCode) {
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...keyParams(key, code, windowsVirtualKeyCode) });
+  }
+
+  async function tapKey(key, code, windowsVirtualKeyCode, durationMs = 40) {
+    await keyDown(key, code, windowsVirtualKeyCode);
+    await sleep(durationMs);
+    await keyUp(key, code, windowsVirtualKeyCode);
+    await sleep(80);
+  }
+
+  const state = () => evaluate(`({ ...globalThis.__SPLICEPIT_SANDBOX__, held: [...globalThis.__SPLICEPIT_SANDBOX__.held] })`);
 
   async function visiblePixels() {
     return evaluate(`(() => {
@@ -113,6 +126,34 @@ try {
     }
   }
 
+  async function assertAnimatedDirection(label, key, code, vk) {
+    const before = await state();
+    await keyDown(key, code, vk);
+    await sleep(150);
+    const first = await state();
+    await assertVisible(`${label} walk frame A`);
+    await sleep(150);
+    const second = await state();
+    await assertVisible(`${label} walk frame B`);
+    await keyUp(key, code, vk);
+    await sleep(100);
+    const idle = await state();
+
+    if (!first.moving || first.animationFrame === 0) {
+      throw new Error(`${label} did not enter walk animation: ${JSON.stringify(first)}`);
+    }
+    if (!second.moving || second.animationFrame === 0 || second.animationFrame === first.animationFrame) {
+      throw new Error(`${label} walk frame did not advance: ${JSON.stringify({ first, second })}`);
+    }
+    if (idle.moving || idle.animationFrame !== 0) {
+      throw new Error(`${label} did not return to idle: ${JSON.stringify(idle)}`);
+    }
+    if (label.endsWith('right') && !(idle.x > before.x + 20)) throw new Error(`${label} did not move right`);
+    if (label.endsWith('left') && !(idle.x < before.x - 20)) throw new Error(`${label} did not move left`);
+    if (label.endsWith('up') && !(idle.y < before.y - 20)) throw new Error(`${label} did not move up`);
+    if (label.endsWith('down') && !(idle.y > before.y + 20)) throw new Error(`${label} did not move down`);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', {
@@ -123,35 +164,34 @@ try {
   });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
 
-  await waitFor(async () => Boolean(await evaluate(`globalThis.__SPLICEPIT_SANDBOX__?.ready`)), 20000);
+  await waitFor(async () => {
+    const snapshot = await evaluate(`globalThis.__SPLICEPIT_SANDBOX__ ? ({ ready: globalThis.__SPLICEPIT_SANDBOX__.ready, error: globalThis.__SPLICEPIT_SANDBOX__.error }) : null`);
+    if (snapshot?.error) throw new Error(`Sandbox failed to start: ${snapshot.error}`);
+    return snapshot?.ready;
+  }, 20000);
 
-  const state = () => evaluate(`({ ...globalThis.__SPLICEPIT_SANDBOX__, held: [...globalThis.__SPLICEPIT_SANDBOX__.held] })`);
-  const initial = await state();
-  await assertVisible('Milo down');
+  const characters = [
+    ['1', 'Milo'],
+    ['2', 'Theo'],
+    ['3', 'Ada'],
+    ['4', 'Pip'],
+  ];
+  const directions = [
+    ['ArrowRight', 'ArrowRight', 39, 'right'],
+    ['ArrowLeft', 'ArrowLeft', 37, 'left'],
+    ['ArrowUp', 'ArrowUp', 38, 'up'],
+    ['ArrowDown', 'ArrowDown', 40, 'down'],
+  ];
 
-  await holdKey('ArrowRight', 'ArrowRight', 39);
-  const right = await state();
-  if (!(right.x > initial.x + 20) || right.direction !== 'right') throw new Error(`Right movement failed: ${JSON.stringify({ initial, right })}`);
-  await assertVisible('Milo right');
+  for (const [digit, name] of characters) {
+    await tapKey(digit, `Digit${digit}`, 48 + Number(digit));
+    await tapKey('r', 'KeyR', 82);
+    await assertVisible(`${name} idle`);
 
-  await holdKey('ArrowUp', 'ArrowUp', 38);
-  const up = await state();
-  if (!(up.y < right.y - 20) || up.direction !== 'up') throw new Error(`Up movement failed: ${JSON.stringify({ right, up })}`);
-  await assertVisible('Milo up');
-
-  await holdKey('ArrowLeft', 'ArrowLeft', 37);
-  const left = await state();
-  if (!(left.x < up.x - 20) || left.direction !== 'left') throw new Error(`Left movement failed: ${JSON.stringify({ up, left })}`);
-  await assertVisible('Milo left');
-
-  await holdKey('ArrowDown', 'ArrowDown', 40);
-  const down = await state();
-  if (!(down.y > left.y + 20) || down.direction !== 'down') throw new Error(`Down movement failed: ${JSON.stringify({ left, down })}`);
-  await assertVisible('Milo down after movement');
-
-  for (const [key, name] of [['2', 'Theo'], ['3', 'Ada'], ['4', 'Pip']]) {
-    await holdKey(key, `Digit${key}`, 48 + Number(key), 40);
-    await assertVisible(`${name} down`);
+    for (const [key, code, vk, direction] of directions) {
+      await tapKey('r', 'KeyR', 82);
+      await assertAnimatedDirection(`${name} ${direction}`, key, code, vk);
+    }
   }
 
   const switched = await state();
@@ -162,7 +202,7 @@ try {
     throw new Error(`Sandbox is not one full-screen canvas: ${JSON.stringify(layout)}`);
   }
 
-  console.log('Raw canvas visual movement smoke passed.');
+  console.log('Animated protagonist walk-cycle smoke passed for all 4 characters and directions.');
   ws.close();
   cleanup();
 } catch (error) {
