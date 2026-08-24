@@ -1,6 +1,10 @@
+import { normalisePlayerIdentity } from '../player/identity.js';
+import type { ProtagonistId } from '../player/protagonists.js';
 import type { CreatureRecord, GameStateSnapshot, QuestStage } from '../types.js';
 
 export const INITIAL: GameStateSnapshot = {
+  avatarId: null,
+  playerName: null,
   hasBaseAnimal: false,
   baseAnimalId: null,
   collectedGenes: [],
@@ -13,6 +17,8 @@ export const INITIAL: GameStateSnapshot = {
 };
 
 class GameStateStore implements GameStateSnapshot {
+  avatarId: ProtagonistId | null = null;
+  playerName: string | null = null;
   hasBaseAnimal = false;
   baseAnimalId: string | null = null;
   collectedGenes: string[] = [];
@@ -29,6 +35,8 @@ class GameStateStore implements GameStateSnapshot {
 
   reset(): void {
     const fresh = structuredClone(INITIAL);
+    this.avatarId = fresh.avatarId;
+    this.playerName = fresh.playerName;
     this.hasBaseAnimal = fresh.hasBaseAnimal;
     this.baseAnimalId = fresh.baseAnimalId;
     this.collectedGenes = fresh.collectedGenes;
@@ -44,6 +52,21 @@ class GameStateStore implements GameStateSnapshot {
     this.reset();
     Object.assign(this, data);
     this.collectedGenes = Array.isArray(data.collectedGenes) ? [...data.collectedGenes] : [];
+
+    const identity = normalisePlayerIdentity(
+      (data as Partial<GameStateSnapshot> & { avatarId?: unknown }).avatarId,
+      (data as Partial<GameStateSnapshot> & { playerName?: unknown }).playerName,
+    );
+    this.avatarId = identity?.avatarId ?? null;
+    this.playerName = identity?.playerName ?? null;
+  }
+
+  setPlayerIdentity(avatarId: ProtagonistId, playerName: string): boolean {
+    const identity = normalisePlayerIdentity(avatarId, playerName);
+    if (!identity) return false;
+    this.avatarId = identity.avatarId;
+    this.playerName = identity.playerName;
+    return true;
   }
 
   acquireAnimal(id: string): void {
@@ -73,6 +96,8 @@ class GameStateStore implements GameStateSnapshot {
 
   snapshot(): GameStateSnapshot {
     return {
+      avatarId: this.avatarId,
+      playerName: this.playerName,
       hasBaseAnimal: this.hasBaseAnimal,
       baseAnimalId: this.baseAnimalId,
       collectedGenes: [...this.collectedGenes],
