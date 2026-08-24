@@ -22,6 +22,7 @@ const SPEED = 180;
 const WALK_FRAME_MS = 115;
 const WALK_SEQUENCE = [1, 2, 3, 2] as const;
 const LOWER_BODY_Y = 64;
+const LOWER_BODY_OVERLAP = 2;
 const HALF_WIDTH = FRAME_WIDTH / 2;
 
 const CHARACTERS = ['milo', 'theo', 'ada', 'pip'] as const;
@@ -213,31 +214,35 @@ function drawAnimatedCharacter(image: HTMLImageElement, destX: number, destY: nu
   const torsoY = animationFrame === 2 ? -1 : 0;
   const leftY = animationFrame === 1 ? 1 : animationFrame === 3 ? -1 : 0;
   const rightY = -leftY;
-  const lowerHeight = FRAME_HEIGHT - LOWER_BODY_Y;
+  const lowerSourceY = LOWER_BODY_Y - LOWER_BODY_OVERLAP;
+  const lowerHeight = FRAME_HEIGHT - lowerSourceY;
+  const lowerDestY = destY + lowerSourceY * DISPLAY_SCALE;
 
-  drawSection(image, 0, 0, FRAME_WIDTH, LOWER_BODY_Y, destX, destY, torsoX, torsoY);
+  // Draw the legs first with a small overlap into the torso. The torso is then
+  // drawn over the join so opposing walk offsets can never expose a black seam.
   drawSection(
     image,
     0,
-    LOWER_BODY_Y,
+    lowerSourceY,
     HALF_WIDTH,
     lowerHeight,
     destX,
-    destY + LOWER_BODY_Y * DISPLAY_SCALE,
+    lowerDestY,
     stride,
     leftY,
   );
   drawSection(
     image,
     HALF_WIDTH,
-    LOWER_BODY_Y,
+    lowerSourceY,
     HALF_WIDTH,
     lowerHeight,
     destX + HALF_WIDTH * DISPLAY_SCALE,
-    destY + LOWER_BODY_Y * DISPLAY_SCALE,
+    lowerDestY,
     -stride,
     rightY,
   );
+  drawSection(image, 0, 0, FRAME_WIDTH, LOWER_BODY_Y, destX, destY, torsoX, torsoY);
 }
 
 function draw(): void {
