@@ -74,38 +74,24 @@ try {
 
   async function waitForReady() {
     return waitFor(async () => {
-      const state = await evaluate(`globalThis.__SPLICEPIT_CHARACTER_SELECT__ ? ({ ...globalThis.__SPLICEPIT_CHARACTER_SELECT__ }) : null`);
-      if (state?.error) throw new Error(`Character select failed to start: ${state.error}`);
+      const state = await evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
+      if (state?.error) throw new Error(`Visual reset stage failed to start: ${state.error}`);
       return state?.ready ? state : null;
     }, 20000);
   }
 
   async function state() {
-    return evaluate(`({ ...globalThis.__SPLICEPIT_CHARACTER_SELECT__ })`);
+    return evaluate(`({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ })`);
   }
 
-  async function typeLetter(key, code, vk) {
+  async function key(key, code, vk, text = '') {
     await cdp('Input.dispatchKeyEvent', {
-      type: 'keyDown', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk, text: key, unmodifiedText: key,
+      type: 'keyDown', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk, text, unmodifiedText: text,
     });
     await cdp('Input.dispatchKeyEvent', {
       type: 'keyUp', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
     });
-    await sleep(40);
-  }
-
-  async function previewHash() {
-    return evaluate(`(() => {
-      const canvas = document.querySelector('#character-preview');
-      const ctx = canvas?.getContext('2d');
-      if (!canvas || !ctx) return 0;
-      const data = ctx.getImageData(50, 25, 90, 120).data;
-      let hash = 0;
-      for (let i = 0; i < data.length; i += 16) {
-        hash = (hash + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7) % 2147483647;
-      }
-      return hash;
-    })()`);
+    await sleep(50);
   }
 
   await cdp('Page.enable');
@@ -124,41 +110,61 @@ try {
   await cdp('Page.bringToFront');
 
   const initial = await state();
-  if (initial.selectedAvatarId !== 'milo' || initial.loadedFromSave || initial.saved) {
-    throw new Error(`Unexpected clean character-select state: ${JSON.stringify(initial)}`);
-  }
-  if (await evaluate(`typeof globalThis.__SPLICEPIT_SANDBOX__ !== 'undefined'`)) {
-    throw new Error('The superseded WP0.4D sandbox is still exposed as the default runtime.');
+  if (initial.selectedAvatarId !== 'milo' || initial.loadedFromSave || initial.saved || initial.phase !== 'select') {
+    throw new Error(`Unexpected clean visual-reset state: ${JSON.stringify(initial)}`);
   }
 
-  const expected = ['milo', 'theo', 'ada', 'pip'];
-  const hashes = new Set();
-  for (const id of expected) {
-    await evaluate(`document.querySelector('[data-avatar="${id}"]').click()`);
-    await sleep(220);
-    const selected = await state();
-    if (selected.selectedAvatarId !== id) throw new Error(`Could not select ${id}: ${JSON.stringify(selected)}`);
-    const hash = await previewHash();
-    if (!hash) throw new Error(`${id} preview did not render.`);
-    hashes.add(hash);
-  }
-  if (hashes.size < 3) throw new Error(`Live previews are not visually distinct enough for smoke verification: ${[...hashes]}`);
+  const rejectedUiPresent = await evaluate(`Boolean(
+    document.querySelector('.character-select-shell, .character-tab, #identity-form, #character-preview') ||
+    globalThis.__SPLICEPIT_CHARACTER_SELECT__
+  )`);
+  if (rejectedUiPresent) throw new Error('Rejected WP0.4E terminal/form presentation is still reachable at boot.');
 
-  await evaluate(`document.querySelector('[data-avatar="theo"]').click(); document.querySelector('#player-name').focus()`);
-  await typeLetter('w', 'KeyW', 87);
-  await typeLetter('a', 'KeyA', 65);
-  await typeLetter('s', 'KeyS', 83);
-  await typeLetter('d', 'KeyD', 68);
-  const textEntry = await evaluate(`({ value: document.querySelector('#player-name').value, selected: globalThis.__SPLICEPIT_CHARACTER_SELECT__.selectedAvatarId })`);
-  if (textEntry.value !== 'wasd' || textEntry.selected !== 'theo') {
-    throw new Error(`Movement letters were intercepted during name entry: ${JSON.stringify(textEntry)}`);
+  const layout = await evaluate(`({
+    canvases: document.querySelectorAll('#visual-reset-stage').length,
+    captureInputs: document.querySelectorAll('#player-name-capture').length,
+    width: innerWidth,
+    bodyWidth: document.body.scrollWidth,
+  })`);
+  if (layout.canvases !== 1 || layout.captureInputs !== 1 || layout.bodyWidth > layout.width) {
+    throw new Error(`Visual reset layout contract failed: ${JSON.stringify(layout)}`);
+  }
+
+  const canvasHash = await evaluate(`(() => {
+    const canvas = document.querySelector('#visual-reset-stage');
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return 0;
+    const data = ctx.getImageData(100, 100, 760, 340).data;
+    let hash = 0;
+    for (let i = 0; i < data.length; i += 64) {
+      hash = (hash + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7) % 2147483647;
+    }
+    return hash;
+  })()`);
+  if (!canvasHash) throw new Error('Visual reset canvas did not render.');
+
+  await key('ArrowRight', 'ArrowRight', 39);
+  let current = await state();
+  if (current.selectedAvatarId !== 'theo') throw new Error(`Keyboard selection did not move to Theo: ${JSON.stringify(current)}`);
+
+  await key('Enter', 'Enter', 13);
+  current = await state();
+  if (current.phase !== 'name') throw new Error(`Enter did not start in-canvas naming: ${JSON.stringify(current)}`);
+
+  await key('w', 'KeyW', 87, 'w');
+  await key('a', 'KeyA', 65, 'a');
+  await key('s', 'KeyS', 83, 's');
+  await key('d', 'KeyD', 68, 'd');
+  current = await state();
+  if (current.playerName !== 'wasd' || current.selectedAvatarId !== 'theo') {
+    throw new Error(`WASD was intercepted during naming: ${JSON.stringify(current)}`);
   }
 
   await evaluate(`(() => {
-    const input = document.querySelector('#player-name');
+    const input = document.querySelector('#player-name-capture');
     input.value = 'Rook';
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    document.querySelector('#identity-form').requestSubmit();
+    input.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
   })()`);
   await waitFor(async () => (await state()).saved);
 
@@ -173,23 +179,11 @@ try {
 
   await cdp('Page.reload', { ignoreCache: true });
   const restored = await waitForReady();
-  const restoredInput = await evaluate(`document.querySelector('#player-name').value`);
-  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Rook' || restoredInput !== 'Rook') {
-    throw new Error(`Saved identity was not restored after reload: ${JSON.stringify({ restored, restoredInput })}`);
+  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Rook') {
+    throw new Error(`Saved identity was not restored after reload: ${JSON.stringify(restored)}`);
   }
 
-  const layout = await evaluate(`({
-    buttons: document.querySelectorAll('.character-tab').length,
-    canvases: document.querySelectorAll('#character-preview').length,
-    width: innerWidth,
-    bodyWidth: document.body.scrollWidth,
-    inputType: document.querySelector('#player-name')?.tagName,
-  })`);
-  if (layout.buttons !== 4 || layout.canvases !== 1 || layout.bodyWidth > layout.width || layout.inputType !== 'INPUT') {
-    throw new Error(`Character-select layout contract failed: ${JSON.stringify(layout)}`);
-  }
-
-  console.log('WP0.4E character selection, keyboard-safe naming and identity persistence smoke passed.');
+  console.log('Visual-reset boot, game-like selection shell and identity persistence smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
