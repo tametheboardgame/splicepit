@@ -105,8 +105,11 @@ try {
   await waitFor(async () => (await state())?.ready === true, 20000);
   await cdp('Page.bringToFront');
 
-  const selector = await state();
-  if (selector.selectionPresentation !== 'yard-arrival' || !selector.selectionRendered || selector.viewportWidth !== 1280 || selector.viewportHeight !== 720) {
+  const selector = await waitFor(async () => {
+    const current = await state();
+    return current?.ready && current?.selectionRendered ? current : null;
+  });
+  if (selector.selectionPresentation !== 'yard-arrival' || selector.viewportWidth !== 1280 || selector.viewportHeight !== 720) {
     throw new Error(`WP0.4E-R selector was not ready before Yard entry: ${JSON.stringify(selector)}`);
   }
 
