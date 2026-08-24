@@ -5,7 +5,6 @@ const port = 9222;
 const gamePort = 8080;
 let nextId = 0;
 const pending = new Map();
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function waitFor(fn, timeoutMs = 15000, intervalMs = 100) {
@@ -15,7 +14,9 @@ async function waitFor(fn, timeoutMs = 15000, intervalMs = 100) {
     try {
       const value = await fn();
       if (value) return value;
-    } catch (error) { lastError = error; }
+    } catch (error) {
+      lastError = error;
+    }
     await sleep(intervalMs);
   }
   throw lastError ?? new Error(`Timed out after ${timeoutMs}ms`);
@@ -24,21 +25,16 @@ async function waitFor(fn, timeoutMs = 15000, intervalMs = 100) {
 const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], {
   stdio: ['ignore', 'pipe', 'pipe'],
 });
-
 const chrome = spawn(chromePath, [
   '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
   `--remote-debugging-port=${port}`, '--remote-allow-origins=*', 'about:blank',
 ], { stdio: ['ignore', 'pipe', 'pipe'] });
-
-let chromeErrors = '';
-chrome.stderr.on('data', (chunk) => { chromeErrors += chunk.toString(); });
 
 function cleanup() {
   if (!server.killed) server.kill('SIGTERM');
   if (!chrome.killed) chrome.kill('SIGTERM');
 }
 process.on('exit', cleanup);
-process.on('SIGINT', () => { cleanup(); process.exit(130); });
 
 try {
   const targets = await waitFor(async () => {
@@ -72,232 +68,153 @@ try {
 
   async function evaluate(expression) {
     const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-    if (result.exceptionDetails) {
-      const detail = result.exceptionDetails.exception?.description || result.exceptionDetails.text || 'Browser evaluation failed';
-      throw new Error(detail);
-    }
+    if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Browser evaluation failed');
     return result.result?.value;
   }
 
-  async function waitExpr(expression, timeoutMs = 15000) {
-    return waitFor(async () => Boolean(await evaluate(expression)), timeoutMs, 120);
+  const keyParams = (key, code, windowsVirtualKeyCode) => ({
+    key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode,
+  });
+
+  async function keyDown(key, code, windowsVirtualKeyCode) {
+    await cdp('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...keyParams(key, code, windowsVirtualKeyCode) });
   }
 
-  async function pressKey(key, code, windowsVirtualKeyCode) {
-    const params = { key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode };
-    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
-    await sleep(45);
-    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
-    await sleep(180);
+  async function keyUp(key, code, windowsVirtualKeyCode) {
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...keyParams(key, code, windowsVirtualKeyCode) });
   }
 
-  async function holdKey(key, code, windowsVirtualKeyCode, durationMs) {
-    const params = { key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode };
-    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
+  async function tapKey(key, code, windowsVirtualKeyCode, durationMs = 40) {
+    await keyDown(key, code, windowsVirtualKeyCode);
     await sleep(durationMs);
-    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
-    await sleep(180);
+    await keyUp(key, code, windowsVirtualKeyCode);
+    await sleep(80);
+  }
+
+  const state = () => evaluate(`({ ...globalThis.__SPLICEPIT_SANDBOX__, held: [...globalThis.__SPLICEPIT_SANDBOX__.held] })`);
+
+  async function visiblePixels() {
+    return evaluate(`(() => {
+      const state = globalThis.__SPLICEPIT_SANDBOX__;
+      const canvas = document.querySelector('#game canvas');
+      const ctx = canvas?.getContext('2d');
+      if (!state || !canvas || !ctx) return { count: 0, width: 0, height: 0 };
+      const sx = Math.max(0, Math.floor(state.x - 70));
+      const sy = Math.max(0, Math.floor(state.y - 200));
+      const sw = Math.min(140, canvas.width - sx);
+      const sh = Math.min(205, canvas.height - sy);
+      const data = ctx.getImageData(sx, sy, sw, sh).data;
+      let count = 0, minX = sw, minY = sh, maxX = -1, maxY = -1;
+      for (let py = 0; py < sh; py += 1) {
+        for (let px = 0; px < sw; px += 1) {
+          const i = (py * sw + px) * 4;
+          if (data[i] > 8 || data[i + 1] > 8 || data[i + 2] > 8) {
+            count += 1;
+            minX = Math.min(minX, px); maxX = Math.max(maxX, px);
+            minY = Math.min(minY, py); maxY = Math.max(maxY, py);
+          }
+        }
+      }
+      return { count, width: maxX >= 0 ? maxX - minX + 1 : 0, height: maxY >= 0 ? maxY - minY + 1 : 0 };
+    })()`);
+  }
+
+  async function assertVisible(label) {
+    const pixels = await visiblePixels();
+    if (pixels.count < 300 || pixels.width < 30 || pixels.height < 80) {
+      throw new Error(`${label} is not visibly rendered: ${JSON.stringify(pixels)}`);
+    }
+  }
+
+  async function assertAnimatedDirection(label, key, code, vk) {
+    const before = await state();
+    await keyDown(key, code, vk);
+    await sleep(150);
+    const first = await state();
+    await assertVisible(`${label} walk frame A`);
+    await sleep(150);
+    const second = await state();
+    await assertVisible(`${label} walk frame B`);
+    await keyUp(key, code, vk);
+    await sleep(100);
+    const idle = await state();
+
+    if (!first.moving || first.animationFrame === 0) {
+      throw new Error(`${label} did not enter walk animation: ${JSON.stringify(first)}`);
+    }
+    if (!second.moving || second.animationFrame === 0 || second.animationFrame === first.animationFrame) {
+      throw new Error(`${label} walk frame did not advance: ${JSON.stringify({ first, second })}`);
+    }
+    if (idle.moving || idle.animationFrame !== 0) {
+      throw new Error(`${label} did not return to idle: ${JSON.stringify(idle)}`);
+    }
+    if (label.endsWith('right') && !(idle.x > before.x + 20)) throw new Error(`${label} did not move right`);
+    if (label.endsWith('left') && !(idle.x < before.x - 20)) throw new Error(`${label} did not move left`);
+    if (label.endsWith('up') && !(idle.y < before.y - 20)) throw new Error(`${label} did not move up`);
+    if (label.endsWith('down') && !(idle.y > before.y + 20)) throw new Error(`${label} did not move down`);
   }
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', {
-    width: 1366,
-    height: 768,
+    width: 1280,
+    height: 720,
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?seed=wp03h-smoke&debug=1` });
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
 
-  try {
-    await waitExpr(`Boolean(globalThis.__SPLICEPIT_GAME__?.scene?.isActive('Title'))`, 20000);
-    await waitExpr(`Boolean(globalThis.__SPLICEPIT_DEBUG__)`);
-  } catch (error) {
-    const diagnostics = await evaluate(`({
-      href: location.href,
-      title: document.title,
-      text: document.body.innerText.slice(0, 1200),
-      game: Boolean(globalThis.__SPLICEPIT_GAME__),
-      debug: Boolean(globalThis.__SPLICEPIT_DEBUG__),
-      scenes: globalThis.__SPLICEPIT_GAME__?.scene?.getScenes(true)?.map(s => s.scene.key) ?? []
-    })`);
-    throw new Error(`${error.message}; startup diagnostics=${JSON.stringify(diagnostics)}`);
-  }
+  await waitFor(async () => {
+    const snapshot = await evaluate(`globalThis.__SPLICEPIT_SANDBOX__ ? ({ ready: globalThis.__SPLICEPIT_SANDBOX__.ready, error: globalThis.__SPLICEPIT_SANDBOX__.error }) : null`);
+    if (snapshot?.error) throw new Error(`Sandbox failed to start: ${snapshot.error}`);
+    return snapshot?.ready;
+  }, 20000);
 
-  const initialDiagnostics = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
-  if (initialDiagnostics?.rng?.seed !== 'wp03h-smoke' || !initialDiagnostics?.scene?.active?.includes('Title')) {
-    throw new Error(`Unexpected deterministic diagnostics: ${JSON.stringify(initialDiagnostics)}`);
-  }
-
-  await pressKey('Enter', 'Enter', 13);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Intro')`);
-  await pressKey('Enter', 'Enter', 13);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
-
-  // A common 14-inch laptop viewport should show the whole shell without vertical page scrolling.
-  const laptopLayout = await evaluate(`({
-    innerWidth,
-    innerHeight,
-    scrollHeight: document.documentElement.scrollHeight,
-    shellHeight: document.getElementById('shell')?.getBoundingClientRect().height ?? 0,
-    gameHeight: document.getElementById('game-wrap')?.getBoundingClientRect().height ?? 0
-  })`);
-  if (laptopLayout.scrollHeight > laptopLayout.innerHeight + 1) {
-    throw new Error(`Laptop viewport requires vertical scrolling: ${JSON.stringify(laptopLayout)}`);
-  }
-
-  // Movement must continue while a direction is held, not require one press per tile.
-  const startX = await evaluate(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x`);
-  await holdKey('ArrowRight', 'ArrowRight', 39, 390);
-  const heldX = await evaluate(`__SPLICEPIT_GAME__.scene.getScene('Lab').playerGrid.x`);
-  if (!(heldX >= startX + 3)) {
-    throw new Error(`Held movement did not repeat across tiles: start=${startX} end=${heldX}`);
-  }
-
-  // The opening base animal is a genuine Rabbit / Goat / Pig choice.
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useAnimalPen(); return true; })()`);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === 'animal'`);
-  await pressKey('ArrowDown', 'ArrowDown', 40);
-  await pressKey('Enter', 'Enter', 13);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === null && __SPLICEPIT_GAME__.scene.getScene('Lab').blocked === true`);
-  await pressKey('Escape', 'Escape', 27);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === false`);
-  const selectedBase = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics().gameplay.baseAnimalId`);
-  if (selectedBase !== 'goat') throw new Error(`Opening animal choice did not persist Goat: ${selectedBase}`);
-
-  // The source archive exposes the canonical opening ten and lets the player choose one.
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useGeneCabinet(); return true; })()`);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === 'source' && __SPLICEPIT_GAME__.scene.getScene('Lab').selectionItems.length === 10`);
-  await pressKey('ArrowDown', 'ArrowDown', 40);
-  await pressKey('ArrowDown', 'ArrowDown', 40);
-  await pressKey('ArrowDown', 'ArrowDown', 40);
-  await pressKey('Enter', 'Enter', 13);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').selectionMode === null && __SPLICEPIT_GAME__.scene.getScene('Lab').blocked === true`);
-  await pressKey('Escape', 'Escape', 27);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Lab').blocked === false`);
-  const recovered = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics().gameplay.collectedGenes`);
-  if (!Array.isArray(recovered) || recovered[0] !== 'gecko_regeneration') {
-    throw new Error(`Opening source choice did not persist selected canonical source: ${JSON.stringify(recovered)}`);
-  }
-
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useSpliceBench(); return true; })()`);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Splice')`);
-
-  const initialLab = await evaluate(`(() => {
-    const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
-    return {
-      subject: splice.selectedSubjectId,
-      source: splice.selectedSourceId,
-      forecast: splice.forecastText.text
-    };
-  })()`);
-  if (!String(initialLab?.subject).startsWith('r03.test.') || initialLab?.source !== 'gecko_regeneration') {
-    throw new Error(`Experimentation lab did not start on a test subject with the chosen physical material: ${JSON.stringify(initialLab)}`);
-  }
-  if (!initialLab?.forecast?.includes('VIABLE EXPRESSION') || !initialLab?.forecast?.includes('UNKNOWN')) {
-    throw new Error(`Forecast leaked or omitted the uncertainty framing: ${JSON.stringify(initialLab)}`);
-  }
-
-  // The valued main cannot be used as the first experiment for a source package.
-  const prematureMain = await evaluate(`(() => {
-    const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
-    const originalSubject = splice.selectedSubjectId;
-    splice.selectedSubjectId = 'r03.main.goat';
-    splice.confirmArmed = true;
-    splice.refresh();
-    splice.execute(true);
-    const diagnostics = __SPLICEPIT_DEBUG__.diagnostics();
-    const message = splice.outcomeText.text;
-    splice.selectedSubjectId = originalSubject;
-    splice.confirmArmed = false;
-    splice.refresh();
-    return { experiments: diagnostics.domain.experimentHistory.length, message };
-  })()`);
-  if (prematureMain?.experiments !== 0 || !prematureMain?.message?.includes('VALUED MAIN LOCKED')) {
-    throw new Error(`Untested source could be committed to the valued main: ${JSON.stringify(prematureMain)}`);
-  }
-
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Splice').execute(false); return true; })()`);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Splice').outcomeText.text.startsWith('LATEST OUTCOME')`);
-  const afterTest = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
-  if (afterTest?.domain?.experimentHistory?.length !== 1 || afterTest?.domain?.researchKnowledge?.[0]?.observationCount !== 1) {
-    throw new Error(`Test splice did not persist research evidence: ${JSON.stringify(afterTest?.domain)}`);
-  }
-  const mainBefore = afterTest.domain.creatures.find((creature) => creature.role === 'main');
-  if (!mainBefore || mainBefore.baseAnimalId !== 'goat' || mainBefore.spliceHistory.length !== 0) {
-    throw new Error(`Test splice modified or replaced the chosen valued main creature: ${JSON.stringify(mainBefore)}`);
-  }
-
+  await cdp('Page.bringToFront');
   await evaluate(`(() => {
-    const splice = __SPLICEPIT_GAME__.scene.getScene('Splice');
-    splice.selectedSubjectId = 'r03.main.goat';
-    splice.confirmArmed = true;
-    splice.refresh();
-    __SPLICEPIT_DEBUG__.setSeed('wp03h-main-smoke');
-    splice.execute(true);
-    return true;
+    window.focus();
+    const canvas = document.querySelector('#game canvas');
+    canvas?.focus({ preventScroll: true });
+    return document.activeElement === canvas;
   })()`);
-  await waitExpr(`__SPLICEPIT_DEBUG__.diagnostics().domain.creatures.some(c => c.role === 'main' && c.spliceHistory.length === 1)`);
-  const afterMain = await evaluate(`__SPLICEPIT_DEBUG__.diagnostics()`);
-  const mainAfter = afterMain.domain.creatures.find((creature) => creature.role === 'main');
-  if (!mainAfter || mainAfter.spliceHistory.length !== 1 || afterMain.domain.experimentHistory.length !== 2) {
-    throw new Error(`Irreversible main splice did not persist correctly: ${JSON.stringify(afterMain.domain)}`);
-  }
-  if (mainAfter.lifeState !== 'living') {
-    throw new Error('Smoke seed unexpectedly killed the Goat main creature; choose a non-lethal deterministic smoke seed.');
-  }
-  if (!afterMain.gameplay.currentCreature) {
-    throw new Error('R0.1 Fit Pit compatibility bridge was not populated from the living domain main creature.');
+
+  const characters = [
+    ['1', 'Milo'],
+    ['2', 'Theo'],
+    ['3', 'Ada'],
+    ['4', 'Pip'],
+  ];
+  const directions = [
+    ['ArrowRight', 'ArrowRight', 39, 'right'],
+    ['ArrowLeft', 'ArrowLeft', 37, 'left'],
+    ['ArrowUp', 'ArrowUp', 38, 'up'],
+    ['ArrowDown', 'ArrowDown', 40, 'down'],
+  ];
+
+  for (const [digit, name] of characters) {
+    await tapKey(digit, `Digit${digit}`, 48 + Number(digit));
+    await tapKey('r', 'KeyR', 82);
+    await assertVisible(`${name} idle`);
+
+    for (const [key, code, vk, direction] of directions) {
+      await tapKey('r', 'KeyR', 82);
+      await assertAnimatedDirection(`${name} ${direction}`, key, code, vk);
+    }
   }
 
-  const spliceDiagnostics = await evaluate(`(() => ({
-    diagnostics: __SPLICEPIT_DEBUG__.diagnostics(),
-    exported: JSON.parse(__SPLICEPIT_DEBUG__.exportState())
-  }))()`);
-  if (spliceDiagnostics?.diagnostics?.rng?.calls < 1 || !spliceDiagnostics?.diagnostics?.creatureBiology?.id) {
-    throw new Error(`Splice diagnostics missing RNG/biology state: ${JSON.stringify(spliceDiagnostics)}`);
-  }
-  if (spliceDiagnostics?.exported?.rng?.seed !== 'wp03h-main-smoke' || spliceDiagnostics?.exported?.version !== 1) {
-    throw new Error(`Debug export is not reproducible: ${JSON.stringify(spliceDiagnostics?.exported)}`);
+  const switched = await state();
+  if (switched.character !== 'pip') throw new Error(`Character switch failed: ${JSON.stringify(switched)}`);
+
+  const layout = await evaluate(`({ canvases: document.querySelectorAll('#game canvas').length, width: innerWidth, height: innerHeight, bodyWidth: document.body.scrollWidth, bodyHeight: document.body.scrollHeight })`);
+  if (layout.canvases !== 1 || layout.bodyWidth !== layout.width || layout.bodyHeight !== layout.height) {
+    throw new Error(`Sandbox is not one full-screen canvas: ${JSON.stringify(layout)}`);
   }
 
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.start('Lab'); return true; })()`);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Lab')`);
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Lab').useFitPit(); return true; })()`);
-  await waitExpr(`__SPLICEPIT_GAME__.scene.isActive('Battle')`);
-  await evaluate(`(() => { __SPLICEPIT_GAME__.scene.getScene('Battle').enemy.hp = 1; return true; })()`);
-  await pressKey('1', 'Digit1', 49);
-
-  await waitExpr(`__SPLICEPIT_GAME__.scene.getScene('Battle').finished === true`, 5000);
-  const save = await evaluate(`JSON.parse(localStorage.getItem('splicepit-save'))`);
-  const gameplay = save?.payload?.gameplay;
-  if (!save || save.schemaVersion !== 2 || gameplay?.questStage !== 'slice_complete' || gameplay?.fitPitWins !== 1 || !gameplay?.currentCreature || gameplay?.baseAnimalId !== 'goat') {
-    throw new Error(`Unexpected versioned save state: ${JSON.stringify(save)}`);
-  }
-  if (!Array.isArray(save.payload?.creatures?.records) || !Array.isArray(save.payload?.materials?.stock) || !Array.isArray(save.payload?.research?.knowledge) || save.payload?.research?.experiments?.length !== 2) {
-    throw new Error(`Missing R0.3H persistence sections: ${JSON.stringify(save)}`);
-  }
-
-  const debugRoundTrip = await evaluate(`(() => {
-    const exported = __SPLICEPIT_DEBUG__.exportState();
-    const before = JSON.parse(exported).rng;
-    __SPLICEPIT_DEBUG__.setSeed('temporary-smoke-seed');
-    const restored = __SPLICEPIT_DEBUG__.importState(exported, { persist: false, restartScene: false });
-    return { before, after: restored.rng, persistedSource: restored.persistedSave?.source };
-  })()`);
-  if (JSON.stringify(debugRoundTrip?.before) !== JSON.stringify(debugRoundTrip?.after) || debugRoundTrip?.persistedSource !== 'primary') {
-    throw new Error(`Debug import/export round-trip failed: ${JSON.stringify(debugRoundTrip)}`);
-  }
-
-  const pageText = await evaluate(`document.body.innerText`);
-  if (pageText.includes('Unable to load the game engine')) throw new Error('Phaser failed to load');
-
-  console.log('Browser smoke OK: laptop viewport fit, held movement, Goat base choice, opening-ten source choice, valued-main test-first guard, test-first research, irreversible main splice, persistence and Fit Pit bridge');
+  console.log('Animated protagonist walk-cycle smoke passed for all 4 characters and directions.');
   ws.close();
-} catch (error) {
-  console.error(error);
-  if (chromeErrors) console.error(chromeErrors.slice(-5000));
-  process.exitCode = 1;
-} finally {
   cleanup();
+} catch (error) {
+  cleanup();
+  console.error(error);
+  process.exit(1);
 }
