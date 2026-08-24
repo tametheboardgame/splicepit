@@ -89,8 +89,8 @@ try {
       const canvas = document.querySelector('#visual-reset-stage');
       const rect = canvas.getBoundingClientRect();
       return {
-        x: rect.left + (${internalX} / 960) * rect.width,
-        y: rect.top + (${internalY} / 540) * rect.height,
+        x: rect.left + (${internalX} / 1280) * rect.width,
+        y: rect.top + (${internalY} / 720) * rect.height,
       };
     })()`);
     await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
@@ -131,8 +131,13 @@ try {
   await waitReady();
   await cdp('Page.bringToFront');
 
-  // Click the actual canvas Change name? control, rather than invoking app functions from JS.
-  await clickCanvasPoint(567, 509);
+  const initial = await state();
+  if (initial.selectionPresentation !== 'yard-arrival' || !initial.selectionRendered || initial.viewportWidth !== 1280 || initial.viewportHeight !== 720) {
+    throw new Error(`In-world selector was not active: ${JSON.stringify(initial)}`);
+  }
+
+  // Click the actual in-world Change name? plank.
+  await clickCanvasPoint(766, 683);
   await waitFor(async () => (await state())?.phase === 'name');
   await sleep(100);
 
@@ -157,7 +162,6 @@ try {
     throw new Error(`Rename input is not visibly positioned over the game: ${JSON.stringify(focusState)}`);
   }
 
-  // Because beginNaming selects the default name, a real keypress should replace it.
   await key('X', 'KeyX', 88, 'X');
   const typed = await evaluate(`({
     value: document.querySelector('#player-name-capture').value,
@@ -167,13 +171,12 @@ try {
     throw new Error(`Real keyboard typing did not reach rename input: ${JSON.stringify(typed)}`);
   }
 
-  // Force focus loss and prove Escape still cannot trap the player in rename mode.
   await evaluate(`document.querySelector('#player-name-capture').blur()`);
   await key('Escape', 'Escape', 27);
   await waitFor(async () => (await state())?.phase === 'select');
 
   // Re-enter through the real pointer path, type a custom name and confirm with Enter.
-  await clickCanvasPoint(567, 509);
+  await clickCanvasPoint(766, 683);
   await waitFor(async () => (await state())?.phase === 'name');
   await sleep(80);
   await typeText('Rook');
@@ -183,7 +186,7 @@ try {
   await key('Enter', 'Enter', 13);
   const confirmed = await waitFor(async () => {
     const current = await state();
-    return current?.phase === 'confirmed' && current.saved ? current : null;
+    return current?.phase === 'confirmed' && current.saved && current.yardRendered ? current : null;
   });
   if (confirmed.playerName !== 'Rook' || confirmed.selectedAvatarId !== 'milo') {
     throw new Error(`Enter did not confirm renamed identity: ${JSON.stringify(confirmed)}`);
@@ -201,7 +204,7 @@ try {
     throw new Error(`Renamed identity did not persist: ${JSON.stringify(persisted)}`);
   }
 
-  console.log('Real pointer rename, visible focus, typing, Escape fallback and Enter confirmation smoke passed.');
+  console.log('In-world pointer rename, visible focus, typing, Escape fallback and Enter-to-Yard smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
