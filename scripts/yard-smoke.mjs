@@ -73,12 +73,20 @@ try {
   }
 
   async function key(key, code, vk) {
-    await cdp('Input.dispatchKeyEvent', {
-      type: 'keyDown', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
-    });
-    await cdp('Input.dispatchKeyEvent', {
-      type: 'keyUp', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
-    });
+    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+    await sleep(80);
+  }
+
+  async function holdKey(keyName, code, vk, durationMs) {
+    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+    await sleep(durationMs);
+    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+    await sleep(120);
+  }
+
+  async function state() {
+    return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
 
   await cdp('Page.enable');
@@ -91,34 +99,45 @@ try {
   });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
 
-  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.ready === true`), 20000);
+  await waitFor(async () => (await state())?.ready === true, 20000);
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.ready === true`), 20000);
+  await waitFor(async () => (await state())?.ready === true, 20000);
   await cdp('Page.bringToFront');
 
   await key('Enter', 'Enter', 13);
-
-  const yardState = await waitFor(async () => {
-    const state = await evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
-    return state?.phase === 'confirmed' && state?.yardRendered ? state : null;
+  const initial = await waitFor(async () => {
+    const current = await state();
+    return current?.phase === 'confirmed' && current?.yardRendered ? current : null;
   });
 
-  if (yardState.selectedAvatarId !== 'milo' || yardState.playerName !== 'Milo' || !yardState.saved) {
-    throw new Error(`Yard did not receive the accepted selected identity: ${JSON.stringify(yardState)}`);
+  if (initial.selectedAvatarId !== 'milo' || initial.playerName !== 'Milo' || !initial.saved) {
+    throw new Error(`Yard did not receive selected identity: ${JSON.stringify(initial)}`);
+  }
+  if (initial.viewportWidth !== 1280 || initial.viewportHeight !== 720 || initial.worldWidth <= 1280 || initial.worldHeight <= 720) {
+    throw new Error(`Expanded world/viewport contract failed: ${JSON.stringify(initial)}`);
+  }
+
+  const canvasSize = await evaluate(`(() => {
+    const canvas = document.querySelector('#visual-reset-stage');
+    return canvas ? { width: canvas.width, height: canvas.height, bodyWidth: document.body.scrollWidth, viewportWidth: innerWidth } : null;
+  })()`);
+  if (!canvasSize || canvasSize.width !== 1280 || canvasSize.height !== 720 || canvasSize.bodyWidth > canvasSize.viewportWidth) {
+    throw new Error(`Yard viewport size/overflow failed: ${JSON.stringify(canvasSize)}`);
   }
 
   const visualStats = await evaluate(`(() => {
     const canvas = document.querySelector('#visual-reset-stage');
     const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return null;
+    const debug = globalThis.__SPLICEPIT_VISUAL_RESET__;
+    if (!canvas || !ctx || !debug) return null;
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const colours = new Set();
     let dark = 0;
     let waterLike = 0;
     let warm = 0;
-    for (let y = 0; y < canvas.height; y += 8) {
-      for (let x = 0; x < canvas.width; x += 8) {
+    for (let y = 0; y < canvas.height; y += 10) {
+      for (let x = 0; x < canvas.width; x += 10) {
         const i = (y * canvas.width + x) * 4;
         const r = data[i];
         const g = data[i + 1];
@@ -126,52 +145,73 @@ try {
         colours.add((r << 16) | (g << 8) | b);
         if (r < 90 && g < 110 && b < 100) dark += 1;
         if (b > r && g >= r && b > 100) waterLike += 1;
-        if (r > 150 && g > 110 && b < 130) warm += 1;
+        if (r > 150 && g > 110 && b < 140) warm += 1;
       }
     }
-
-    const player = ctx.getImageData(490, 360, 110, 125).data;
+    const px = Math.round(debug.playerX - debug.cameraX);
+    const py = Math.round(debug.playerY - debug.cameraY);
+    const playerData = ctx.getImageData(Math.max(0, px - 38), Math.max(0, py - 100), 76, 104).data;
     let playerVariation = 0;
-    for (let i = 4; i < player.length; i += 32) {
-      if (
-        player[i] !== player[i - 4] ||
-        player[i + 1] !== player[i - 3] ||
-        player[i + 2] !== player[i - 2]
-      ) playerVariation += 1;
+    for (let i = 4; i < playerData.length; i += 32) {
+      if (playerData[i] !== playerData[i - 4] || playerData[i + 1] !== playerData[i - 3] || playerData[i + 2] !== playerData[i - 2]) {
+        playerVariation += 1;
+      }
     }
-
-    return {
-      uniqueColours: colours.size,
-      dark,
-      waterLike,
-      warm,
-      playerVariation,
-      bodyWidth: document.body.scrollWidth,
-      viewportWidth: innerWidth,
-    };
+    return { uniqueColours: colours.size, dark, waterLike, warm, playerVariation };
   })()`);
 
-  if (!visualStats) throw new Error('Could not inspect Yard canvas.');
-  if (visualStats.uniqueColours < 24) {
-    throw new Error(`Yard palette/detail collapsed unexpectedly: ${JSON.stringify(visualStats)}`);
+  if (!visualStats || visualStats.uniqueColours < 24 || visualStats.waterLike < 20 || visualStats.warm < 25 || visualStats.dark < 20 || visualStats.playerVariation < 35) {
+    throw new Error(`Expanded Yard visual contract failed: ${JSON.stringify(visualStats)}`);
   }
-  if (visualStats.waterLike < 25 || visualStats.warm < 40 || visualStats.dark < 25) {
-    throw new Error(`Yard lost required environment colour families: ${JSON.stringify(visualStats)}`);
+
+  // Move south into open space. This proves held semantic movement and gives the camera room to follow.
+  await holdKey('s', 'KeyS', 83, 850);
+  const south = await state();
+  if (!(south.playerY > initial.playerY + 70) || south.facing !== 'down') {
+    throw new Error(`South movement failed: ${JSON.stringify({ initial, south })}`);
   }
-  if (visualStats.playerVariation < 50) {
-    throw new Error(`Accepted protagonist is not visibly present in the Yard review area: ${JSON.stringify(visualStats)}`);
+  if (!(south.cameraY > initial.cameraY + 25)) {
+    throw new Error(`Camera did not follow southward movement: ${JSON.stringify({ initial, south })}`);
   }
-  if (visualStats.bodyWidth > visualStats.viewportWidth) {
-    throw new Error(`Yard introduced horizontal overflow: ${JSON.stringify(visualStats)}`);
+
+  // Move right while below the pond so the player can traverse a wider part of the expanded Yard.
+  await holdKey('d', 'KeyD', 68, 1200);
+  const east = await state();
+  if (!(east.playerX > south.playerX + 120) || east.facing !== 'right') {
+    throw new Error(`East movement failed: ${JSON.stringify({ south, east })}`);
+  }
+  if (!(east.cameraX > south.cameraX + 45)) {
+    throw new Error(`Camera did not follow eastward movement: ${JSON.stringify({ south, east })}`);
+  }
+
+  // Walking north from here runs into the pond edge. It must stop rather than crossing the water.
+  const beforeCollision = east.collisionCount;
+  await holdKey('w', 'KeyW', 87, 1200);
+  const north = await state();
+  if (north.facing !== 'up' || north.collisionCount <= beforeCollision) {
+    throw new Error(`Water/prop collision was not exercised: ${JSON.stringify({ east, north })}`);
+  }
+  if (north.playerY < 650) {
+    throw new Error(`Player appears to have crossed the pond collision: ${JSON.stringify(north)}`);
   }
 
   const rejectedUiPresent = await evaluate(`Boolean(
     document.querySelector('.character-select-shell, .character-tab, #identity-form, #character-preview') ||
     globalThis.__SPLICEPIT_CHARACTER_SELECT__
   )`);
-  if (rejectedUiPresent) throw new Error('Rejected legacy presentation returned during Yard review.');
+  if (rejectedUiPresent) throw new Error('Rejected legacy presentation returned during Yard movement.');
 
-  console.log(`WP0.4F Yard render smoke passed: ${JSON.stringify(visualStats)}`);
+  // Escape remains a review-only route back to the temporary chooser and restores its original logical canvas.
+  await key('Escape', 'Escape', 27);
+  const returned = await waitFor(async () => {
+    const current = await state();
+    return current?.phase === 'select' ? current : null;
+  });
+  if (returned.viewportWidth !== 960 || returned.viewportHeight !== 540 || returned.yardRendered) {
+    throw new Error(`Escape did not restore temporary chooser cleanly: ${JSON.stringify(returned)}`);
+  }
+
+  console.log(`WP0.4G movement/camera/collision/scale smoke passed: ${JSON.stringify({ visualStats, south, east, north })}`);
   ws.close();
   cleanup();
 } catch (error) {
