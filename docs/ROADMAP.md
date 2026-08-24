@@ -58,7 +58,7 @@ Useful domain logic, deterministic systems, save infrastructure, content models,
 
 A development conversation should begin with the next READY work package, currently:
 
-> Start WP0.4E
+> Start WP0.4F
 
 The execution process should then:
 
@@ -150,8 +150,8 @@ Current authoritative graphics-first sequence:
 
 16. **WP0.4C — Visual Direction and Protagonist Lock** — **COMPLETE**
 17. **WP0.4D — Runtime Protagonist Sprite Production** — **COMPLETE**
-18. **WP0.4E — Character Selection and Identity Persistence** — **READY**
-19. **WP0.4F — Apprentice Splicer Yard Rebuild** — **PLANNED**
+18. **WP0.4E — Character Selection and Identity Persistence** — **COMPLETE**
+19. **WP0.4F — Apprentice Splicer Yard Rebuild** — **READY**
 20. **WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish** — **PLANNED**
 21. **WP0.4H — Graphics-First Playable Gate** — **HUMAN GATE**
 22. **WP0.4I — Post-Gate Presentation Expansion** — **PLANNED, MUST NOT START BEFORE WP0.4H APPROVAL**
@@ -192,6 +192,25 @@ Accepted implementation facts:
 **Do not redraw, shrink or replace the accepted protagonists merely to satisfy the earlier 24 × 32 planning assumption.** Any future sprite re-authoring must be justified by an actual visual/gameplay problem and pass human review.
 
 The next unresolved visual question is **how large these accepted protagonists should appear relative to the actual concept-derived world**. That is deliberately answered in WP0.4F/G by seeing them inside the real environment, not by choosing a number in isolation.
+
+## WP0.4E result — COMPLETE AND MERGED 24 AUGUST 2026
+
+WP0.4E established player identity without pulling world or mechanic work forward.
+
+Accepted implementation facts:
+
+- boot now enters a deliberately compact Milo / Theo / Ada / Pip chooser instead of the temporary black movement sandbox;
+- the live preview uses the accepted **64 × 96 directional protagonist source art** and the accepted integer-pixel walk treatment;
+- all four choices are native keyboard-accessible buttons and remain mouse/touch-ready;
+- player name entry is native text input, including W/A/S/D without movement-key interception;
+- player identity is normalised and persisted as `avatarId` plus `playerName` in the existing `GameStateSnapshot` and normal save payload;
+- this is an additive schema-v2 gameplay extension: existing saves without identity hydrate safely to `null`, while newly written saves include the two identity fields;
+- refresh/load restores the same protagonist and player name;
+- there are no protagonist-specific mechanical differences and no modular appearance creator;
+- automated browser coverage verifies all four selections, visually distinct live previews, keyboard-safe naming, save persistence and reload restoration;
+- typecheck, content validation, RNG validation, unit/save tests, production build and browser smoke all passed before merge.
+
+The next package is **WP0.4F — Apprentice Splicer Yard Rebuild**. It must build the concept-derived world around the accepted protagonist rather than extending the discarded Lab presentation.
 
 ## WP0.4E–H immediate milestone
 
