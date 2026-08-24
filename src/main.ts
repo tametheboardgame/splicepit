@@ -58,14 +58,15 @@ type CharacterSelectDebug = {
   previewFrame: number;
 };
 
-const root = document.getElementById('game');
+const root = document.getElementById('game') as HTMLElement | null;
 if (!root) throw new Error('Missing #game root');
+const gameRoot: HTMLElement = root;
 
 const loadedSave = loadGame();
 let selectedAvatarId: ProtagonistId = gameState.avatarId ?? 'milo';
 const loadedIdentity = loadedSave && gameState.avatarId !== null && gameState.playerName !== null;
 
-root.innerHTML = `
+gameRoot.innerHTML = `
   <div class="character-select-shell">
     <main class="character-select" aria-labelledby="character-select-title">
       <header class="select-heading">
@@ -112,14 +113,15 @@ root.innerHTML = `
 `;
 
 function requireElement<T extends Element>(selector: string): T {
-  const element = root.querySelector<T>(selector);
+  const element = gameRoot.querySelector<T>(selector);
   if (!element) throw new Error(`Missing character-select element: ${selector}`);
   return element;
 }
 
 const previewCanvas = requireElement<HTMLCanvasElement>('#character-preview');
-const previewContext = previewCanvas.getContext('2d', { alpha: false });
-if (!previewContext) throw new Error('Character preview canvas is unavailable');
+const maybePreviewContext = previewCanvas.getContext('2d', { alpha: false });
+if (!maybePreviewContext) throw new Error('Character preview canvas is unavailable');
+const previewContext: CanvasRenderingContext2D = maybePreviewContext;
 previewContext.imageSmoothingEnabled = false;
 
 const previewName = requireElement<HTMLElement>('#preview-name');
@@ -127,7 +129,7 @@ const previewNote = requireElement<HTMLElement>('#preview-note');
 const nameInput = requireElement<HTMLInputElement>('#player-name');
 const identityForm = requireElement<HTMLFormElement>('#identity-form');
 const statusText = requireElement<HTMLParagraphElement>('#identity-status');
-const characterButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('.character-tab'));
+const characterButtons = Array.from(gameRoot.querySelectorAll<HTMLButtonElement>('.character-tab'));
 
 nameInput.value = gameState.playerName ?? '';
 
