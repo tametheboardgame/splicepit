@@ -1,63 +1,57 @@
 # WP0.4D — Runtime Protagonist Sprite Production
 
-**Status:** APPROVED ART INTEGRATION CANDIDATE
+**Status:** ANIMATED SANDBOX PLAYTEST CANDIDATE
 
-WP0.4D converts the four approved protagonist sheets into real runtime assets and replaces the rejected ultra-minimal 24×32 pass.
+WP0.4D establishes the four approved protagonists as the visual foundation for the graphics-first reset and proves that they can be selected, faced and moved cleanly before any old Lab/gameplay presentation is reintroduced.
 
-## Approved runtime asset contract
+## Current sandbox contract
 
-Each protagonist has one PNG spritesheet at `public/assets/protagonists/<id>.png`.
+The branch boots directly into a full-screen black movement sandbox.
 
 - protagonists: Milo, Theo, Ada and Pip;
-- frame size: 64 × 96 px;
-- sheet size: 256 × 384 px;
-- columns: idle, walk 1, walk 2, walk 3;
-- rows: down, left, right, up;
-- frame indices: 0–15 in row-major order;
-- gameplay scale: 1×;
-- review scale: 2×;
-- nearest-neighbour texture filtering;
-- bottom-centre sprite origin so feet remain anchored during movement.
+- approved directional source frames: 64 × 96 px;
+- directions: down, left, right and up;
+- review scale: 2× nearest-neighbour rendering;
+- Arrow keys / WASD move continuously;
+- diagonal movement is speed-normalised;
+- 1 / 2 / 3 / 4 switch Milo / Theo / Ada / Pip;
+- R resets the protagonist to centre;
+- movement is clamped to the viewport;
+- no Lab, title flow, collisions, interactions, HUD or gameplay systems are present in this review build.
 
-Stable protagonist IDs are `milo`, `theo`, `ada` and `pip`. Runtime texture keys are `protagonist-<id>` and animation keys are `protagonist-<id>-<direction>-<idle|walk>`.
+## Movement animation
 
-## Actual game integration
+The earlier generated `*-hd-v2.png` 256 × 384 sheets contain invalid/blank walk cells and are not trusted as runtime animation sources.
 
-The existing Lab gameplay remains mechanically unchanged, but its temporary procedural figure is replaced at runtime with the approved protagonist renderer. Milo is the default until WP0.4E implements character selection and persistence.
+The sandbox instead loads the approved 64 × 96 directional protagonist artwork from `src/assets/frames/` and creates a four-phase walk cycle at runtime. The cycle uses integer-pixel torso bob and opposing lower-body step offsets so the approved artwork remains crisp and recognisable while moving.
 
-For WP0.4D branch testing only, the protagonist can be changed with:
+Idle returns to the unmodified directional frame immediately when movement stops.
 
-- `?protagonist=milo`
-- `?protagonist=theo`
-- `?protagonist=ada`
-- `?protagonist=pip`
+This procedural cycle is the current WP0.4D movement-animation implementation and is deliberately isolated from the rest of the game so it can be visually accepted or rejected without contaminating later world work.
 
-The isolated visual review route remains available with `?spriteTest=1`.
+## Source-art boundary
 
-To review a protagonist immediately inside the real Lab without replaying the intro, use `?labTest=1&protagonist=<id>`.
+The approved protagonist identities remain Milo, Theo, Ada and Pip. Preserve their detailed hair, layered clothing, boots, straps, grime and cyan biotech accents.
 
-## Cosmetic extension boundary
-
-WP0.4D does not implement a character creator, but the protagonist definition now separates authored identity from future cosmetic choices.
-
-WP0.4E may add a small set of controlled options, particularly skin tone and limited authored accent/accessory variants. Do not apply whole-sprite tinting because that would recolour clothes, hair and biotech equipment. Use targeted masks, authored palette variants or overlays instead.
-
-The protagonists must remain recognisably Milo, Theo, Ada and Pip rather than becoming fully modular avatars.
+Small later customisation may include skin tone and a limited number of authored accent/accessory variants. Do not use a whole-sprite tint because that would recolour clothing and equipment. Prefer targeted masks, authored palette variants or overlays. A broad modular character creator remains deferred.
 
 ## Automated checks
 
-`tests/protagonist-sprites.test.mjs` verifies:
+Repository validation remains required:
 
-- the exact four protagonist IDs;
-- 64 × 96 frame dimensions;
-- four rows and four columns;
-- deterministic direction/frame ordering;
-- exact 256 × 384 PNG dimensions;
-- the lightweight appearance boundary;
-- removal of the failed base64-in-TypeScript asset experiment.
+- strict TypeScript typecheck;
+- content validation;
+- RNG-boundary validation;
+- unit/domain/save tests;
+- production Vite build;
+- player-facing Chromium smoke.
 
-Existing typecheck, content, RNG, domain/save tests, production build and browser smoke remain required.
+The browser smoke verifies all four protagonists, all four directions, visible animated movement, frame progression, return to idle, correct displacement, character switching and a single full-screen canvas.
 
 ## Save/schema impact
 
-None. WP0.4D changes presentation/runtime rendering only. Character choice and cosmetic persistence belong to WP0.4E.
+None. WP0.4D is presentation/runtime rendering only. Character choice and cosmetic persistence are deferred until the protagonist presentation is accepted and integrated into the rebuilt world path.
+
+## Next gate
+
+Human visual review of the deployed movement sandbox. Do not reintroduce the old Lab/runtime presentation until the four protagonists and their movement feel acceptable.
