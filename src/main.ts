@@ -1,29 +1,39 @@
+import miloDown from './assets/frames/milo-down.txt?raw';
+import miloLeft from './assets/frames/milo-left.txt?raw';
+import miloRight from './assets/frames/milo-right.txt?raw';
+import miloUp from './assets/frames/milo-up.txt?raw';
+import theoDown from './assets/frames/theo-down.txt?raw';
+import theoLeft from './assets/frames/theo-left.txt?raw';
+import theoRight from './assets/frames/theo-right.txt?raw';
+import theoUp from './assets/frames/theo-up.txt?raw';
+import adaDown from './assets/frames/ada-down.txt?raw';
+import adaLeft from './assets/frames/ada-left.txt?raw';
+import adaRight from './assets/frames/ada-right.txt?raw';
+import adaUp from './assets/frames/ada-up.txt?raw';
+import pipDown from './assets/frames/pip-down.txt?raw';
+import pipLeft from './assets/frames/pip-left.txt?raw';
+import pipRight from './assets/frames/pip-right.txt?raw';
+import pipUp from './assets/frames/pip-up.txt?raw';
+
 const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
-const SHEET_WIDTH = FRAME_WIDTH * 4;
-const SHEET_HEIGHT = FRAME_HEIGHT * 4;
 const DISPLAY_SCALE = 2;
 const SPEED = 180;
-const WALK_FRAME_MS = 125;
+const WALK_FRAME_MS = 115;
 const WALK_SEQUENCE = [1, 2, 3, 2] as const;
+const LOWER_BODY_Y = 64;
+const HALF_WIDTH = FRAME_WIDTH / 2;
 
 const CHARACTERS = ['milo', 'theo', 'ada', 'pip'] as const;
 const DIRECTIONS = ['down', 'left', 'right', 'up'] as const;
 type CharacterId = (typeof CHARACTERS)[number];
 type Direction = (typeof DIRECTIONS)[number];
 
-const SHEET_PATHS: Record<CharacterId, string> = {
-  milo: '/assets/protagonists/milo-hd-v2.png',
-  theo: '/assets/protagonists/theo-hd-v2.png',
-  ada: '/assets/protagonists/ada-hd-v2.png',
-  pip: '/assets/protagonists/pip-hd-v2.png',
-};
-
-const DIRECTION_ROW: Record<Direction, number> = {
-  down: 0,
-  left: 1,
-  right: 2,
-  up: 3,
+const FRAME_BASE64: Record<CharacterId, Record<Direction, string>> = {
+  milo: { down: miloDown, left: miloLeft, right: miloRight, up: miloUp },
+  theo: { down: theoDown, left: theoLeft, right: theoRight, up: theoUp },
+  ada: { down: adaDown, left: adaLeft, right: adaRight, up: adaUp },
+  pip: { down: pipDown, left: pipLeft, right: pipRight, up: pipUp },
 };
 
 const KEY_DIRECTION: Record<string, Direction | undefined> = {
@@ -59,7 +69,7 @@ const ctx: CanvasRenderingContext2D = maybeContext;
 ctx.imageSmoothingEnabled = false;
 
 const held = new Set<string>();
-const sheets = {} as Record<CharacterId, HTMLImageElement>;
+const frames = {} as Record<CharacterId, Record<Direction, HTMLImageElement>>;
 let characterIndex = 0;
 let direction: Direction = 'down';
 let x = window.innerWidth / 2;
@@ -168,6 +178,68 @@ function update(deltaSeconds: number): void {
   }
 }
 
+function drawSection(
+  image: HTMLImageElement,
+  sourceX: number,
+  sourceY: number,
+  sourceWidth: number,
+  sourceHeight: number,
+  destX: number,
+  destY: number,
+  offsetX: number,
+  offsetY: number,
+): void {
+  ctx.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    destX + offsetX * DISPLAY_SCALE,
+    destY + offsetY * DISPLAY_SCALE,
+    sourceWidth * DISPLAY_SCALE,
+    sourceHeight * DISPLAY_SCALE,
+  );
+}
+
+function drawAnimatedCharacter(image: HTMLImageElement, destX: number, destY: number): void {
+  if (animationFrame === 0) {
+    ctx.drawImage(image, destX, destY, FRAME_WIDTH * DISPLAY_SCALE, FRAME_HEIGHT * DISPLAY_SCALE);
+    return;
+  }
+
+  const stride = animationFrame === 1 ? -2 : animationFrame === 3 ? 2 : 0;
+  const torsoX = animationFrame === 1 ? -1 : animationFrame === 3 ? 1 : 0;
+  const torsoY = animationFrame === 2 ? -1 : 0;
+  const leftY = animationFrame === 1 ? 1 : animationFrame === 3 ? -1 : 0;
+  const rightY = -leftY;
+  const lowerHeight = FRAME_HEIGHT - LOWER_BODY_Y;
+
+  drawSection(image, 0, 0, FRAME_WIDTH, LOWER_BODY_Y, destX, destY, torsoX, torsoY);
+  drawSection(
+    image,
+    0,
+    LOWER_BODY_Y,
+    HALF_WIDTH,
+    lowerHeight,
+    destX,
+    destY + LOWER_BODY_Y * DISPLAY_SCALE,
+    stride,
+    leftY,
+  );
+  drawSection(
+    image,
+    HALF_WIDTH,
+    LOWER_BODY_Y,
+    HALF_WIDTH,
+    lowerHeight,
+    destX + HALF_WIDTH * DISPLAY_SCALE,
+    destY + LOWER_BODY_Y * DISPLAY_SCALE,
+    -stride,
+    rightY,
+  );
+}
+
 function draw(): void {
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
@@ -175,23 +247,13 @@ function draw(): void {
   if (!debug.ready) return;
 
   const character = CHARACTERS[characterIndex];
-  const sheet = sheets[character];
+  const image = frames[character][direction];
   const width = FRAME_WIDTH * DISPLAY_SCALE;
   const height = FRAME_HEIGHT * DISPLAY_SCALE;
-  const sourceX = animationFrame * FRAME_WIDTH;
-  const sourceY = DIRECTION_ROW[direction] * FRAME_HEIGHT;
+  const destX = Math.round(x - width / 2);
+  const destY = Math.round(y - height);
 
-  ctx.drawImage(
-    sheet,
-    sourceX,
-    sourceY,
-    FRAME_WIDTH,
-    FRAME_HEIGHT,
-    Math.round(x - width / 2),
-    Math.round(y - height),
-    width,
-    height,
-  );
+  drawAnimatedCharacter(image, destX, destY);
 
   debug.x = x;
   debug.y = y;
@@ -210,15 +272,13 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
-async function decodeSheet(character: CharacterId): Promise<HTMLImageElement> {
+async function decodeFrame(base64: string, label: string): Promise<HTMLImageElement> {
   const image = new Image();
-  image.src = SHEET_PATHS[character];
+  image.src = `data:image/png;base64,${base64.trim()}`;
   await image.decode();
 
-  if (image.naturalWidth !== SHEET_WIDTH || image.naturalHeight !== SHEET_HEIGHT) {
-    throw new Error(
-      `${character} sheet has unexpected dimensions ${image.naturalWidth}x${image.naturalHeight}`,
-    );
+  if (image.naturalWidth !== FRAME_WIDTH || image.naturalHeight !== FRAME_HEIGHT) {
+    throw new Error(`${label} frame has unexpected dimensions ${image.naturalWidth}x${image.naturalHeight}`);
   }
 
   return image;
@@ -227,9 +287,15 @@ async function decodeSheet(character: CharacterId): Promise<HTMLImageElement> {
 async function start(): Promise<void> {
   try {
     await Promise.all(
-      CHARACTERS.map(async (character) => {
-        sheets[character] = await decodeSheet(character);
-      }),
+      CHARACTERS.flatMap((character) =>
+        DIRECTIONS.map(async (frameDirection) => {
+          frames[character] ??= {} as Record<Direction, HTMLImageElement>;
+          frames[character][frameDirection] = await decodeFrame(
+            FRAME_BASE64[character][frameDirection],
+            `${character}-${frameDirection}`,
+          );
+        }),
+      ),
     );
 
     debug.ready = true;
@@ -239,7 +305,7 @@ async function start(): Promise<void> {
     requestAnimationFrame(frame);
   } catch (error) {
     debug.error = error instanceof Error ? error.message : String(error);
-    console.error('Failed to load protagonist walk sheets', error);
+    console.error('Failed to load approved protagonist directional frames', error);
   }
 }
 
