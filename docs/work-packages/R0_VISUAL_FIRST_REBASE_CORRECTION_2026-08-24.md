@@ -31,51 +31,49 @@ The dark monospace `APPRENTICE REGISTRATION` screen, character tabs, boxed previ
 
 Automated tests may prove technical persistence. They cannot self-approve visual design.
 
-## WP0.4F — Apprentice Splicer Yard Rebuild — READY
+## WP0.4F — Apprentice Splicer Yard Rebuild — COMPLETE / HUMAN ACCEPTED 24 AUGUST 2026
 
 **Purpose:** establish the actual game's world language before final interface language is designed.
 
-Build a completely fresh small top-down Apprentice Splicer Yard from the approved concept direction.
+The completely fresh top-down Apprentice Splicer Yard direction was implemented and human-reviewed on 24 August 2026.
 
-Hard rules:
+Human review result:
+
+- the **visual direction is approved**;
+- the Yard reads as the right SplicePit world language and should be built forward rather than discarded;
+- the first static 960 × 540 framing was too close / too large on screen;
+- the preferred correction is to show **substantially more world at once**, making the protagonist and existing scenery feel smaller in the viewport, rather than merely sharpening the same close composition;
+- the inability to move in the WP0.4F preview was expected to be fixed immediately in WP0.4G.
+
+The accepted WP0.4F foundation was merged in PR #26. Do not use the scale criticism as justification to revert to the old Lab or abandon the accepted Yard art direction.
+
+Hard rules remain:
 
 - do not resurrect or reskin the old Lab;
 - do not use the rejected WP0.4E interface as a shell around the Yard;
-- do not use procedural placeholder scenery that becomes visually dominant;
-- do not add splice, battle, economy, quest or broad menu systems;
-- put an accepted protagonist visibly into the scene at provisional gameplay scale during the first meaningful review.
+- do not add splice, battle, economy, quest or broad menu systems before the graphics-first gate;
+- preserve the warm, attractive, cute-but-concerning biotech language established by the accepted Yard.
 
-Required ingredients remain:
+## WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish — IN HUMAN REVIEW
 
-- compact workshop/lab building;
-- grass/dirt route structure;
-- trees, shrubs, flowers and strange plants;
-- water feature and bridge where composition supports it;
-- crates, barrels and specimen tables;
-- fenced pens/cages;
-- creature husbandry/containment detail;
-- improvised biotech and questionable experiments;
-- warm attractive surface with increasingly concerning biological detail;
-- clear walking space.
+Take the accepted WP0.4D protagonist movement and make it belong in the accepted Yard, incorporating the WP0.4F human scale feedback.
 
-**Gate:** a screenshot with the real protagonist visibly present reads immediately as a specific SplicePit place derived from the approved concept, not generic RPG scenery and not the old Lab.
+Current review implementation deliberately avoids fractional canvas zoom. Instead it:
 
-## WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish — PLANNED
+- uses a **1280 × 720 Yard viewport** so more world is visible while source pixels stay crisp;
+- expands the Yard to a **1760 × 1080 world** around the accepted core composition;
+- renders the accepted 64 × 96 protagonist at **1× source scale** in-world;
+- retains the temporary chooser at its 960 × 540 logical size until WP0.4E-R replaces it;
+- adds held-key four-direction movement using the existing semantic action bindings;
+- adds feet-based collision against buildings, props, pens/cages, water, trees and world bounds;
+- uses axis-separated collision so sliding along obstacles remains possible;
+- adds smooth camera follow with integer-rounded render coordinates;
+- adds basic depth sorting through tree canopies;
+- expands the accepted Yard language with surrounding quarantine, nursery, stream/bridge and vegetation detail rather than simply stretching the old scene.
 
-Take the accepted WP0.4D protagonist movement and make it belong in the accepted Yard.
+Automated browser coverage must verify real held-key movement, camera follow and collision, but this package **cannot be accepted by automation alone**.
 
-Required:
-
-- lock actual gameplay display scale from real world proportion;
-- four-direction movement and idle facing;
-- sensible feet origin/hitbox;
-- collisions against world geometry;
-- foreground/background depth treatment;
-- smooth camera follow;
-- nearest-neighbour presentation without blur/shimmer;
-- keyboard baseline through existing semantic input architecture.
-
-**Gate:** simply moving around the Yard feels pleasant and the protagonist appears to inhabit the space rather than float over it.
+**Human gate:** judge whether the wider 1280 × 720 view, 1× protagonist size, camera behaviour, movement feel, collision and expanded world proportions are the right direction. If the world still feels too close, too sparse, too small or otherwise wrongly proportioned, revise here before character-select presentation work begins.
 
 ## WP0.4E-R — Character-Selection Presentation Redesign — PLANNED REPAIR PACKAGE
 
