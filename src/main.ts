@@ -6,6 +6,7 @@ import { normalisePlayerName, PLAYER_NAME_MAX_LENGTH } from './player/identity.j
 import { PROTAGONIST_IDS, PROTAGONIST_SPRITES, type ProtagonistId } from './player/protagonists.js';
 import { gameState } from './state/GameState.js';
 import { loadGame, saveGame } from './systems/saveSystem.js';
+import { drawApprenticeSplicerYard } from './world/yard.js';
 
 const VIEW_WIDTH = 960;
 const VIEW_HEIGHT = 540;
@@ -20,6 +21,7 @@ const HALF_WIDTH = FRAME_WIDTH / 2;
 const CHARACTER_Y = 230;
 const USE_BUTTON = { x: 316, y: 492, width: 154, height: 34 } as const;
 const RENAME_BUTTON = { x: 490, y: 492, width: 154, height: 34 } as const;
+
 const CHARACTER_X: Record<ProtagonistId, number> = {
   milo: 150,
   theo: 360,
@@ -45,6 +47,7 @@ type VisualResetDebug = {
   loadedFromSave: boolean;
   saved: boolean;
   frame: number;
+  yardRendered: boolean;
 };
 
 const root = document.getElementById('game') as HTMLElement | null;
@@ -56,7 +59,7 @@ let phase: ResetPhase = 'select';
 let saved = Boolean(loadedSave && gameState.avatarId && gameState.playerName);
 
 root.innerHTML = `
-  <canvas id="visual-reset-stage" width="${VIEW_WIDTH}" height="${VIEW_HEIGHT}" aria-label="SplicePit protagonist visual reset stage"></canvas>
+  <canvas id="visual-reset-stage" width="${VIEW_WIDTH}" height="${VIEW_HEIGHT}" aria-label="SplicePit visual review stage"></canvas>
   <input
     id="player-name-capture"
     class="player-name-capture"
@@ -70,7 +73,7 @@ root.innerHTML = `
 
 const canvas = root.querySelector<HTMLCanvasElement>('#visual-reset-stage') as HTMLCanvasElement | null;
 const nameInput = root.querySelector<HTMLInputElement>('#player-name-capture') as HTMLInputElement | null;
-if (!canvas || !nameInput) throw new Error('Visual reset stage failed to mount');
+if (!canvas || !nameInput) throw new Error('Visual review stage failed to mount');
 const stageCanvas: HTMLCanvasElement = canvas;
 const playerNameInput: HTMLInputElement = nameInput;
 
@@ -96,6 +99,7 @@ const debug: VisualResetDebug = {
   loadedFromSave: saved,
   saved,
   frame: 0,
+  yardRendered: false,
 };
 
 (globalThis as typeof globalThis & { __SPLICEPIT_VISUAL_RESET__?: VisualResetDebug }).__SPLICEPIT_VISUAL_RESET__ = debug;
@@ -105,7 +109,7 @@ function drawPixelRect(x: number, y: number, width: number, height: number, fill
   context.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
 }
 
-function drawBackground(): void {
+function drawSelectionBackground(): void {
   drawPixelRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT, '#dfe6b6');
   drawPixelRect(0, 0, VIEW_WIDTH, 158, '#c8d7a0');
   drawPixelRect(0, 158, VIEW_WIDTH, 14, '#657b57');
@@ -208,7 +212,7 @@ function drawAnimatedCharacter(image: HTMLImageElement, destX: number, destY: nu
   drawSection(image, 0, 0, FRAME_WIDTH, LOWER_BODY_Y, destX, destY, torsoX, torsoY);
 }
 
-function drawCharacter(id: ProtagonistId, now: number): void {
+function drawSelectionCharacter(id: ProtagonistId, now: number): void {
   const centreX = CHARACTER_X[id];
   const destX = centreX - (FRAME_WIDTH * DISPLAY_SCALE) / 2;
   const selected = id === selectedAvatarId;
@@ -262,7 +266,7 @@ function drawActionButton(x: number, y: number, width: number, height: number, l
   context.fillText(label, x + width / 2, y + height / 2 + 1);
 }
 
-function drawFooter(now: number): void {
+function drawSelectionFooter(now: number): void {
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   const protagonistName = PROTAGONIST_SPRITES[selectedAvatarId].name;
@@ -285,21 +289,6 @@ function drawFooter(now: number): void {
     return;
   }
 
-  if (phase === 'confirmed') {
-    context.fillStyle = '#f3e8b9';
-    context.fillRect(300, 474, 360, 52);
-    context.strokeStyle = '#496448';
-    context.lineWidth = 3;
-    context.strokeRect(301.5, 475.5, 357, 49);
-    context.fillStyle = '#26382f';
-    context.font = '800 18px "Trebuchet MS", "Segoe UI", sans-serif';
-    context.fillText(`${currentName} selected ✓`, VIEW_WIDTH / 2, 490);
-    context.font = '600 11px "Trebuchet MS", "Segoe UI", sans-serif';
-    context.fillStyle = '#53624d';
-    context.fillText('Identity saved. The Apprentice Splicer Yard is the next build.', VIEW_WIDTH / 2, 512);
-    return;
-  }
-
   context.fillStyle = '#314339';
   context.font = '700 13px "Trebuchet MS", "Segoe UI", sans-serif';
   context.fillText(`Name: ${currentName}`, VIEW_WIDTH / 2, 478);
@@ -308,9 +297,20 @@ function drawFooter(now: number): void {
 }
 
 function render(now: number): void {
-  drawBackground();
-  for (const id of PROTAGONIST_IDS) drawCharacter(id, now);
-  drawFooter(now);
+  if (phase === 'confirmed') {
+    drawApprenticeSplicerYard(context, {
+      protagonistImage: frames[selectedAvatarId],
+      playerName: playerNameInput.value || preferredNameFor(selectedAvatarId),
+      now,
+    });
+    debug.yardRendered = true;
+  } else {
+    debug.yardRendered = false;
+    drawSelectionBackground();
+    for (const id of PROTAGONIST_IDS) drawSelectionCharacter(id, now);
+    drawSelectionFooter(now);
+  }
+
   requestAnimationFrame(render);
 }
 
@@ -326,6 +326,7 @@ function setSelection(id: ProtagonistId): void {
   debug.selectedAvatarId = id;
   debug.phase = phase;
   debug.saved = saved;
+  debug.yardRendered = false;
   syncPreferredName();
 }
 
@@ -356,6 +357,7 @@ function confirmSelection(): void {
 function beginNaming(): void {
   phase = 'name';
   debug.phase = phase;
+  debug.yardRendered = false;
   syncPreferredName();
   playerNameInput.focus({ preventScroll: true });
   playerNameInput.select();
@@ -368,6 +370,7 @@ function finishNaming(): void {
 function cancelNaming(): void {
   phase = 'select';
   debug.phase = phase;
+  debug.yardRendered = false;
   syncPreferredName();
   playerNameInput.blur();
 }
@@ -380,6 +383,7 @@ window.addEventListener('keydown', (event) => {
       event.preventDefault();
       phase = 'select';
       debug.phase = phase;
+      debug.yardRendered = false;
     }
     return;
   }
@@ -433,8 +437,6 @@ stageCanvas.addEventListener('pointerdown', (event) => {
   }
 
   if (phase === 'confirmed') {
-    phase = 'select';
-    debug.phase = phase;
     return;
   }
 
@@ -442,6 +444,7 @@ stageCanvas.addEventListener('pointerdown', (event) => {
     confirmSelection();
     return;
   }
+
   if (pointInside(x, y, RENAME_BUTTON)) {
     beginNaming();
     return;
