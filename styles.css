@@ -44,4 +44,29 @@ body {
   height: 1px;
   opacity: 0;
   pointer-events: none;
+  box-sizing: border-box;
+}
+
+.player-name-capture.is-active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 20;
+  transform: translateY(-50%);
+  border: 2px solid #6c795b;
+  border-radius: 0;
+  background: #f3e8b9;
+  color: #26382f;
+  padding: 2px 8px;
+  text-align: center;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-weight: 800;
+  line-height: 1;
+  caret-color: #26382f;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(243, 232, 185, 0.55);
+}
+
+.player-name-capture.is-active:focus {
+  border-color: #496448;
+  box-shadow: 0 0 0 3px rgba(73, 100, 72, 0.35);
 }
