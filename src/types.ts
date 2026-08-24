@@ -1,4 +1,5 @@
 import type { ContentStatus } from './domain/model.js';
+import type { ProtagonistId } from './player/protagonists.js';
 
 export interface CreatureStats {
   maxHp: number;
@@ -79,6 +80,8 @@ export interface Combatant {
 export type QuestStage = 'find_animal' | 'collect_genes' | 'splice' | 'fight' | 'slice_complete';
 
 export interface GameStateSnapshot {
+  avatarId: ProtagonistId | null;
+  playerName: string | null;
   hasBaseAnimal: boolean;
   baseAnimalId: string | null;
   collectedGenes: string[];

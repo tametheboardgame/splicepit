@@ -72,86 +72,40 @@ try {
     return result.result?.value;
   }
 
-  const keyParams = (key, code, windowsVirtualKeyCode) => ({
-    key, code, windowsVirtualKeyCode, nativeVirtualKeyCode: windowsVirtualKeyCode,
-  });
-
-  async function keyDown(key, code, windowsVirtualKeyCode) {
-    await cdp('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...keyParams(key, code, windowsVirtualKeyCode) });
+  async function waitForReady() {
+    return waitFor(async () => {
+      const state = await evaluate(`globalThis.__SPLICEPIT_CHARACTER_SELECT__ ? ({ ...globalThis.__SPLICEPIT_CHARACTER_SELECT__ }) : null`);
+      if (state?.error) throw new Error(`Character select failed to start: ${state.error}`);
+      return state?.ready ? state : null;
+    }, 20000);
   }
 
-  async function keyUp(key, code, windowsVirtualKeyCode) {
-    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...keyParams(key, code, windowsVirtualKeyCode) });
+  async function state() {
+    return evaluate(`({ ...globalThis.__SPLICEPIT_CHARACTER_SELECT__ })`);
   }
 
-  async function tapKey(key, code, windowsVirtualKeyCode, durationMs = 40) {
-    await keyDown(key, code, windowsVirtualKeyCode);
-    await sleep(durationMs);
-    await keyUp(key, code, windowsVirtualKeyCode);
-    await sleep(80);
+  async function typeLetter(key, code, vk) {
+    await cdp('Input.dispatchKeyEvent', {
+      type: 'keyDown', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk, text: key, unmodifiedText: key,
+    });
+    await cdp('Input.dispatchKeyEvent', {
+      type: 'keyUp', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
+    });
+    await sleep(40);
   }
 
-  const state = () => evaluate(`({ ...globalThis.__SPLICEPIT_SANDBOX__, held: [...globalThis.__SPLICEPIT_SANDBOX__.held] })`);
-
-  async function visiblePixels() {
+  async function previewHash() {
     return evaluate(`(() => {
-      const state = globalThis.__SPLICEPIT_SANDBOX__;
-      const canvas = document.querySelector('#game canvas');
+      const canvas = document.querySelector('#character-preview');
       const ctx = canvas?.getContext('2d');
-      if (!state || !canvas || !ctx) return { count: 0, width: 0, height: 0 };
-      const sx = Math.max(0, Math.floor(state.x - 70));
-      const sy = Math.max(0, Math.floor(state.y - 200));
-      const sw = Math.min(140, canvas.width - sx);
-      const sh = Math.min(205, canvas.height - sy);
-      const data = ctx.getImageData(sx, sy, sw, sh).data;
-      let count = 0, minX = sw, minY = sh, maxX = -1, maxY = -1;
-      for (let py = 0; py < sh; py += 1) {
-        for (let px = 0; px < sw; px += 1) {
-          const i = (py * sw + px) * 4;
-          if (data[i] > 8 || data[i + 1] > 8 || data[i + 2] > 8) {
-            count += 1;
-            minX = Math.min(minX, px); maxX = Math.max(maxX, px);
-            minY = Math.min(minY, py); maxY = Math.max(maxY, py);
-          }
-        }
+      if (!canvas || !ctx) return 0;
+      const data = ctx.getImageData(50, 25, 90, 120).data;
+      let hash = 0;
+      for (let i = 0; i < data.length; i += 16) {
+        hash = (hash + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7) % 2147483647;
       }
-      return { count, width: maxX >= 0 ? maxX - minX + 1 : 0, height: maxY >= 0 ? maxY - minY + 1 : 0 };
+      return hash;
     })()`);
-  }
-
-  async function assertVisible(label) {
-    const pixels = await visiblePixels();
-    if (pixels.count < 300 || pixels.width < 30 || pixels.height < 80) {
-      throw new Error(`${label} is not visibly rendered: ${JSON.stringify(pixels)}`);
-    }
-  }
-
-  async function assertAnimatedDirection(label, key, code, vk) {
-    const before = await state();
-    await keyDown(key, code, vk);
-    await sleep(150);
-    const first = await state();
-    await assertVisible(`${label} walk frame A`);
-    await sleep(150);
-    const second = await state();
-    await assertVisible(`${label} walk frame B`);
-    await keyUp(key, code, vk);
-    await sleep(100);
-    const idle = await state();
-
-    if (!first.moving || first.animationFrame === 0) {
-      throw new Error(`${label} did not enter walk animation: ${JSON.stringify(first)}`);
-    }
-    if (!second.moving || second.animationFrame === 0 || second.animationFrame === first.animationFrame) {
-      throw new Error(`${label} walk frame did not advance: ${JSON.stringify({ first, second })}`);
-    }
-    if (idle.moving || idle.animationFrame !== 0) {
-      throw new Error(`${label} did not return to idle: ${JSON.stringify(idle)}`);
-    }
-    if (label.endsWith('right') && !(idle.x > before.x + 20)) throw new Error(`${label} did not move right`);
-    if (label.endsWith('left') && !(idle.x < before.x - 20)) throw new Error(`${label} did not move left`);
-    if (label.endsWith('up') && !(idle.y < before.y - 20)) throw new Error(`${label} did not move up`);
-    if (label.endsWith('down') && !(idle.y > before.y + 20)) throw new Error(`${label} did not move down`);
   }
 
   await cdp('Page.enable');
@@ -163,54 +117,79 @@ try {
     mobile: false,
   });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
-
-  await waitFor(async () => {
-    const snapshot = await evaluate(`globalThis.__SPLICEPIT_SANDBOX__ ? ({ ready: globalThis.__SPLICEPIT_SANDBOX__.ready, error: globalThis.__SPLICEPIT_SANDBOX__.error }) : null`);
-    if (snapshot?.error) throw new Error(`Sandbox failed to start: ${snapshot.error}`);
-    return snapshot?.ready;
-  }, 20000);
-
+  await waitForReady();
+  await evaluate(`localStorage.clear()`);
+  await cdp('Page.reload', { ignoreCache: true });
+  await waitForReady();
   await cdp('Page.bringToFront');
+
+  const initial = await state();
+  if (initial.selectedAvatarId !== 'milo' || initial.loadedFromSave || initial.saved) {
+    throw new Error(`Unexpected clean character-select state: ${JSON.stringify(initial)}`);
+  }
+  if (await evaluate(`typeof globalThis.__SPLICEPIT_SANDBOX__ !== 'undefined'`)) {
+    throw new Error('The superseded WP0.4D sandbox is still exposed as the default runtime.');
+  }
+
+  const expected = ['milo', 'theo', 'ada', 'pip'];
+  const hashes = new Set();
+  for (const id of expected) {
+    await evaluate(`document.querySelector('[data-avatar="${id}"]').click()`);
+    await sleep(220);
+    const selected = await state();
+    if (selected.selectedAvatarId !== id) throw new Error(`Could not select ${id}: ${JSON.stringify(selected)}`);
+    const hash = await previewHash();
+    if (!hash) throw new Error(`${id} preview did not render.`);
+    hashes.add(hash);
+  }
+  if (hashes.size < 3) throw new Error(`Live previews are not visually distinct enough for smoke verification: ${[...hashes]}`);
+
+  await evaluate(`document.querySelector('[data-avatar="theo"]').click(); document.querySelector('#player-name').focus()`);
+  await typeLetter('w', 'KeyW', 87);
+  await typeLetter('a', 'KeyA', 65);
+  await typeLetter('s', 'KeyS', 83);
+  await typeLetter('d', 'KeyD', 68);
+  const textEntry = await evaluate(`({ value: document.querySelector('#player-name').value, selected: globalThis.__SPLICEPIT_CHARACTER_SELECT__.selectedAvatarId })`);
+  if (textEntry.value !== 'wasd' || textEntry.selected !== 'theo') {
+    throw new Error(`Movement letters were intercepted during name entry: ${JSON.stringify(textEntry)}`);
+  }
+
   await evaluate(`(() => {
-    window.focus();
-    const canvas = document.querySelector('#game canvas');
-    canvas?.focus({ preventScroll: true });
-    return document.activeElement === canvas;
+    const input = document.querySelector('#player-name');
+    input.value = 'Rook';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#identity-form').requestSubmit();
   })()`);
+  await waitFor(async () => (await state()).saved);
 
-  const characters = [
-    ['1', 'Milo'],
-    ['2', 'Theo'],
-    ['3', 'Ada'],
-    ['4', 'Pip'],
-  ];
-  const directions = [
-    ['ArrowRight', 'ArrowRight', 39, 'right'],
-    ['ArrowLeft', 'ArrowLeft', 37, 'left'],
-    ['ArrowUp', 'ArrowUp', 38, 'up'],
-    ['ArrowDown', 'ArrowDown', 40, 'down'],
-  ];
-
-  for (const [digit, name] of characters) {
-    await tapKey(digit, `Digit${digit}`, 48 + Number(digit));
-    await tapKey('r', 'KeyR', 82);
-    await assertVisible(`${name} idle`);
-
-    for (const [key, code, vk, direction] of directions) {
-      await tapKey('r', 'KeyR', 82);
-      await assertAnimatedDirection(`${name} ${direction}`, key, code, vk);
-    }
+  const persisted = await evaluate(`(() => {
+    const raw = localStorage.getItem('splicepit-save');
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed ? { avatarId: parsed.payload.gameplay.avatarId, playerName: parsed.payload.gameplay.playerName } : null;
+  })()`);
+  if (persisted?.avatarId !== 'theo' || persisted?.playerName !== 'Rook') {
+    throw new Error(`Identity was not written into the normal save: ${JSON.stringify(persisted)}`);
   }
 
-  const switched = await state();
-  if (switched.character !== 'pip') throw new Error(`Character switch failed: ${JSON.stringify(switched)}`);
-
-  const layout = await evaluate(`({ canvases: document.querySelectorAll('#game canvas').length, width: innerWidth, height: innerHeight, bodyWidth: document.body.scrollWidth, bodyHeight: document.body.scrollHeight })`);
-  if (layout.canvases !== 1 || layout.bodyWidth !== layout.width || layout.bodyHeight !== layout.height) {
-    throw new Error(`Sandbox is not one full-screen canvas: ${JSON.stringify(layout)}`);
+  await cdp('Page.reload', { ignoreCache: true });
+  const restored = await waitForReady();
+  const restoredInput = await evaluate(`document.querySelector('#player-name').value`);
+  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Rook' || restoredInput !== 'Rook') {
+    throw new Error(`Saved identity was not restored after reload: ${JSON.stringify({ restored, restoredInput })}`);
   }
 
-  console.log('Animated protagonist walk-cycle smoke passed for all 4 characters and directions.');
+  const layout = await evaluate(`({
+    buttons: document.querySelectorAll('.character-tab').length,
+    canvases: document.querySelectorAll('#character-preview').length,
+    width: innerWidth,
+    bodyWidth: document.body.scrollWidth,
+    inputType: document.querySelector('#player-name')?.tagName,
+  })`);
+  if (layout.buttons !== 4 || layout.canvases !== 1 || layout.bodyWidth > layout.width || layout.inputType !== 'INPUT') {
+    throw new Error(`Character-select layout contract failed: ${JSON.stringify(layout)}`);
+  }
+
+  console.log('WP0.4E character selection, keyboard-safe naming and identity persistence smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {

@@ -2,20 +2,262 @@ html,
 body,
 #game {
   width: 100%;
-  height: 100%;
+  min-width: 100%;
+  min-height: 100%;
   margin: 0;
-  overflow: hidden;
-  background: #000;
+}
+
+html,
+body {
+  min-height: 100vh;
+  background: #17160f;
 }
 
 body {
-  min-width: 100vw;
-  min-height: 100vh;
+  overflow-x: hidden;
+  color: #f0ead7;
+  font-family: "Cascadia Mono", "Segoe UI Mono", "Consolas", monospace;
 }
 
-canvas {
+button,
+input {
+  font: inherit;
+}
+
+.character-select-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 28px 20px;
+  background:
+    linear-gradient(90deg, rgba(117, 104, 65, 0.08) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(rgba(117, 104, 65, 0.06) 1px, transparent 1px) 0 0 / 32px 32px,
+    radial-gradient(circle at 50% 20%, #302d20 0, #1d1b14 42%, #13120d 100%);
+}
+
+.character-select {
+  width: min(760px, 100%);
+  box-sizing: border-box;
+}
+
+.select-heading {
+  margin-bottom: 22px;
+  border-bottom: 1px solid #77704e;
+  padding-bottom: 14px;
+}
+
+.select-kicker {
+  margin: 0 0 8px;
+  color: #b8ad72;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+.select-heading h1 {
+  margin: 0;
+  color: #fff7dc;
+  font-size: clamp(26px, 5vw, 42px);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.select-subtitle {
+  margin: 10px 0 0;
+  color: #aaa48e;
+  font-size: 13px;
+}
+
+.select-body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 30px;
+  align-items: start;
+}
+
+.preview-column {
+  min-width: 0;
+}
+
+.preview-frame {
+  border-left: 3px solid #8d8350;
+  padding-left: 14px;
+}
+
+#character-preview {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
+  width: 190px;
+  max-width: 100%;
+  height: auto;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border: 1px solid #4b4837;
+  background: #211f18;
+}
+
+.preview-caption {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.preview-caption strong {
+  color: #fff3c9;
+  font-size: 18px;
+}
+
+.preview-caption span {
+  color: #9f9a86;
+  font-size: 12px;
+}
+
+.identity-column {
+  min-width: 0;
+}
+
+.character-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 26px;
+}
+
+.character-tab {
+  min-width: 0;
+  border: 1px solid #5c5844;
+  border-radius: 0;
+  padding: 10px 7px;
+  background: #232119;
+  color: #c9c2a6;
+  cursor: pointer;
+  transition: background 90ms linear, color 90ms linear, border-color 90ms linear;
+}
+
+.character-tab:hover,
+.character-tab:focus-visible {
+  border-color: #b6aa6c;
+  outline: 1px solid #b6aa6c;
+  outline-offset: 2px;
+  color: #fff3c9;
+}
+
+.character-tab.is-selected {
+  border-color: #c2b36a;
+  background: #3a3824;
+  color: #fff4c7;
+}
+
+#identity-form {
+  display: grid;
+  gap: 9px;
+}
+
+.name-label {
+  color: #e4dcc0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#player-name {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #77704e;
+  border-radius: 0;
+  padding: 11px 12px;
+  background: #11110d;
+  color: #fff7dc;
+  caret-color: #d5c56e;
+  outline: none;
+}
+
+#player-name:focus {
+  border-color: #c7b86a;
+  box-shadow: 0 0 0 1px #c7b86a;
+}
+
+#player-name[aria-invalid="true"] {
+  border-color: #c97865;
+}
+
+.name-help {
+  min-height: 30px;
+  margin: 0;
+  color: #827d6c;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.save-identity {
+  justify-self: start;
+  border: 1px solid #9f9256;
+  border-radius: 0;
+  padding: 10px 18px;
+  background: #5f5a31;
+  color: #fff8dd;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.save-identity:hover,
+.save-identity:focus-visible {
+  background: #77703b;
+  outline: 1px solid #d1c172;
+  outline-offset: 2px;
+}
+
+.identity-status {
+  min-height: 34px;
+  margin: 3px 0 0;
+  color: #9f9a86;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.identity-status[data-state="success"] {
+  color: #b9ca86;
+}
+
+.identity-status[data-state="error"] {
+  color: #e1957f;
+}
+
+@media (max-width: 660px) {
+  .character-select-shell {
+    place-items: start center;
+    padding-top: 22px;
+  }
+
+  .select-body {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .preview-frame {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 14px;
+    align-items: end;
+  }
+
+  #character-preview {
+    width: 150px;
+  }
+
+  .character-tabs {
+    margin-bottom: 18px;
+  }
+}
+
+@media (max-width: 430px) {
+  .character-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .preview-frame {
+    grid-template-columns: 128px minmax(0, 1fr);
+  }
+
+  #character-preview {
+    width: 128px;
+  }
 }
