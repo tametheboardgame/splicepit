@@ -94,6 +94,14 @@ try {
     await sleep(50);
   }
 
+  async function persistedIdentity() {
+    return evaluate(`(() => {
+      const raw = localStorage.getItem('splicepit-save');
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed ? { avatarId: parsed.payload.gameplay.avatarId, playerName: parsed.payload.gameplay.playerName } : null;
+    })()`);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', {
@@ -110,7 +118,10 @@ try {
   await cdp('Page.bringToFront');
 
   const initial = await state();
-  if (initial.selectedAvatarId !== 'milo' || initial.loadedFromSave || initial.saved || initial.phase !== 'select') {
+  if (
+    initial.selectedAvatarId !== 'milo' || initial.playerName !== 'Milo' ||
+    initial.loadedFromSave || initial.saved || initial.phase !== 'select'
+  ) {
     throw new Error(`Unexpected clean visual-reset state: ${JSON.stringify(initial)}`);
   }
 
@@ -145,19 +156,44 @@ try {
 
   await key('ArrowRight', 'ArrowRight', 39);
   let current = await state();
-  if (current.selectedAvatarId !== 'theo') throw new Error(`Keyboard selection did not move to Theo: ${JSON.stringify(current)}`);
+  if (current.selectedAvatarId !== 'theo' || current.playerName !== 'Theo') {
+    throw new Error(`Keyboard selection did not move to Theo with default name: ${JSON.stringify(current)}`);
+  }
 
+  // Enter accepts the authored name without forcing the rename flow.
   await key('Enter', 'Enter', 13);
   current = await state();
-  if (current.phase !== 'name') throw new Error(`Enter did not start in-canvas naming: ${JSON.stringify(current)}`);
+  if (current.phase !== 'confirmed' || !current.saved || current.playerName !== 'Theo') {
+    throw new Error(`Default-name confirmation failed: ${JSON.stringify(current)}`);
+  }
+  let persisted = await persistedIdentity();
+  if (persisted?.avatarId !== 'theo' || persisted?.playerName !== 'Theo') {
+    throw new Error(`Default identity was not persisted: ${JSON.stringify(persisted)}`);
+  }
 
+  // Reload restores the authored/default identity.
+  await cdp('Page.reload', { ignoreCache: true });
+  let restored = await waitForReady();
+  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Theo') {
+    throw new Error(`Default identity was not restored after reload: ${JSON.stringify(restored)}`);
+  }
+
+  // Rename is optional, explicitly entered with N, and starts pre-filled with the current/default name.
+  await key('n', 'KeyN', 78);
+  current = await state();
+  const renameInput = await evaluate(`document.querySelector('#player-name-capture').value`);
+  if (current.phase !== 'name' || renameInput !== 'Theo') {
+    throw new Error(`Optional rename did not start pre-filled: ${JSON.stringify({ current, renameInput })}`);
+  }
+
+  // The input is selected on entry, so ordinary typing replaces the default and movement letters are not intercepted.
   await key('w', 'KeyW', 87, 'w');
   await key('a', 'KeyA', 65, 'a');
   await key('s', 'KeyS', 83, 's');
   await key('d', 'KeyD', 68, 'd');
   current = await state();
   if (current.playerName !== 'wasd' || current.selectedAvatarId !== 'theo') {
-    throw new Error(`WASD was intercepted during naming: ${JSON.stringify(current)}`);
+    throw new Error(`WASD was intercepted during optional naming: ${JSON.stringify(current)}`);
   }
 
   await evaluate(`(() => {
@@ -166,24 +202,23 @@ try {
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
   })()`);
-  await waitFor(async () => (await state()).saved);
+  await waitFor(async () => {
+    const value = await state();
+    return value.saved && value.phase === 'confirmed' ? value : null;
+  });
 
-  const persisted = await evaluate(`(() => {
-    const raw = localStorage.getItem('splicepit-save');
-    const parsed = raw ? JSON.parse(raw) : null;
-    return parsed ? { avatarId: parsed.payload.gameplay.avatarId, playerName: parsed.payload.gameplay.playerName } : null;
-  })()`);
+  persisted = await persistedIdentity();
   if (persisted?.avatarId !== 'theo' || persisted?.playerName !== 'Rook') {
-    throw new Error(`Identity was not written into the normal save: ${JSON.stringify(persisted)}`);
+    throw new Error(`Renamed identity was not written into the normal save: ${JSON.stringify(persisted)}`);
   }
 
   await cdp('Page.reload', { ignoreCache: true });
-  const restored = await waitForReady();
+  restored = await waitForReady();
   if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Rook') {
-    throw new Error(`Saved identity was not restored after reload: ${JSON.stringify(restored)}`);
+    throw new Error(`Renamed identity was not restored after reload: ${JSON.stringify(restored)}`);
   }
 
-  console.log('Visual-reset boot, game-like selection shell and identity persistence smoke passed.');
+  console.log('Visual-reset default-name confirmation, optional rename and identity persistence smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
