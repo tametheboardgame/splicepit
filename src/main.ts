@@ -18,6 +18,8 @@ const LOWER_BODY_Y = 64;
 const LOWER_BODY_OVERLAP = 2;
 const HALF_WIDTH = FRAME_WIDTH / 2;
 const CHARACTER_Y = 230;
+const USE_BUTTON = { x: 316, y: 492, width: 154, height: 34 } as const;
+const RENAME_BUTTON = { x: 490, y: 492, width: 154, height: 34 } as const;
 const CHARACTER_X: Record<ProtagonistId, number> = {
   milo: 150,
   theo: 360,
@@ -32,7 +34,7 @@ const DOWN_FRAME_BASE64: Record<ProtagonistId, string> = {
   pip: pipDown,
 };
 
-type ResetPhase = 'select' | 'name';
+type ResetPhase = 'select' | 'name' | 'confirmed';
 
 type VisualResetDebug = {
   ready: boolean;
@@ -51,7 +53,6 @@ if (!root) throw new Error('Missing #game root');
 const loadedSave = loadGame();
 let selectedAvatarId: ProtagonistId = gameState.avatarId ?? 'milo';
 let phase: ResetPhase = 'select';
-let lastPointerSelection: ProtagonistId | null = null;
 let saved = Boolean(loadedSave && gameState.avatarId && gameState.playerName);
 
 root.innerHTML = `
@@ -78,7 +79,12 @@ if (!maybeContext) throw new Error('Canvas 2D context unavailable');
 const context: CanvasRenderingContext2D = maybeContext;
 context.imageSmoothingEnabled = false;
 
-playerNameInput.value = gameState.playerName ?? '';
+function preferredNameFor(id: ProtagonistId): string {
+  if (gameState.avatarId === id && gameState.playerName) return gameState.playerName;
+  return PROTAGONIST_SPRITES[id].name;
+}
+
+playerNameInput.value = preferredNameFor(selectedAvatarId);
 
 const frames = {} as Record<ProtagonistId, HTMLImageElement>;
 const debug: VisualResetDebug = {
@@ -206,7 +212,7 @@ function drawCharacter(id: ProtagonistId, now: number): void {
   const centreX = CHARACTER_X[id];
   const destX = centreX - (FRAME_WIDTH * DISPLAY_SCALE) / 2;
   const selected = id === selectedAvatarId;
-  const faded = phase === 'name' && !selected;
+  const faded = phase !== 'select' && !selected;
 
   context.save();
   if (faded) context.globalAlpha = 0.28;
@@ -243,30 +249,62 @@ function drawCharacter(id: ProtagonistId, now: number): void {
   context.restore();
 }
 
+function drawActionButton(x: number, y: number, width: number, height: number, label: string, primary: boolean): void {
+  context.fillStyle = primary ? '#496448' : '#f0e3ad';
+  context.fillRect(x, y, width, height);
+  context.strokeStyle = primary ? '#273b2f' : '#6c795b';
+  context.lineWidth = 2;
+  context.strokeRect(x + 1, y + 1, width - 2, height - 2);
+  context.fillStyle = primary ? '#fff5cf' : '#314339';
+  context.font = '800 13px "Trebuchet MS", "Segoe UI", sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(label, x + width / 2, y + height / 2 + 1);
+}
+
 function drawFooter(now: number): void {
   context.textAlign = 'center';
   context.textBaseline = 'middle';
+  const protagonistName = PROTAGONIST_SPRITES[selectedAvatarId].name;
+  const currentName = playerNameInput.value || preferredNameFor(selectedAvatarId);
 
   if (phase === 'name') {
     context.fillStyle = '#f3e8b9';
-    context.fillRect(258, 472, 444, 48);
+    context.fillRect(258, 466, 444, 62);
     context.fillStyle = '#6c795b';
-    context.fillRect(258, 472, 444, 3);
+    context.fillRect(258, 466, 444, 3);
     context.fillStyle = '#26382f';
-    context.font = '700 13px "Trebuchet MS", "Segoe UI", sans-serif';
-    context.fillText(`Name ${PROTAGONIST_SPRITES[selectedAvatarId].name}`, VIEW_WIDTH / 2, 487);
+    context.font = '700 12px "Trebuchet MS", "Segoe UI", sans-serif';
+    context.fillText('Change name?', VIEW_WIDTH / 2, 479);
     const caret = Math.floor(now / 450) % 2 === 0 ? '▌' : '';
     context.font = '800 18px "Trebuchet MS", "Segoe UI", sans-serif';
-    context.fillText(`${playerNameInput.value}${caret}`, VIEW_WIDTH / 2, 505);
+    context.fillText(`${playerNameInput.value}${caret}`, VIEW_WIDTH / 2, 500);
+    context.font = '600 10px "Trebuchet MS", "Segoe UI", sans-serif';
+    context.fillStyle = '#53624d';
+    context.fillText(`Enter: use this name · Esc: keep ${protagonistName}`, VIEW_WIDTH / 2, 518);
     return;
   }
 
-  context.fillStyle = '#485846';
-  context.font = '600 12px "Trebuchet MS", "Segoe UI", sans-serif';
-  const savedName = saved && gameState.playerName
-    ? `${gameState.playerName} is saved as ${PROTAGONIST_SPRITES[selectedAvatarId].name}. `
-    : '';
-  context.fillText(`${savedName}← / → or A / D to choose · Enter to name · mouse/touch: tap a character twice`, VIEW_WIDTH / 2, 500);
+  if (phase === 'confirmed') {
+    context.fillStyle = '#f3e8b9';
+    context.fillRect(300, 474, 360, 52);
+    context.strokeStyle = '#496448';
+    context.lineWidth = 3;
+    context.strokeRect(301.5, 475.5, 357, 49);
+    context.fillStyle = '#26382f';
+    context.font = '800 18px "Trebuchet MS", "Segoe UI", sans-serif';
+    context.fillText(`${currentName} selected ✓`, VIEW_WIDTH / 2, 490);
+    context.font = '600 11px "Trebuchet MS", "Segoe UI", sans-serif';
+    context.fillStyle = '#53624d';
+    context.fillText('Identity saved. The Apprentice Splicer Yard is the next build.', VIEW_WIDTH / 2, 512);
+    return;
+  }
+
+  context.fillStyle = '#314339';
+  context.font = '700 13px "Trebuchet MS", "Segoe UI", sans-serif';
+  context.fillText(`Name: ${currentName}`, VIEW_WIDTH / 2, 478);
+  drawActionButton(USE_BUTTON.x, USE_BUTTON.y, USE_BUTTON.width, USE_BUTTON.height, `Use ${currentName}`, true);
+  drawActionButton(RENAME_BUTTON.x, RENAME_BUTTON.y, RENAME_BUTTON.width, RENAME_BUTTON.height, 'Change name?', false);
 }
 
 function render(now: number): void {
@@ -276,11 +314,19 @@ function render(now: number): void {
   requestAnimationFrame(render);
 }
 
+function syncPreferredName(): void {
+  playerNameInput.value = preferredNameFor(selectedAvatarId);
+  debug.playerName = playerNameInput.value;
+}
+
 function setSelection(id: ProtagonistId): void {
   selectedAvatarId = id;
-  saved = false;
+  phase = 'select';
+  saved = Boolean(gameState.avatarId === id && gameState.playerName);
   debug.selectedAvatarId = id;
-  debug.saved = false;
+  debug.phase = phase;
+  debug.saved = saved;
+  syncPreferredName();
 }
 
 function moveSelection(delta: number): void {
@@ -289,32 +335,56 @@ function moveSelection(delta: number): void {
   setSelection(PROTAGONIST_IDS[next]);
 }
 
-function beginNaming(): void {
-  phase = 'name';
-  debug.phase = phase;
-  playerNameInput.value = gameState.avatarId === selectedAvatarId && gameState.playerName ? gameState.playerName : '';
-  debug.playerName = playerNameInput.value;
-  playerNameInput.focus({ preventScroll: true });
-}
-
-function finishNaming(): void {
-  const playerName = normalisePlayerName(playerNameInput.value);
-  if (!playerName) return;
-
+function commitIdentity(rawName: string): void {
+  const playerName = normalisePlayerName(rawName) ?? PROTAGONIST_SPRITES[selectedAvatarId].name;
   playerNameInput.value = playerName;
   if (!gameState.setPlayerIdentity(selectedAvatarId, playerName)) return;
   if (!saveGame()) return;
 
   saved = true;
-  phase = 'select';
+  phase = 'confirmed';
   debug.phase = phase;
   debug.playerName = playerName;
   debug.saved = true;
   playerNameInput.blur();
 }
 
+function confirmSelection(): void {
+  commitIdentity(preferredNameFor(selectedAvatarId));
+}
+
+function beginNaming(): void {
+  phase = 'name';
+  debug.phase = phase;
+  syncPreferredName();
+  playerNameInput.focus({ preventScroll: true });
+  playerNameInput.select();
+}
+
+function finishNaming(): void {
+  commitIdentity(playerNameInput.value);
+}
+
+function cancelNaming(): void {
+  phase = 'select';
+  debug.phase = phase;
+  syncPreferredName();
+  playerNameInput.blur();
+}
+
 window.addEventListener('keydown', (event) => {
-  if (!debug.ready || phase !== 'select') return;
+  if (!debug.ready) return;
+
+  if (phase === 'confirmed') {
+    if (event.code === 'Escape' || event.code === 'Backspace') {
+      event.preventDefault();
+      phase = 'select';
+      debug.phase = phase;
+    }
+    return;
+  }
+
+  if (phase !== 'select') return;
 
   if (event.code === 'ArrowLeft' || event.code === 'KeyA') {
     event.preventDefault();
@@ -322,9 +392,12 @@ window.addEventListener('keydown', (event) => {
   } else if (event.code === 'ArrowRight' || event.code === 'KeyD') {
     event.preventDefault();
     moveSelection(1);
-  } else if (event.code === 'Enter' || event.code === 'Space') {
+  } else if (event.code === 'KeyN') {
     event.preventDefault();
     beginNaming();
+  } else if (event.code === 'Enter' || event.code === 'Space') {
+    event.preventDefault();
+    confirmSelection();
   }
 });
 
@@ -339,41 +412,48 @@ playerNameInput.addEventListener('keydown', (event) => {
     finishNaming();
   } else if (event.code === 'Escape') {
     event.preventDefault();
-    phase = 'select';
-    debug.phase = phase;
-    playerNameInput.blur();
+    cancelNaming();
   }
 });
 
+function pointInside(x: number, y: number, box: { x: number; y: number; width: number; height: number }): boolean {
+  return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
+}
+
 stageCanvas.addEventListener('pointerdown', (event) => {
   if (!debug.ready) return;
+
+  const rect = stageCanvas.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
+  const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
+
   if (phase === 'name') {
     playerNameInput.focus({ preventScroll: true });
     return;
   }
 
-  const rect = stageCanvas.getBoundingClientRect();
-  const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
-  const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
-  if (y < 190 || y > 462) return;
-
-  let hit: ProtagonistId | null = null;
-  for (const id of PROTAGONIST_IDS) {
-    if (Math.abs(x - CHARACTER_X[id]) <= 78) {
-      hit = id;
-      break;
-    }
-  }
-  if (!hit) return;
-
-  if (hit === selectedAvatarId && lastPointerSelection === hit) {
-    beginNaming();
-    lastPointerSelection = null;
+  if (phase === 'confirmed') {
+    phase = 'select';
+    debug.phase = phase;
     return;
   }
 
-  setSelection(hit);
-  lastPointerSelection = hit;
+  if (pointInside(x, y, USE_BUTTON)) {
+    confirmSelection();
+    return;
+  }
+  if (pointInside(x, y, RENAME_BUTTON)) {
+    beginNaming();
+    return;
+  }
+
+  if (y < 190 || y > 462) return;
+  for (const id of PROTAGONIST_IDS) {
+    if (Math.abs(x - CHARACTER_X[id]) <= 78) {
+      setSelection(id);
+      return;
+    }
+  }
 });
 
 async function decodeFrame(base64: string, label: string): Promise<HTMLImageElement> {
