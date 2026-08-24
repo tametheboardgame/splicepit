@@ -1,3 +1,5 @@
+import { RENAME_INPUT_BOX, SELECT_VIEW_HEIGHT, SELECT_VIEW_WIDTH } from './ui/apprenticeSelection.js';
+
 type VisualResetState = {
   phase: 'select' | 'name' | 'confirmed';
 };
@@ -5,13 +7,6 @@ type VisualResetState = {
 type VisualResetGlobal = typeof globalThis & {
   __SPLICEPIT_VISUAL_RESET__?: VisualResetState;
 };
-
-const VIEW_WIDTH = 960;
-const VIEW_HEIGHT = 540;
-const INPUT_X = 300;
-const INPUT_Y = 500;
-const INPUT_WIDTH = 360;
-const INPUT_HEIGHT = 28;
 
 function debugState(): VisualResetState | undefined {
   return (globalThis as VisualResetGlobal).__SPLICEPIT_VISUAL_RESET__;
@@ -29,12 +24,12 @@ function mountRenameInputBridge(): void {
 
   const positionInput = (): void => {
     const rect = canvas.getBoundingClientRect();
-    const scaleX = rect.width / VIEW_WIDTH;
-    const scaleY = rect.height / VIEW_HEIGHT;
-    input.style.left = `${rect.left + INPUT_X * scaleX}px`;
-    input.style.top = `${rect.top + INPUT_Y * scaleY}px`;
-    input.style.width = `${INPUT_WIDTH * scaleX}px`;
-    input.style.height = `${Math.max(24, INPUT_HEIGHT * scaleY)}px`;
+    const scaleX = rect.width / SELECT_VIEW_WIDTH;
+    const scaleY = rect.height / SELECT_VIEW_HEIGHT;
+    input.style.left = `${rect.left + RENAME_INPUT_BOX.x * scaleX}px`;
+    input.style.top = `${rect.top + RENAME_INPUT_BOX.y * scaleY}px`;
+    input.style.width = `${RENAME_INPUT_BOX.width * scaleX}px`;
+    input.style.height = `${Math.max(26, RENAME_INPUT_BOX.height * scaleY)}px`;
     input.style.fontSize = `${Math.max(14, 18 * scaleY)}px`;
   };
 
@@ -51,9 +46,7 @@ function mountRenameInputBridge(): void {
     if (naming) {
       input.classList.add('is-active');
       positionInput();
-      if (!wasNaming) {
-        requestAnimationFrame(focusForNaming);
-      }
+      if (!wasNaming) requestAnimationFrame(focusForNaming);
     } else {
       input.classList.remove('is-active');
     }
