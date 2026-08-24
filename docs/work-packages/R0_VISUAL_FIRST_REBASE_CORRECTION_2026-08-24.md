@@ -54,32 +54,31 @@ Hard rules remain:
 - do not add splice, battle, economy, quest or broad menu systems before the graphics-first gate;
 - preserve the warm, attractive, cute-but-concerning biotech language established by the accepted Yard.
 
-## WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish — IN HUMAN REVIEW
+## WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish — COMPLETE / HUMAN ACCEPTED 24 AUGUST 2026
 
-Take the accepted WP0.4D protagonist movement and make it belong in the accepted Yard, incorporating the WP0.4F human scale feedback.
+WP0.4G was implemented in PR #27, technically validated, human-reviewed and merged on 24 August 2026.
 
-Current review implementation deliberately avoids fractional canvas zoom. Instead it:
+Accepted baseline:
 
-- uses a **1280 × 720 Yard viewport** so more world is visible while source pixels stay crisp;
-- expands the Yard to a **1760 × 1080 world** around the accepted core composition;
-- renders the accepted 64 × 96 protagonist at **1× source scale** in-world;
-- retains the temporary chooser at its 960 × 540 logical size until WP0.4E-R replaces it;
-- adds held-key four-direction movement using the existing semantic action bindings;
-- adds feet-based collision against buildings, props, pens/cages, water, trees and world bounds;
-- uses axis-separated collision so sliding along obstacles remains possible;
-- adds smooth camera follow with integer-rounded render coordinates;
-- adds basic depth sorting through tree canopies;
-- expands the accepted Yard language with surrounding quarantine, nursery, stream/bridge and vegetation detail rather than simply stretching the old scene.
+- **1280 × 720 Yard viewport**;
+- **1760 × 1080 world** around the accepted core Yard composition;
+- accepted 64 × 96 protagonist rendered at **1× source scale** in-world;
+- held-key four-direction movement using the existing semantic action bindings;
+- feet-based collision against buildings, props, pens/cages, water, trees and world bounds;
+- axis-separated collision so sliding along obstacles remains possible;
+- smooth camera follow with integer-rounded render coordinates;
+- basic depth sorting through tree canopies;
+- expanded quarantine, nursery, stream/bridge and vegetation areas around the original Yard core.
 
-Automated browser coverage must verify real held-key movement, camera follow and collision, but this package **cannot be accepted by automation alone**.
+Human review described the result as effectively the right direction and specifically approved the wider scale/movement feel. **Do not re-enlarge the protagonist or return to the close WP0.4F framing.**
 
-**Human gate:** judge whether the wider 1280 × 720 view, 1× protagonist size, camera behaviour, movement feel, collision and expanded world proportions are the right direction. If the world still feels too close, too sparse, too small or otherwise wrongly proportioned, revise here before character-select presentation work begins.
+The user also noted that the graphics can become higher quality. Treat this as **future production/polish work rather than a rejection of the current scale, composition or visual language**. Improve tiles, props, environment art and detail fidelity later without changing the accepted world proportions merely to make the art sharper.
 
-## WP0.4E-R — Character-Selection Presentation Redesign — PLANNED REPAIR PACKAGE
+## WP0.4E-R — Character-Selection Presentation Redesign — READY
 
-**Depends on:** visually accepted WP0.4F and movement/world language from WP0.4G.
+**Depends on:** visually accepted WP0.4F and WP0.4G — now satisfied.
 
-**Purpose:** redesign character choice using the game world as the source of interface language.
+**Purpose:** redesign character choice using the accepted game world as the source of interface language.
 
 Technical identity plumbing from WP0.4E is reused. The visible design starts again.
 
@@ -125,6 +124,4 @@ If this gate fails, return to D/F/G/E-R as appropriate. Do not compensate by add
 
 ## Temporary boot harness
 
-A temporary canvas-only protagonist harness is permitted while F/G are being built solely to ensure the rejected page is no longer the default boot and to keep identity persistence testable.
-
-It is non-canon, must stay visually lightweight, and must be replaced by WP0.4E-R before the human gate.
+The temporary canvas-only protagonist harness has completed its purpose. WP0.4E-R must replace it before WP0.4H.
