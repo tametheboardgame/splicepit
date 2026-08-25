@@ -5,6 +5,18 @@ import { gameState } from '../state/GameState.js';
 
 function browserStorage(): Storage | null { return typeof localStorage === 'undefined' ? null : localStorage; }
 
+type OpeningMenuState = {
+  newGameStarted?: boolean;
+};
+
+type OpeningFlowGlobal = typeof globalThis & {
+  __SPLICEPIT_MENU__?: OpeningMenuState;
+};
+
+function isOpeningNewGameSession(): boolean {
+  return (globalThis as OpeningFlowGlobal).__SPLICEPIT_MENU__?.newGameStarted === true;
+}
+
 export function saveGame(): boolean {
   const storage = browserStorage();
   if (!storage) return false;
@@ -13,6 +25,12 @@ export function saveGame(): boolean {
 }
 
 export function loadGame(): boolean {
+  if (isOpeningNewGameSession()) {
+    gameState.reset();
+    domainState.reset();
+    return false;
+  }
+
   const storage = browserStorage();
   if (!storage) return false;
   archiveLegacyR01Save(storage);

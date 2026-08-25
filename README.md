@@ -21,6 +21,8 @@ Human review has accepted the foundation established across WP0.4C–G and WP0.4
 
 WP0.5A established the accepted bright/corrupted SplicePit title treatment. WP0.5B added the world-native Main Menu shell. WP0.5C is accepted and merged, providing the reusable bright/corrupted narration and dialogue presentation between New Game and the existing character-selection runtime. The opening narration is delivered by **Dr. Viktor Splicenstein**, the player's apparently dependable SpliceMaster; authored corruption pulses briefly replace his friendly portrait with a much more disturbing version of the same character.
 
+WP0.5D integrates the accepted in-world Milo/Theo/Ada/Pip selector into the actual New Game sequence. A New Game now enters character choice from fresh runtime state rather than inheriting an earlier prototype identity; the authored default names, optional rename flow and selected identity then carry directly into the Apprentice Splicer Yard.
+
 The old player-facing Lab/Splice/Battle presentation and the rejected dark registration-form character selector are prototype history and must not return.
 
 The current environment art is **not final fidelity**. Its direction and scale are approved, but future work must progressively replace the blockout-like low-detail environment treatment with richer, more authored pixel art matching the care and personality of the protagonist sprites.
@@ -37,11 +39,11 @@ The title screen establishes this immediately: cheerful `SplicePit` presentation
 
 The opening deliberately satirises the optimistic monster-RPG introduction, then teaches controls, Bag, Map and objectives before sending the player to Dr. Viktor Splicenstein. Viktor is killed by his own spliced **RinoCow**, the inherited debt becomes the player's problem, the player learns the splice bench, creates a viable first creature, and completes the first local Pit fight.
 
-Proper New Game / Continue / autosave behaviour is deliberately scheduled near the end of this opening-slice build. Current refresh behaviour is not a blocker.
+WP0.5D establishes only the fresh New Game runtime boundary needed for the opening flow. Proper Continue, autosave and checkpoint persistence remain deliberately scheduled near the end of this opening-slice build in R0.10.
 
 ## Current / next executable work package
 
-> **Current executable package: WP0.5D — Character Selection Integrated into New Game**
+> **Next executable package: Graphics Tightening Pass A — Title / UI / Selection**
 
 ## Planning source of truth
 
