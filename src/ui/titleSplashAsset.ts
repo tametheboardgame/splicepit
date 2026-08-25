@@ -39,7 +39,8 @@ export function primeHappyTitleSplash(): void {
   happyTitleStatus = 'loading';
   try {
     const blob = decodeSplashBlob();
-    happyTitleObjectUrl = URL.createObjectURL(blob);
+    const objectUrl = URL.createObjectURL(blob);
+    happyTitleObjectUrl = objectUrl;
     const image = new Image();
     image.decoding = 'async';
     image.onload = () => {
@@ -53,7 +54,7 @@ export function primeHappyTitleSplash(): void {
       happyTitleError = 'Approved happy splash artwork failed to decode';
       revokeObjectUrl();
     };
-    image.src = happyTitleObjectUrl;
+    image.src = objectUrl;
     happyTitleImage = image;
   } catch (error) {
     happyTitleStatus = 'error';
