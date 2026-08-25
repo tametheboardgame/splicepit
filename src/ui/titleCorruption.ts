@@ -1,3 +1,5 @@
+import { drawCorruptionPolish, drawFrontDoorBackdropPolish, drawTitleLogoPolish } from './frontDoorArt.js';
+
 export const TITLE_VIEW_WIDTH = 1280;
 export const TITLE_VIEW_HEIGHT = 720;
 export const TITLE_REVEAL_MS = 1250;
@@ -270,6 +272,7 @@ export function drawCorruptionOverlay(ctx: CanvasRenderingContext2D, options: Co
   ctx.globalAlpha = amount * 0.5;
   for (let y = 0; y < height; y += 8) rect(ctx, 0, y, width, 1, '#020503');
   ctx.restore();
+  drawCorruptionPolish(ctx, amount, options.elapsedMs, width, height, seed);
 }
 
 export function drawTitleScreen(ctx: CanvasRenderingContext2D, elapsedMs: number): TitleVisualState {
@@ -277,7 +280,18 @@ export function drawTitleScreen(ctx: CanvasRenderingContext2D, elapsedMs: number
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
   drawBrightBackdrop(ctx, elapsedMs);
+  drawFrontDoorBackdropPolish(ctx, elapsedMs, 'title');
   drawBrightLogo(ctx, state.reveal);
+  drawTitleLogoPolish(ctx, state.reveal, elapsedMs);
+
+  ctx.save();
+  ctx.globalAlpha = state.reveal;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 15px "Trebuchet MS", "Segoe UI", sans-serif';
+  ctx.fillStyle = '#26382f';
+  ctx.fillText('GENETIC EXCELLENCE · ETHICS OPTIONAL', 640, 506);
+  ctx.restore();
 
   if (state.corruption > 0) {
     drawDarkReference(ctx, state.corruption, elapsedMs);
