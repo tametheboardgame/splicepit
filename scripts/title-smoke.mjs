@@ -76,6 +76,10 @@ try {
     return evaluate(`globalThis.__SPLICEPIT_TITLE__ ? ({ ...globalThis.__SPLICEPIT_TITLE__ }) : null`);
   }
 
+  async function splashState() {
+    return evaluate(`globalThis.__SPLICEPIT_HAPPY_SPLASH__ ? ({ ...globalThis.__SPLICEPIT_HAPPY_SPLASH__ }) : null`);
+  }
+
   async function menuState() {
     return evaluate(`globalThis.__SPLICEPIT_MENU__ ? ({ ...globalThis.__SPLICEPIT_MENU__ }) : null`);
   }
@@ -129,6 +133,8 @@ try {
   await waitFor(async () => {
     const current = await titleState();
     if (current?.error) throw new Error(current.error);
+    const splash = await splashState();
+    if (splash?.status === 'error') throw new Error(`Happy splash load failed: ${JSON.stringify(splash)}`);
     return current?.ready && current?.titleRendered ? current : null;
   });
   await evaluate(`localStorage.clear()`);
@@ -137,9 +143,12 @@ try {
   const baselineState = await waitFor(async () => {
     const current = await titleState();
     if (current?.error) throw new Error(current.error);
+    const splash = await splashState();
+    if (splash?.status === 'error') throw new Error(`Happy splash load failed: ${JSON.stringify(splash)}`);
+    if (splash?.status !== 'ready') return null;
     if (!(current?.titleRendered && current.elapsedMs >= 1250 && current.elapsedMs < 1600 && current.corruption === 0)) return null;
     const complexity = await canvasComplexity();
-    return complexity >= 64 ? { ...current, complexity } : null;
+    return complexity >= 64 ? { ...current, complexity, splash } : null;
   });
   const baselineHash = await canvasHash();
   if (!baselineHash || baselineState.complexity < 64 || baselineState.advanced || baselineState.readyToAdvance) {
@@ -179,7 +188,12 @@ try {
 
   // Fresh reload: one early input skips the reveal/corruption sequence but does not advance; the next advances.
   await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => (await titleState())?.titleRendered === true);
+  await waitFor(async () => {
+    const current = await titleState();
+    const splash = await splashState();
+    if (splash?.status === 'error') throw new Error(`Happy splash load failed after reload: ${JSON.stringify(splash)}`);
+    return current?.titleRendered === true && splash?.status === 'ready';
+  });
   await key(' ', 'Space', 32);
   const skipped = await waitFor(async () => {
     const current = await titleState();
