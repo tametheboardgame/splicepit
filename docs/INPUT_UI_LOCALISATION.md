@@ -4,20 +4,23 @@
 
 Introduced by WP0.2D. This is the R0.2 foundation contract for player input, reusable UI, scene transitions and localisable dialogue/string content.
 
+Extended by WP0.6A for opening-world Bag/Map actions and reusable contextual tutorial prompts.
+
 ## Semantic input
 
 Gameplay scenes consume semantic actions rather than physical keys.
 
-The initial action catalogue includes:
+The action catalogue includes:
 
 - movement: `MOVE_UP`, `MOVE_DOWN`, `MOVE_LEFT`, `MOVE_RIGHT`;
 - shared interaction: `INTERACT`, `CONFIRM`, `CANCEL`, `MENU`;
+- opening-world access: `BAG`, `MAP`;
 - current Lab context: `LAB_INTERACT`, `LAB_CANCEL`;
 - current Battle context: `BATTLE_PRIMARY`, `BATTLE_SECONDARY`, `BATTLE_TERTIARY`.
 
-`src/input/actions.ts` owns default binding profiles. `src/input/SemanticInput.ts` converts physical keyboard controls into those actions.
+`src/input/actions.ts` owns default binding profiles. `src/input/SemanticInput.ts` and `src/input/BrowserSemanticInput.ts` convert physical keyboard controls into those actions for the applicable runtime.
 
-Keyboard is the supported R0.2 device. The public input service accepts additional semantic adapters and the binding profile already has gamepad/touch mapping slots, so later device work does not require gameplay scenes to learn physical controller buttons or touch regions.
+Keyboard is the currently supported device. The public input service accepts additional semantic adapters and the binding profile already has gamepad/touch mapping slots, so later device work does not require gameplay code to learn physical controller buttons or touch regions.
 
 Physical key codes must remain inside the input adapter layer. Scenes must not use Phaser key codes or bind the keyboard directly.
 
@@ -27,10 +30,30 @@ Physical key codes must remain inside the input adapter layer. Scenes must not u
 - interact/Lab interact: E or Space;
 - confirm: Enter or Space;
 - cancel/Lab cancel: Escape;
-- menu: Tab or M;
+- generic menu: Tab;
+- Bag: B;
+- Map: M;
 - Battle primary/secondary/tertiary shortcuts: 1/2/3.
 
-The visible Lab interaction prompt is generated from the semantic binding hint rather than hard-coding `E` into scene text.
+`M` is reserved for the Map semantic action from WP0.6A onward rather than also firing the generic `MENU` action.
+
+Visible interaction/tutorial hints are generated from semantic binding hints rather than hard-coding physical keys into player-facing copy.
+
+## Contextual tutorial/help framework
+
+WP0.6A adds `src/tutorial/tutorialFramework.ts` and the compact `src/ui/tutorialPrompt.ts` renderer.
+
+The framework supports reusable contextual prompts for:
+
+- movement;
+- interact;
+- confirm/cancel;
+- Bag;
+- Map;
+- later splice tutorial guidance;
+- later battle tutorial guidance.
+
+Prompts resolve their displayed control hints from the binding profile, can complete automatically from observed semantic actions or manually from authored sequences, and fade away without pausing gameplay. The Apprentice Splicer Yard movement prompt is the first real integration. WP0.6C owns the authored onboarding sequence rather than WP0.6A hard-coding one.
 
 ## Focus and selection
 
@@ -56,13 +79,13 @@ Foundation conventions:
 - modals;
 - dialogue boxes.
 
-The current slice uses these primitives in Title, Intro, Lab, Splice and Battle UI. `src/ui/helpers.ts` is limited to low-level presentation helpers rather than interaction policy.
+The legacy/prototype scenes continue to use these primitives where retained as technical foundations. Current opening-slice canvas presentation may use newer game-native renderers where the visual reset has replaced the old player-facing UI.
 
 ## Scene transitions
 
-`src/ui/transitions.ts` owns fade-in, fade-out transition and fade-restart behaviour.
+`src/ui/transitions.ts` owns fade-in, fade-out transition and fade-restart behaviour for the Phaser scene foundation.
 
-Playable scenes use the shared transition functions rather than calling `scene.start()` directly. This keeps transition timing/presentation replaceable without scene-by-scene rewrites.
+Playable Phaser scenes use the shared transition functions rather than calling `scene.start()` directly. This keeps transition timing/presentation replaceable without scene-by-scene rewrites.
 
 ## Localisation and dialogue
 
@@ -74,20 +97,24 @@ Scene-authored narrative, headings, prompts and current prototype UI labels are 
 
 ## Save/schema impact
 
-WP0.2D does **not** change the R0.2 save-envelope schema introduced by WP0.2C.
+WP0.2D did **not** change the R0.2 save-envelope schema introduced by WP0.2C. WP0.6A also makes no save/schema change.
 
-Input remapping is not yet a supported player feature, so no binding data is persisted in this WP. The separate settings store created by WP0.2C remains the intended future persistence location for remapping, locale, audio and accessibility settings.
+Input remapping is not yet a supported player feature, so no binding data is persisted here. The separate settings store created by WP0.2C remains the intended future persistence location for remapping, locale, audio and accessibility settings.
+
+Tutorial persistence across reloads is deliberately deferred with the opening-slice save/checkpoint work in R0.10.
 
 ## Validation gates
 
-WP0.2D adds automated coverage that verifies:
+Automated coverage verifies:
 
 - required semantic actions and default mappings exist;
 - controller/touch extension slots remain present;
 - localisation IDs/interpolation resolve correctly;
 - dialogue IDs resolve through string IDs and permit an optional audio reference;
 - playable scenes do not own physical key codes or direct keyboard bindings;
-- playable scenes use the shared transition framework;
-- browser smoke enters Title/Intro through keyboard confirmation, performs Lab movement/interaction/cancel through semantic controls, selects/attempts a splice through focused controls and executes a Battle action through the semantic shortcut.
+- playable Phaser scenes use the shared transition framework;
+- browser smoke exercises the player-facing semantic controls;
+- WP0.6A tutorial unit tests cover prompt definitions, binding-derived hints, action-driven/manual completion and reset behaviour;
+- WP0.6A browser smoke proves the Yard prompt renders without modal interruption, movement remains active, real movement completes the prompt and the prompt fades cleanly.
 
 Save/schema impact: none.
