@@ -80,6 +80,10 @@ try {
     return evaluate(`globalThis.__SPLICEPIT_DIALOGUE__ ? ({ ...globalThis.__SPLICEPIT_DIALOGUE__ }) : null`);
   }
 
+  async function selectionState() {
+    return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
+  }
+
   async function key(key, code, vk) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
@@ -93,6 +97,17 @@ try {
     await sleep(100);
   }
 
+  async function persistedIdentity() {
+    return evaluate(`(() => {
+      const raw = localStorage.getItem('splicepit-save');
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed ? {
+        avatarId: parsed.payload.gameplay.avatarId,
+        playerName: parsed.payload.gameplay.playerName,
+      } : null;
+    })()`);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', {
@@ -101,6 +116,23 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
+
+  // Seed a previous prototype identity so New Game must prove that it starts fresh.
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1` });
+  await waitFor(async () => (await selectionState())?.ready === true);
+  await evaluate(`localStorage.clear()`);
+  await cdp('Page.reload', { ignoreCache: true });
+  await waitFor(async () => (await selectionState())?.ready === true);
+  await key('ArrowRight', 'ArrowRight', 39);
+  await key('Enter', 'Enter', 13);
+  const seeded = await waitFor(async () => {
+    const current = await selectionState();
+    return current?.phase === 'confirmed' && current?.saved && current?.yardRendered ? current : null;
+  });
+  if (seeded.selectedAvatarId !== 'theo' || seeded.playerName !== 'Theo') {
+    throw new Error(`Could not seed previous identity before New Game test: ${JSON.stringify(seeded)}`);
+  }
+
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?menuTest=1` });
 
   const initial = await waitFor(async () => {
@@ -110,6 +142,11 @@ try {
   });
   if (initial.screen !== 'menu' || initial.selectedId !== 'new-game' || initial.continueEnabled !== false) {
     throw new Error(`Unexpected main menu initial state: ${JSON.stringify(initial)}`);
+  }
+
+  const oldIdentity = await persistedIdentity();
+  if (oldIdentity?.avatarId !== 'theo' || oldIdentity?.playerName !== 'Theo') {
+    throw new Error(`Seeded identity did not survive to menu: ${JSON.stringify(oldIdentity)}`);
   }
 
   const layout = await evaluate(`(() => {
@@ -169,7 +206,44 @@ try {
     throw new Error(`New Game did not hand off to opening narration: ${JSON.stringify({ finalMenu, dialogue })}`);
   }
 
-  console.log('WP0.5B main menu keyboard, pointer, disabled Continue, Settings and New Game narration handoff smoke passed.');
+  // Skip the authored narration here. WP0.5C owns its detailed dialogue/corruption coverage.
+  await key('Escape', 'Escape', 27);
+  const selector = await waitFor(async () => {
+    const current = await selectionState();
+    if (current?.error) throw new Error(current.error);
+    return current?.ready && current?.phase === 'select' && current?.selectionRendered ? current : null;
+  });
+  if (
+    selector.selectedAvatarId !== 'milo' || selector.playerName !== 'Milo' ||
+    selector.loadedFromSave || selector.saved || selector.selectionPresentation !== 'yard-arrival'
+  ) {
+    throw new Error(`New Game selector inherited stale identity instead of fresh state: ${JSON.stringify(selector)}`);
+  }
+
+  await key('ArrowRight', 'ArrowRight', 39);
+  const theoSelection = await waitFor(async () => {
+    const current = await selectionState();
+    return current?.selectedAvatarId === 'theo' && current?.playerName === 'Theo' ? current : null;
+  });
+  if (theoSelection.phase !== 'select') {
+    throw new Error(`Character choice did not remain in selection phase: ${JSON.stringify(theoSelection)}`);
+  }
+
+  await key('Enter', 'Enter', 13);
+  const yard = await waitFor(async () => {
+    const current = await selectionState();
+    return current?.phase === 'confirmed' && current?.saved && current?.yardRendered ? current : null;
+  });
+  if (yard.selectedAvatarId !== 'theo' || yard.playerName !== 'Theo') {
+    throw new Error(`Selected New Game identity did not enter onboarding Yard: ${JSON.stringify(yard)}`);
+  }
+
+  const newIdentity = await persistedIdentity();
+  if (newIdentity?.avatarId !== 'theo' || newIdentity?.playerName !== 'Theo') {
+    throw new Error(`Selected New Game identity did not become current state: ${JSON.stringify(newIdentity)}`);
+  }
+
+  console.log('WP0.5D menu, narration, fresh character selection, identity commit and Yard handoff smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
