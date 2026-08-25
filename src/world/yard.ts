@@ -26,12 +26,19 @@ export const OPENING_ROUTE_LANDMARKS: readonly OpeningRouteLandmark[] = [
 ] as const;
 
 export const OPENING_ROUTE_WAYPOINTS = [
-  { x: 1180, y: 660 },
+  { x: 1200, y: 700 },
+  { x: 1450, y: 655 },
   { x: 1560, y: 655 },
   { x: 1840, y: 655 },
   { x: 2140, y: 650 },
-  { x: 2170, y: 566 },
+  { x: 2140, y: 566 },
   { x: 2460, y: 566 },
+  { x: 2140, y: 760 },
+  { x: 2140, y: 900 },
+  { x: 2140, y: 1110 },
+  { x: 2140, y: 1320 },
+  { x: 2400, y: 1432 },
+  { x: 2590, y: 1432 },
 ] as const;
 
 type TreeSpec = { x: number; y: number; scale: number; sortY: number };
@@ -164,7 +171,6 @@ const TREES: TreeSpec[] = [
 
 function drawWorldGround(ctx: CanvasRenderingContext2D): void {
   rect(ctx, 0, 0, YARD_WORLD_WIDTH, YARD_WORLD_HEIGHT, P.grass);
-
   const patches = [
     [30, 30, 300, 80, P.grassLight], [420, 40, 280, 62, P.grassDark], [930, 24, 360, 82, P.grassLight],
     [1320, 40, 390, 90, P.grassDark], [20, 440, 280, 90, P.grassDark], [1420, 410, 310, 110, P.grassLight],
@@ -173,7 +179,6 @@ function drawWorldGround(ctx: CanvasRenderingContext2D): void {
     [2360, 930, 500, 150, P.grassDark], [1640, 1420, 430, 130, P.grassDark], [2480, 1450, 380, 100, P.grassLight],
   ] as const;
   for (const [x, y, w, h, colour] of patches) rect(ctx, x, y, w, h, colour);
-
   for (let x = 24; x < YARD_WORLD_WIDTH; x += 116) {
     const y = 28 + ((x * 17) % 1500);
     grassTuft(ctx, x, y);
@@ -188,15 +193,12 @@ function drawOldYardPaths(ctx: CanvasRenderingContext2D): void {
   rect(ctx, 730, 0, 200, 300, P.dirtDark);
   rect(ctx, 744, 0, 172, 310, P.dirt);
   rect(ctx, 758, 0, 144, 316, P.dirtLight);
-
   rect(ctx, 260, 500, 410, 92, P.dirtDark);
   rect(ctx, 270, 508, 400, 76, P.dirt);
   rect(ctx, 282, 516, 388, 60, P.dirtLight);
-
   rect(ctx, 1050, 620, 520, 94, P.dirtDark);
   rect(ctx, 1050, 630, 520, 74, P.dirt);
   rect(ctx, 1050, 640, 520, 54, P.dirtLight);
-
   rect(ctx, 760, 740, 182, 340, P.dirtDark);
   rect(ctx, 774, 732, 154, 348, P.dirt);
   rect(ctx, 788, 726, 126, 354, P.dirtLight);
@@ -206,30 +208,23 @@ function drawOpeningRoute(ctx: CanvasRenderingContext2D): void {
   rect(ctx, 1550, 606, 640, 112, P.roadDark);
   rect(ctx, 1560, 616, 620, 92, P.road);
   rect(ctx, 1572, 628, 596, 68, P.roadLight);
-
   rect(ctx, 2074, 430, 124, 288, P.roadDark);
   rect(ctx, 2086, 418, 100, 300, P.road);
   rect(ctx, 2100, 410, 72, 304, P.roadLight);
-
   rect(ctx, 2148, 512, 330, 108, P.roadDark);
   rect(ctx, 2148, 522, 330, 88, P.road);
   rect(ctx, 2148, 534, 330, 64, P.roadLight);
-
   rect(ctx, 2052, 680, 154, 770, P.roadDark);
   rect(ctx, 2064, 680, 130, 760, P.road);
   rect(ctx, 2078, 680, 102, 752, P.roadLight);
-
   rect(ctx, 2120, 1364, 800, 126, P.roadDark);
   rect(ctx, 2120, 1376, 800, 102, P.road);
   rect(ctx, 2120, 1390, 800, 74, P.roadLight);
-
   for (let x = 1640; x < 2040; x += 80) {
     rect(ctx, x, 648, 34, 5, P.dirtDark);
     rect(ctx, x + 42, 676, 22, 4, P.dirtDark);
   }
-  for (let y = 750; y < 1320; y += 86) {
-    rect(ctx, 2100, y, 38, 4, P.dirtDark);
-  }
+  for (let y = 750; y < 1320; y += 86) rect(ctx, 2100, y, 38, 4, P.dirtDark);
 }
 
 function drawWestQuarantine(ctx: CanvasRenderingContext2D, now: number): void {
@@ -245,9 +240,7 @@ function drawWestQuarantine(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, 100, 608, 20, 54, P.teal);
   rect(ctx, 106, 614, 8, 40, P.red);
   routeLabel(ctx, 'QUARANTINE', 187, 574);
-  for (const [x, y] of [[330, 616], [366, 638], [322, 670]] as const) {
-    outlineRect(ctx, { x, y, width: 30, height: 28 }, P.wood, P.woodDark, 3);
-  }
+  for (const [x, y] of [[330, 616], [366, 638], [322, 670]] as const) outlineRect(ctx, { x, y, width: 30, height: 28 }, P.wood, P.woodDark, 3);
 }
 
 function drawSouthNursery(ctx: CanvasRenderingContext2D, now: number): void {
@@ -293,9 +286,7 @@ function drawCoreGround(ctx: CanvasRenderingContext2D): void {
   rect(ctx, ox + 464, oy + 310, 242, 50, P.dirtLight);
   rect(ctx, ox + 664, oy + 324, 122, 46, P.dirtDark);
   rect(ctx, ox + 674, oy + 334, 106, 28, P.dirtLight);
-  for (const [x, y] of [[16, 104], [46, 214], [198, 272], [328, 460], [430, 224], [586, 32], [790, 238], [902, 446]] as const) {
-    grassTuft(ctx, ox + x, oy + y);
-  }
+  for (const [x, y] of [[16, 104], [46, 214], [198, 272], [328, 460], [430, 224], [586, 32], [790, 238], [902, 446]] as const) grassTuft(ctx, ox + x, oy + y);
   flower(ctx, ox + 202, oy + 38, P.pink);
   flower(ctx, ox + 230, oy + 54, P.purple);
   flower(ctx, ox + 694, oy + 468, '#ece6b0');
@@ -361,7 +352,6 @@ function drawCoreProps(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, x + 548, y + 216, 28, 20, P.bone);
   rect(ctx, x + 554, y + 210, 16, 8, P.bone);
   rect(ctx, x + 558, y + 214, 8, 4, P.pink);
-
   rect(ctx, x + 512, y + 62, 194, 132, '#87aa5d');
   for (const px of [510, 554, 598, 642, 686]) {
     rect(ctx, x + px, y + 60, 8, 28, P.fenceDark);
@@ -380,7 +370,6 @@ function drawCoreProps(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, x + 626, y + 132, 8, 12, '#bcae87');
   rect(ctx, x + 592, y + 116, 8, 6, P.pink);
   rect(ctx, x + 622, y + 104, blink ? 6 : 3, blink ? 2 : 4, P.ink);
-
   outlineRect(ctx, { x: x + 72, y: y + 302, width: 92, height: 128 }, P.tealDark, '#32453d', 4);
   rect(ctx, x + 82, y + 312, 72, 102, P.glass);
   rect(ctx, x + 88, y + 354, 60, 54, '#8fc692');
@@ -390,7 +379,6 @@ function drawCoreProps(ctx: CanvasRenderingContext2D, now: number): void {
     const by = 320 + ((base - bubbleOffset - 320 + 88) % 88);
     rect(ctx, x + bx, y + by, 5, 5, P.glassLight);
   }
-
   outlineRect(ctx, { x: x + 238, y: y + 392, width: 106, height: 74 }, '#8ca86d', P.fenceDark, 3);
   for (let gx = 246; gx < 336; gx += 14) rect(ctx, x + gx, y + 398, 2, 58, P.fence);
   rect(ctx, x + 274, y + 420, 26, 18, P.bone);
@@ -408,9 +396,7 @@ function drawCorePond(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, x + 732, y + 300, 156, 126, P.water);
   rect(ctx, x + 716, y + 320, 188, 88, P.water);
   const shift = Math.floor(now / 500) % 2 ? 6 : 0;
-  for (const [wx, wy, w] of [[748, 314, 34], [824, 330, 46], [770, 382, 40], [852, 398, 24]] as const) {
-    rect(ctx, x + wx + shift, y + wy, w, 3, P.waterLight);
-  }
+  for (const [wx, wy, w] of [[748, 314, 34], [824, 330, 46], [770, 382, 40], [852, 398, 24]] as const) rect(ctx, x + wx + shift, y + wy, w, 3, P.waterLight);
   rect(ctx, x + 684, y + 344, 96, 14, P.woodDark);
   for (let bx = 690; bx < 776; bx += 14) {
     rect(ctx, x + bx, y + 338, 10, 26, P.woodLight);
@@ -435,17 +421,13 @@ function drawCorePlants(ctx: CanvasRenderingContext2D, now: number): void {
 }
 
 function drawAmbientDetail(ctx: CanvasRenderingContext2D, now: number): void {
-  for (const [x, y] of [[420, 126], [488, 154], [1340, 240], [1376, 268], [434, 874], [474, 908], [1760, 520], [1870, 470], [2290, 810], [2540, 1080], [2680, 1120]] as const) {
-    bush(ctx, x, y);
-  }
+  for (const [x, y] of [[420, 126], [488, 154], [1340, 240], [1376, 268], [434, 874], [474, 908], [1760, 520], [1870, 470], [2290, 810], [2540, 1080], [2680, 1120]] as const) bush(ctx, x, y);
   outlineRect(ctx, { x: 1240, y: 130, width: 124, height: 78 }, '#92ad68', P.fenceDark, 3);
   for (let x = 1250; x < 1350; x += 18) rect(ctx, x, 138, 2, 60, P.fence);
   rect(ctx, 1280, 160, 30, 22, P.bone);
   rect(ctx, 1302, 150, 18, 16, P.bone);
   if (Math.floor(now / 820) % 2 === 0) rect(ctx, 1312, 154, 3, 3, P.ink);
-  for (const [x, y, colour] of [[548, 942, P.purple], [588, 962, P.orange], [1374, 842, P.pink], [1420, 864, P.yellow], [1810, 735, P.purple], [1990, 790, P.orange], [2390, 1070, P.pink], [2660, 1330, P.yellow]] as const) {
-    flower(ctx, x, y, colour);
-  }
+  for (const [x, y, colour] of [[548, 942, P.purple], [588, 962, P.orange], [1374, 842, P.pink], [1420, 864, P.yellow], [1810, 735, P.purple], [1990, 790, P.orange], [2390, 1070, P.pink], [2660, 1330, P.yellow]] as const) flower(ctx, x, y, colour);
 }
 
 function drawRouteFurniture(ctx: CanvasRenderingContext2D): void {
@@ -456,14 +438,12 @@ function drawRouteFurniture(ctx: CanvasRenderingContext2D): void {
   }
   outlineRect(ctx, { x: 1826, y: 568, width: 118, height: 48 }, P.roof, P.woodDark, 3);
   routeLabel(ctx, 'LAB  →', 1885, 592);
-
   for (const y of [760, 930, 1100, 1270]) {
     rect(ctx, 2014, y, 8, 74, P.woodDark);
     rect(ctx, 2200, y, 8, 74, P.woodDark);
     rect(ctx, 2020, y + 12, 180, 5, P.fence);
     rect(ctx, 2020, y + 48, 180, 5, P.fence);
   }
-
   outlineRect(ctx, { x: 2190, y: 1308, width: 146, height: 54 }, P.red, P.woodDark, 4);
   routeLabel(ctx, 'LOCAL PIT  →', 2263, 1335);
 }
@@ -477,7 +457,6 @@ function drawMasterLabExterior(ctx: CanvasRenderingContext2D, now: number): void
   rect(ctx, x - 18, y + 10, 556, 40, P.roofDark);
   rect(ctx, x, y - 4, 520, 28, P.roof);
   rect(ctx, x + 32, y - 16, 456, 18, P.roofLight);
-
   rect(ctx, x + 74, y - 58, 38, 54, P.woodDark);
   rect(ctx, x + 84, y - 68, 20, 58, '#6f604c');
   rect(ctx, x + 382, y - 36, 18, 30, P.tealDark);
@@ -487,55 +466,45 @@ function drawMasterLabExterior(ctx: CanvasRenderingContext2D, now: number): void
     rect(ctx, x + 462, y - 62, 8, 8, '#cdd7bb');
     rect(ctx, x + 474, y - 76, 11, 11, '#b6c9b0');
   }
-
   for (const wx of [48, 158, 352, 430]) {
     outlineRect(ctx, { x: x + wx, y: y + 92, width: 72, height: 68 }, P.glass, P.tealDark, 4);
     rect(ctx, x + wx + 8, y + 100, 56, 52, P.glassLight);
     rect(ctx, x + wx + 34, y + 98, 4, 56, P.tealDark);
   }
-
   outlineRect(ctx, { x: x + 214, y: y + 160, width: 104, height: 176 }, '#76513e', '#4a382f', 6);
   rect(ctx, x + 226, y + 172, 80, 152, P.wood);
   rect(ctx, x + 240, y + 188, 52, 30, P.yellow);
   routeLabel(ctx, 'MASTER', x + 266, y + 203);
   rect(ctx, x + 292, y + 252, 7, 7, P.ink);
-
   outlineRect(ctx, { x: x + 44, y: y + 192, width: 122, height: 118 }, P.tealDark, '#32453d', 4);
   rect(ctx, x + 54, y + 202, 102, 98, P.glass);
   rect(ctx, x + 64, y + 258, 82, 32, Math.floor(now / 520) % 2 ? '#88bc79' : '#98c985');
   rect(ctx, x + 86, y + 226, 32, 40, P.pink);
-
   outlineRect(ctx, { x: x + 360, y: y + 194, width: 112, height: 116 }, P.glass, P.tealDark, 4);
   rect(ctx, x + 370, y + 204, 92, 96, '#a8cfad');
   for (let gx = x + 378; gx < x + 460; gx += 18) rect(ctx, gx, y + 204, 2, 96, P.teal);
-
   outlineRect(ctx, { x: x + 164, y: y + 44, width: 192, height: 36 }, P.roof, P.woodDark, 4);
-  routeLabel(ctx, "SPLICENSTEIN LAB", x + 260, y + 62);
+  routeLabel(ctx, 'SPLICENSTEIN LAB', x + 260, y + 62);
 }
 
 function drawDebtEncounterLayby(ctx: CanvasRenderingContext2D, now: number): void {
   outlineRect(ctx, { x: 1840, y: 842, width: 466, height: 250 }, P.stone, P.stoneDark, 6);
   rect(ctx, 1852, 854, 442, 226, P.stoneLight);
-  for (let x = 1870; x < 2280; x += 54) {
-    rect(ctx, x, 878 + ((x / 54) % 3) * 46, 20, 4, P.stone);
-  }
+  for (let x = 1870; x < 2280; x += 54) rect(ctx, x, 878 + ((x / 54) % 3) * 46, 20, 4, P.stone);
   rect(ctx, 1940, 916, 250, 8, P.stoneDark);
   rect(ctx, 1940, 1012, 250, 8, P.stoneDark);
-
   for (const x of [1880, 2252]) {
     rect(ctx, x, 884, 12, 122, P.woodDark);
     rect(ctx, x + 4, 884, 8, 122, P.wood);
     rect(ctx, x - 12, 884, 38, 10, P.roofDark);
     rect(ctx, x - 8, 996, 30, 12, P.stoneDark);
   }
-
   outlineRect(ctx, { x: 1958, y: 940, width: 72, height: 46 }, P.wood, P.woodDark, 4);
   rect(ctx, 1968, 950, 52, 26, P.red);
   rect(ctx, 2068, 944, 128, 18, P.woodDark);
   rect(ctx, 2078, 962, 10, 34, P.woodDark);
   rect(ctx, 2176, 962, 10, 34, P.woodDark);
   if (Math.floor(now / 900) % 2 === 0) rect(ctx, 1884, 908, 4, 8, P.yellow);
-
   outlineRect(ctx, { x: 2038, y: 866, width: 126, height: 40 }, P.stoneDark, P.woodDark, 3);
   routeLabel(ctx, 'OLD TOLL', 2101, 886);
 }
@@ -549,10 +518,8 @@ function drawPitRoadApproach(ctx: CanvasRenderingContext2D, now: number): void {
   }
   rect(ctx, 2360, 1336, 500, 5, P.fence);
   rect(ctx, 2360, 1518, 500, 5, P.fence);
-
   outlineRect(ctx, { x: 2544, y: 1300, width: 172, height: 56 }, P.red, P.woodDark, 5);
   routeLabel(ctx, 'LOCAL PIT  0.4 km', 2630, 1328);
-
   rect(ctx, 2820, 1386, 18, 82, P.woodDark);
   rect(ctx, 2860, 1386, 18, 82, P.woodDark);
   rect(ctx, 2820, 1392, 58, 10, P.red);
@@ -579,12 +546,9 @@ export const YARD_COLLIDERS: readonly YardRect[] = [
   { x: 1480, y: 220, width: 216, height: 410 },
   { x: 1480, y: 674, width: 216, height: 156 },
   { x: 2234, y: 150, width: 532, height: 372 },
-  { x: 1834, y: 836, width: 472, height: 24 },
-  { x: 1834, y: 1074, width: 472, height: 24 },
-  { x: 1834, y: 860, width: 26, height: 214 },
-  { x: 2280, y: 860, width: 26, height: 214 },
+  { x: 1868, y: 876, width: 38, height: 142 },
+  { x: 2240, y: 876, width: 38, height: 142 },
   { x: 1952, y: 934, width: 84, height: 58 },
-  { x: 2062, y: 938, width: 138, height: 66 },
   { x: 2810, y: 1378, width: 78, height: 98 },
 ];
 
@@ -594,9 +558,7 @@ function overlaps(a: YardRect, b: YardRect): boolean {
 
 export function isYardPositionBlocked(feetX: number, feetY: number): boolean {
   const hitbox: YardRect = { x: feetX - 11, y: feetY - 13, width: 22, height: 15 };
-  if (hitbox.x < 12 || hitbox.y < 12 || hitbox.x + hitbox.width > YARD_WORLD_WIDTH - 12 || hitbox.y + hitbox.height > YARD_WORLD_HEIGHT - 12) {
-    return true;
-  }
+  if (hitbox.x < 12 || hitbox.y < 12 || hitbox.x + hitbox.width > YARD_WORLD_WIDTH - 12 || hitbox.y + hitbox.height > YARD_WORLD_HEIGHT - 12) return true;
   if (YARD_COLLIDERS.some((collider) => overlaps(hitbox, collider))) return true;
   for (const tree of TREES) {
     const s = tree.scale;
@@ -638,20 +600,15 @@ export function drawApprenticeSplicerYardBase(ctx: CanvasRenderingContext2D, now
   drawMasterLabExterior(ctx, now);
   drawDebtEncounterLayby(ctx, now);
   drawPitRoadApproach(ctx, now);
-
   for (const tree of TREES) treeTrunk(ctx, tree);
-  for (const tree of TREES) {
-    if (tree.sortY <= playerFeetY) treeCanopy(ctx, tree);
-  }
+  for (const tree of TREES) if (tree.sortY <= playerFeetY) treeCanopy(ctx, tree);
   ctx.restore();
 }
 
 export function drawApprenticeSplicerYardForeground(ctx: CanvasRenderingContext2D, playerFeetY: number): void {
   ctx.save();
   ctx.imageSmoothingEnabled = false;
-  for (const tree of TREES) {
-    if (tree.sortY > playerFeetY) treeCanopy(ctx, tree);
-  }
+  for (const tree of TREES) if (tree.sortY > playerFeetY) treeCanopy(ctx, tree);
   rect(ctx, 0, YARD_WORLD_HEIGHT - 20, YARD_WORLD_WIDTH, 20, P.grassDeep);
   ctx.restore();
 }
