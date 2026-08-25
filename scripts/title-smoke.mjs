@@ -100,6 +100,22 @@ try {
     })()`);
   }
 
+  async function canvasComplexity() {
+    return evaluate(`(() => {
+      const canvas = document.querySelector('#visual-reset-stage');
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) return 0;
+      const colours = new Set();
+      for (let y = 40; y < 680; y += 24) {
+        for (let x = 40; x < 1240; x += 24) {
+          const pixel = ctx.getImageData(x, y, 1, 1).data;
+          colours.add((pixel[0] << 16) | (pixel[1] << 8) | pixel[2]);
+        }
+      }
+      return colours.size;
+    })()`);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', {
@@ -121,10 +137,12 @@ try {
   const baselineState = await waitFor(async () => {
     const current = await titleState();
     if (current?.error) throw new Error(current.error);
-    return current?.titleRendered && current.elapsedMs >= 1250 && current.elapsedMs < 1600 && current.corruption === 0 ? current : null;
+    if (!(current?.titleRendered && current.elapsedMs >= 1250 && current.elapsedMs < 1600 && current.corruption === 0)) return null;
+    const complexity = await canvasComplexity();
+    return complexity >= 64 ? { ...current, complexity } : null;
   });
   const baselineHash = await canvasHash();
-  if (!baselineHash || baselineState.advanced || baselineState.readyToAdvance) {
+  if (!baselineHash || baselineState.complexity < 64 || baselineState.advanced || baselineState.readyToAdvance) {
     throw new Error(`Unexpected bright title baseline: ${JSON.stringify({ baselineState, baselineHash })}`);
   }
 
@@ -179,7 +197,7 @@ try {
     throw new Error(`Title did not hand off cleanly to WP0.5B menu: ${JSON.stringify({ finalTitle, menu })}`);
   }
 
-  console.log('WP0.5A bright title, visible corruption, clean recovery, skip and main-menu handoff smoke passed.');
+  console.log('WP0.5A illustrated bright title, visible corruption, clean recovery, skip and main-menu handoff smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
