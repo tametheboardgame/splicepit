@@ -25,6 +25,7 @@ export type TitleVisualState = {
   readyToAdvance: boolean;
   promptAlpha: number;
   corruptionEventsPassed: number;
+  timelineElapsedMs: number;
 };
 
 export type CorruptionOverlayOptions = {
@@ -42,6 +43,7 @@ let happyReference: HTMLImageElement | null = null;
 let happyStatus: HappySplashStatus = 'idle';
 let happyError: string | null = null;
 let happyReadyAtElapsed: number | null = null;
+let skipRequested = false;
 
 function syncHappyDebug(): void {
   (globalThis as typeof globalThis & { __SPLICEPIT_HAPPY_SPLASH__?: HappySplashDebug }).__SPLICEPIT_HAPPY_SPLASH__ = {
@@ -98,7 +100,7 @@ export function titleVisualState(elapsedMs: number): TitleVisualState {
 
   const readyToAdvance = elapsed >= TITLE_ADVANCE_MS;
   const promptAlpha = readyToAdvance ? 0.62 + Math.sin(elapsed / 380) * 0.24 : 0;
-  return { reveal, corruption, readyToAdvance, promptAlpha, corruptionEventsPassed };
+  return { reveal, corruption, readyToAdvance, promptAlpha, corruptionEventsPassed, timelineElapsedMs: elapsed };
 }
 
 function rect(
@@ -113,6 +115,24 @@ function rect(
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
 }
 
+function markHappyReady(): void {
+  happyStatus = 'ready';
+  happyError = null;
+  syncHappyDebug();
+}
+
+function markHappyError(): void {
+  happyStatus = 'error';
+  happyError = `Failed to load ${HAPPY_TITLE_SPLASH_SRC}`;
+  syncHappyDebug();
+}
+
+function reconcileHappyImageState(): void {
+  if (!happyReference || happyStatus !== 'loading' || !happyReference.complete) return;
+  if (happyReference.naturalWidth > 0) markHappyReady();
+  else markHappyError();
+}
+
 function happyTitleImage(): HTMLImageElement | null {
   if (typeof Image === 'undefined') return null;
   if (!happyReference) {
@@ -120,20 +140,23 @@ function happyTitleImage(): HTMLImageElement | null {
     syncHappyDebug();
     const image = new Image();
     image.decoding = 'async';
-    image.onload = () => {
-      happyStatus = 'ready';
-      happyError = null;
-      syncHappyDebug();
-    };
-    image.onerror = () => {
-      happyStatus = 'error';
-      happyError = `Failed to load ${HAPPY_TITLE_SPLASH_SRC}`;
-      syncHappyDebug();
-    };
+    image.onload = markHappyReady;
+    image.onerror = markHappyError;
     image.src = HAPPY_TITLE_SPLASH_SRC;
     happyReference = image;
   }
+
+  // Some mobile/cached-image paths can complete without delivering an event to
+  // our handler. Reconcile from the browser's authoritative image state every frame.
+  reconcileHappyImageState();
   return happyStatus === 'ready' && happyReference.naturalWidth > 0 ? happyReference : null;
+}
+
+export function forceTitleReady(elapsedMs: number): void {
+  skipRequested = true;
+  if (happyStatus === 'ready' && happyReadyAtElapsed !== null) {
+    happyReadyAtElapsed = Math.max(0, elapsedMs - TITLE_ADVANCE_MS);
+  }
 }
 
 function drawHappyReference(
@@ -144,8 +167,8 @@ function drawHappyReference(
   ctx.save();
   ctx.imageSmoothingEnabled = true;
 
-  // Always keep a bright frame underneath the title art. A slow or failed
-  // asset load must never leave the last dark-corruption frame on screen.
+  // Always repaint a bright frame underneath the title art. A slow or failed
+  // asset load must never leave the previous dark-corruption frame visible.
   ctx.globalAlpha = 1;
   rect(ctx, 0, 0, TITLE_VIEW_WIDTH, 382, '#bce9dc');
   rect(ctx, 0, 382, TITLE_VIEW_WIDTH, TITLE_VIEW_HEIGHT - 382, '#6fa36e');
@@ -220,14 +243,14 @@ export function drawCorruptionOverlay(ctx: CanvasRenderingContext2D, options: Co
 
 export function drawTitleScreen(ctx: CanvasRenderingContext2D, elapsedMs: number): TitleVisualState {
   const image = happyTitleImage();
-  if (image && happyReadyAtElapsed === null) happyReadyAtElapsed = elapsedMs;
+  if (image && happyReadyAtElapsed === null) {
+    happyReadyAtElapsed = skipRequested ? Math.max(0, elapsedMs - TITLE_ADVANCE_MS) : elapsedMs;
+  }
 
   const visualElapsed =
     happyStatus === 'ready' && happyReadyAtElapsed !== null
       ? Math.max(0, elapsedMs - happyReadyAtElapsed)
-      : happyStatus === 'error'
-        ? elapsedMs
-        : 0;
+      : 0;
   const state = titleVisualState(visualElapsed);
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -235,7 +258,7 @@ export function drawTitleScreen(ctx: CanvasRenderingContext2D, elapsedMs: number
   drawHappyReference(ctx, image, state.reveal);
 
   // Corruption is only permitted after the approved happy splash has actually
-  // loaded. This prevents cold/mobile loads from ever appearing permanently dark.
+  // loaded. Failed/slow loads therefore stay visibly bright, never permanently dark.
   if (image && state.corruption > 0) {
     drawDarkReference(ctx, state.corruption, visualElapsed);
     drawCorruptionOverlay(ctx, { amount: state.corruption, elapsedMs: visualElapsed });
