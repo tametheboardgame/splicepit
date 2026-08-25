@@ -1,3 +1,4 @@
+import { drawFrontDoorBackdropPolish, drawMenuBackdropPolish } from './frontDoorArt.js';
 import { TITLE_VIEW_HEIGHT, TITLE_VIEW_WIDTH } from './titleCorruption.js';
 
 export type MainMenuItemId = 'new-game' | 'continue' | 'settings';
@@ -73,7 +74,6 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, elapsedMs: number): void {
     rect(ctx, x - 6, 618 + bob, 18, 6, '#86b979');
   }
 
-  // A tiny world-native biotech vignette, deliberately cheerful until inspected closely.
   rect(ctx, 98, 398, 132, 170, '#365644');
   rect(ctx, 106, 406, 116, 154, '#9adbc6');
   rect(ctx, 116, 420, 96, 126, '#6aab9b');
@@ -127,6 +127,7 @@ function drawWoodPlank(
   disabled: boolean,
 ): void {
   const border = selected && !disabled ? '#fff0a9' : '#365644';
+  rect(ctx, x + 6, y + height + 3, width, 5, '#4d3c2d');
   rect(ctx, x - 6, y - 6, width + 12, height + 12, border);
   rect(ctx, x, y, width, height, disabled ? '#776b58' : '#9b7046');
   rect(ctx, x + 8, y + 8, width - 16, height - 16, disabled ? '#8a7e69' : '#b78755');
@@ -134,6 +135,10 @@ function drawWoodPlank(
   rect(ctx, x + 28, y + height - 18, width - 56, 4, disabled ? '#685f51' : '#7e5639');
   rect(ctx, x + 14, y + 18, 5, 5, '#4d3c2d');
   rect(ctx, x + width - 19, y + height - 23, 5, 5, '#4d3c2d');
+  if (selected && !disabled) {
+    rect(ctx, x - 18, y + 17, 10, height - 34, '#d96b3b');
+    rect(ctx, x + width + 8, y + 17, 10, height - 34, '#7ebc69');
+  }
 }
 
 function drawMenu(ctx: CanvasRenderingContext2D, state: MainMenuRenderState): void {
@@ -161,24 +166,29 @@ function drawMenu(ctx: CanvasRenderingContext2D, state: MainMenuRenderState): vo
 
   const selectedItem = MAIN_MENU_ITEMS[state.selectedIndex];
   const status = state.statusText || selectedItem?.note || '';
+  rect(ctx, 410, 604, 460, 62, '#365644');
+  rect(ctx, 418, 612, 444, 46, '#496448');
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '800 14px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.fillStyle = '#eff8dc';
-  ctx.fillText(status, 640, 622);
+  ctx.fillText(status, 640, 626);
   ctx.font = '800 12px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.fillStyle = '#dff6e8';
-  ctx.fillText('↑ ↓ / W S · ENTER · CLICK', 640, 650);
+  ctx.fillText('↑ ↓ / W S · ENTER · CLICK', 640, 648);
   ctx.restore();
 }
 
 function drawSettings(ctx: CanvasRenderingContext2D): void {
+  rect(ctx, 378, 278, 524, 334, '#26382f');
   rect(ctx, 386, 286, 508, 318, '#365644');
   rect(ctx, 396, 296, 488, 298, '#9b7046');
   rect(ctx, 410, 310, 460, 270, '#b78755');
   rect(ctx, 428, 330, 424, 6, '#c89a64');
   rect(ctx, 428, 466, 424, 5, '#7e5639');
+  rect(ctx, 398, 344, 8, 160, '#315f5b');
+  rect(ctx, 874, 344, 8, 160, '#315f5b');
 
   ctx.save();
   ctx.textAlign = 'center';
@@ -252,7 +262,9 @@ export function drawMainMenuScreen(
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
   drawBackdrop(ctx, elapsedMs);
+  drawFrontDoorBackdropPolish(ctx, elapsedMs, 'menu');
   drawLogo(ctx);
+  drawMenuBackdropPolish(ctx, elapsedMs);
   if (state.screen === 'settings') drawSettings(ctx);
   else drawMenu(ctx, state);
 }

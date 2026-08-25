@@ -1,4 +1,5 @@
 import type { DialoguePageDefinition, DialoguePageVisualState } from '../dialogue/presentation.js';
+import { drawDialogueBackdropPolish, drawFrontDoorBackdropPolish } from './frontDoorArt.js';
 import { drawCorruptionOverlay, TITLE_VIEW_HEIGHT, TITLE_VIEW_WIDTH } from './titleCorruption.js';
 
 export const DIALOGUE_VIEW_WIDTH = TITLE_VIEW_WIDTH;
@@ -103,8 +104,10 @@ function drawPortrait(
   const corruptedImage = page.portrait.corruptedSrc ? getPortrait(page.portrait.corruptedSrc) : null;
   const image = corrupted && corruptedImage ? corruptedImage : normalImage;
 
+  rect(ctx, x - 12, y - 12, PORTRAIT_SIZE + 24, PORTRAIT_SIZE + 24, '#26382f');
   rect(ctx, x - 8, y - 8, PORTRAIT_SIZE + 16, PORTRAIT_SIZE + 16, corrupted ? '#611d26' : '#365644');
   rect(ctx, x, y, PORTRAIT_SIZE, PORTRAIT_SIZE, corrupted ? '#1b1115' : '#9adbc6');
+  rect(ctx, x + 7, y + 7, PORTRAIT_SIZE - 14, 4, corrupted ? '#6f2731' : '#dff6e8');
   if (image) {
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -121,6 +124,13 @@ function drawPortrait(
     ctx.ellipse(x + PORTRAIT_SIZE / 2, y + 142, 58, 46, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  }
+
+  for (const [boltX, boltY] of [[x - 5, y - 5], [x + PORTRAIT_SIZE + 5, y - 5], [x - 5, y + PORTRAIT_SIZE + 5], [x + PORTRAIT_SIZE + 5, y + PORTRAIT_SIZE + 5]] as const) {
+    ctx.fillStyle = '#f2dfae';
+    ctx.beginPath();
+    ctx.arc(boltX, boltY, 3, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   if (corrupted) {
@@ -168,11 +178,28 @@ function drawDialogueFrame(
   pageIndex: number,
   totalPages: number,
 ): void {
+  rect(ctx, FRAME.x - 18, FRAME.y - 15, FRAME.width + 36, FRAME.height + 33, '#26382f');
   rect(ctx, FRAME.x - 10, FRAME.y - 10, FRAME.width + 20, FRAME.height + 20, '#365644');
   rect(ctx, FRAME.x, FRAME.y, FRAME.width, FRAME.height, '#9b7046');
   rect(ctx, FRAME.x + 12, FRAME.y + 12, FRAME.width - 24, FRAME.height - 24, '#f2dfae');
   rect(ctx, FRAME.x + 24, FRAME.y + 25, FRAME.width - 48, 5, '#fff0a9');
   rect(ctx, FRAME.x + 24, FRAME.y + FRAME.height - 31, FRAME.width - 48, 4, '#c89a64');
+  rect(ctx, FRAME.x + 24, FRAME.y + 38, 4, FRAME.height - 82, '#d7c28a');
+  rect(ctx, FRAME.x + FRAME.width - 28, FRAME.y + 38, 4, FRAME.height - 82, '#d7c28a');
+
+  for (const [x, y] of [
+    [FRAME.x - 5, FRAME.y - 5],
+    [FRAME.x + FRAME.width + 5, FRAME.y - 5],
+    [FRAME.x - 5, FRAME.y + FRAME.height + 5],
+    [FRAME.x + FRAME.width + 5, FRAME.y + FRAME.height + 5],
+  ] as const) {
+    ctx.fillStyle = '#f2dfae';
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#634a36';
+    ctx.fillRect(x - 1, y - 3, 2, 6);
+  }
 
   drawPortrait(ctx, page, visual);
 
@@ -183,8 +210,10 @@ function drawDialogueFrame(
 
   if (page.speaker) {
     const nameWidth = Math.max(160, Math.min(420, 42 + page.speaker.length * 13));
+    rect(ctx, textX - 13, FRAME.y - 33, nameWidth + 26, 54, '#26382f');
     rect(ctx, textX - 8, FRAME.y - 28, nameWidth + 16, 44, '#365644');
     rect(ctx, textX, FRAME.y - 20, nameWidth, 28, '#b78755');
+    rect(ctx, textX + 8, FRAME.y - 15, nameWidth - 16, 3, '#c89a64');
     ctx.save();
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -219,6 +248,7 @@ function drawDialogueFrame(
       [FRAME.x + FRAME.width - 42, FRAME.y + FRAME.height - 56],
       [FRAME.x + FRAME.width - 53, FRAME.y + FRAME.height - 42],
     ], '#d96b3b');
+    rect(ctx, FRAME.x + FRAME.width - 68, FRAME.y + FRAME.height - 61, 30, 3, '#fff0a9');
   }
 }
 
@@ -263,6 +293,8 @@ export function drawDialogueScreen(
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
   drawBrightBackdrop(ctx, elapsedMs);
+  drawFrontDoorBackdropPolish(ctx, elapsedMs, 'dialogue');
+  drawDialogueBackdropPolish(ctx, elapsedMs);
   drawDialogueFrame(ctx, page, visual, pageIndex, totalPages);
 
   ctx.save();
