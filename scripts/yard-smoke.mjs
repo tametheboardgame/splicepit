@@ -97,7 +97,7 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1` });
 
   await waitFor(async () => (await state())?.ready === true, 20000);
   await evaluate(`localStorage.clear()`);
