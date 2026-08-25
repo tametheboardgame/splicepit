@@ -88,13 +88,23 @@ function getPortrait(src: string): HTMLImageElement | null {
   return image.complete && image.naturalWidth > 0 ? image : null;
 }
 
-function drawPortrait(ctx: CanvasRenderingContext2D, page: DialoguePageDefinition): void {
+function drawPortrait(
+  ctx: CanvasRenderingContext2D,
+  page: DialoguePageDefinition,
+  visual: DialoguePageVisualState,
+): void {
   if (!page.portrait) return;
   const x = FRAME.x + 26;
   const y = FRAME.y + 44;
-  rect(ctx, x - 8, y - 8, PORTRAIT_SIZE + 16, PORTRAIT_SIZE + 16, '#365644');
-  rect(ctx, x, y, PORTRAIT_SIZE, PORTRAIT_SIZE, '#9adbc6');
-  const image = getPortrait(page.portrait.src);
+  const corrupted = visual.corruption > 0.18;
+
+  // Warm both portrait variants from the first frame so authored corruption pulses can swap instantly.
+  const normalImage = getPortrait(page.portrait.src);
+  const corruptedImage = page.portrait.corruptedSrc ? getPortrait(page.portrait.corruptedSrc) : null;
+  const image = corrupted && corruptedImage ? corruptedImage : normalImage;
+
+  rect(ctx, x - 8, y - 8, PORTRAIT_SIZE + 16, PORTRAIT_SIZE + 16, corrupted ? '#611d26' : '#365644');
+  rect(ctx, x, y, PORTRAIT_SIZE, PORTRAIT_SIZE, corrupted ? '#1b1115' : '#9adbc6');
   if (image) {
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -102,14 +112,23 @@ function drawPortrait(ctx: CanvasRenderingContext2D, page: DialoguePageDefinitio
     ctx.restore();
   } else {
     ctx.save();
-    ctx.fillStyle = '#6aab9b';
+    ctx.fillStyle = corrupted ? '#6f2731' : '#6aab9b';
     ctx.beginPath();
     ctx.arc(x + PORTRAIT_SIZE / 2, y + 66, 38, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#365644';
+    ctx.fillStyle = corrupted ? '#210a0d' : '#365644';
     ctx.beginPath();
     ctx.ellipse(x + PORTRAIT_SIZE / 2, y + 142, 58, 46, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+  }
+
+  if (corrupted) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.72, visual.corruption * 0.9);
+    const slice = Math.max(2, Math.round(visual.corruption * 8));
+    rect(ctx, x - 4, y + 28, PORTRAIT_SIZE + 8, slice, '#d7e971');
+    rect(ctx, x + 18, y + 104, PORTRAIT_SIZE - 24, Math.max(2, slice - 2), '#b8333f');
     ctx.restore();
   }
 }
@@ -155,7 +174,7 @@ function drawDialogueFrame(
   rect(ctx, FRAME.x + 24, FRAME.y + 25, FRAME.width - 48, 5, '#fff0a9');
   rect(ctx, FRAME.x + 24, FRAME.y + FRAME.height - 31, FRAME.width - 48, 4, '#c89a64');
 
-  drawPortrait(ctx, page);
+  drawPortrait(ctx, page, visual);
 
   const hasPortrait = Boolean(page.portrait);
   const textX = FRAME.x + (hasPortrait ? 232 : 56);

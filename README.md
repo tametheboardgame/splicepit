@@ -19,7 +19,7 @@ Human review has accepted the foundation established across WP0.4C–G and WP0.4
 - four-direction movement, collision and camera feel;
 - in-world character-selection presentation.
 
-WP0.5A established the accepted bright/corrupted SplicePit title treatment. WP0.5B added the world-native Main Menu shell. WP0.5C is accepted and merged, providing the reusable bright/corrupted narration and dialogue presentation between New Game and the existing character-selection runtime.
+WP0.5A established the accepted bright/corrupted SplicePit title treatment. WP0.5B added the world-native Main Menu shell. WP0.5C is accepted and merged, providing the reusable bright/corrupted narration and dialogue presentation between New Game and the existing character-selection runtime. The opening narration is delivered by **Dr. Viktor Splicenstein**, the player's apparently dependable SpliceMaster; authored corruption pulses briefly replace his friendly portrait with a much more disturbing version of the same character.
 
 The old player-facing Lab/Splice/Battle presentation and the rejected dark registration-form character selector are prototype history and must not return.
 
@@ -29,13 +29,13 @@ The current environment art is **not final fidelity**. Its direction and scale a
 
 Development now proceeds towards the first real opening vertical slice:
 
-`Splash / Title → Main Menu → New Game → Opening narration → Character choice → Basic onboarding → Find Master → RinoCow disaster → Debt confrontation → First splice tutorial → First local Pit fight → result / next hook`
+`Splash / Title → Main Menu → New Game → Opening narration → Character choice → Basic onboarding → Find Dr. Viktor Splicenstein → RinoCow disaster → Debt confrontation → First splice tutorial → First local Pit fight → result / next hook`
 
 The core tonal thesis is a bright, colourful, inviting monster-RPG surface with biological horror, brutality and a darker visual layer repeatedly trying to break through.
 
 The title screen establishes this immediately: cheerful `SplicePit` presentation, brief corruption/flicker into the darker concept-art identity, then back to normal.
 
-The opening deliberately satirises the optimistic monster-RPG introduction, then teaches controls, Bag, Map and objectives before sending the player to their Master. The Master is killed by his own spliced **RinoCow**, the inherited debt becomes the player's problem, the player learns the splice bench, creates a viable first creature, and completes the first local Pit fight.
+The opening deliberately satirises the optimistic monster-RPG introduction, then teaches controls, Bag, Map and objectives before sending the player to Dr. Viktor Splicenstein. Viktor is killed by his own spliced **RinoCow**, the inherited debt becomes the player's problem, the player learns the splice bench, creates a viable first creature, and completes the first local Pit fight.
 
 Proper New Game / Continue / autosave behaviour is deliberately scheduled near the end of this opening-slice build. Current refresh behaviour is not a blocker.
 
@@ -48,7 +48,7 @@ Proper New Game / Continue / autosave behaviour is deliberately scheduled near t
 A new implementation session should read these in order:
 
 - `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-25.md` — **current authoritative execution override from the accepted graphics-first foundation through the first Pit fight**.
-- `docs/ROADMAP.md` — long-range master execution roadmap; older R0.4I/J–R0.8 sequencing is overridden where the dated opening-slice roadmap conflicts.
+- `docs/ROADMAP.md` — long-range master plan; older R0.4I/J–R0.8 sequencing is overridden where the dated opening-slice roadmap conflicts.
 - `docs/VISUAL_DIRECTION_2026-08-23.md` — locked player/environment visual direction.
 - `docs/VISUAL_RESET_CORRECTION_2026-08-24.md` — explicit rejection of the old visible WP0.4E form and rules for what survives.
 - `docs/work-packages/R0_VISUAL_FIRST_REBASE_CORRECTION_2026-08-24.md` — graphics-first correction history and accepted foundation.

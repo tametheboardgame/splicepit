@@ -3,6 +3,7 @@ export type DialogueTextSpeed = 'slow' | 'normal' | 'fast' | 'instant';
 export type DialoguePortraitDefinition = {
   readonly src: string;
   readonly alt: string;
+  readonly corruptedSrc?: string;
 };
 
 export type DialogueCorruptionEvent = {
