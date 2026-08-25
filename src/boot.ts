@@ -1,6 +1,6 @@
 import {
   drawTitleScreen,
-  TITLE_ADVANCE_MS,
+  forceTitleReady,
   TITLE_VIEW_HEIGHT,
   TITLE_VIEW_WIDTH,
 } from './ui/titleCorruption.js';
@@ -405,7 +405,7 @@ if (skipTitle) {
     };
     (globalThis as BootGlobal).__SPLICEPIT_TITLE__ = debug;
 
-    let startedAt = performance.now();
+    const startedAt = performance.now();
     let frameHandle = 0;
     let advancing = false;
 
@@ -414,7 +414,7 @@ if (skipTitle) {
       const elapsedMs = Math.max(0, now - startedAt);
       const state = drawTitleScreen(context, elapsedMs);
       debug.titleRendered = true;
-      debug.elapsedMs = Math.round(elapsedMs);
+      debug.elapsedMs = Math.round(state.timelineElapsedMs);
       debug.corruption = state.corruption;
       debug.corruptionEventsPassed = state.corruptionEventsPassed;
       debug.maxCorruption = Math.max(debug.maxCorruption, state.corruption);
@@ -434,9 +434,8 @@ if (skipTitle) {
     };
 
     const advanceOrSkip = (): void => {
-      const elapsedMs = performance.now() - startedAt;
-      if (elapsedMs < TITLE_ADVANCE_MS) {
-        startedAt = performance.now() - TITLE_ADVANCE_MS;
+      if (!debug.readyToAdvance) {
+        forceTitleReady(Math.max(0, performance.now() - startedAt));
         return;
       }
       handOffToMenu();

@@ -5,7 +5,7 @@ export const TITLE_VIEW_HEIGHT = 720;
 export const TITLE_REVEAL_MS = 1250;
 export const TITLE_ADVANCE_MS = 3200;
 
-const HAPPY_TITLE_SPLASH_SRC = '/assets/splicepit-happy-title-v2.webp';
+const HAPPY_TITLE_SPLASH_SRC = '/assets/splicepit-happy-title-v3.webp';
 const FIRST_PULSES = [
   { start: 1650, duration: 120, strength: 0.48 },
   { start: 1880, duration: 280, strength: 1 },
@@ -25,6 +25,7 @@ export type TitleVisualState = {
   readyToAdvance: boolean;
   promptAlpha: number;
   corruptionEventsPassed: number;
+  timelineElapsedMs: number;
 };
 
 export type CorruptionOverlayOptions = {
@@ -41,6 +42,8 @@ type HappySplashDebug = { status: HappySplashStatus; error: string | null; src: 
 let happyReference: HTMLImageElement | null = null;
 let happyStatus: HappySplashStatus = 'idle';
 let happyError: string | null = null;
+let happyReadyAtElapsed: number | null = null;
+let skipRequested = false;
 
 function syncHappyDebug(): void {
   (globalThis as typeof globalThis & { __SPLICEPIT_HAPPY_SPLASH__?: HappySplashDebug }).__SPLICEPIT_HAPPY_SPLASH__ = {
@@ -97,7 +100,7 @@ export function titleVisualState(elapsedMs: number): TitleVisualState {
 
   const readyToAdvance = elapsed >= TITLE_ADVANCE_MS;
   const promptAlpha = readyToAdvance ? 0.62 + Math.sin(elapsed / 380) * 0.24 : 0;
-  return { reveal, corruption, readyToAdvance, promptAlpha, corruptionEventsPassed };
+  return { reveal, corruption, readyToAdvance, promptAlpha, corruptionEventsPassed, timelineElapsedMs: elapsed };
 }
 
 function rect(
@@ -112,6 +115,24 @@ function rect(
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
 }
 
+function markHappyReady(): void {
+  happyStatus = 'ready';
+  happyError = null;
+  syncHappyDebug();
+}
+
+function markHappyError(): void {
+  happyStatus = 'error';
+  happyError = `Failed to load ${HAPPY_TITLE_SPLASH_SRC}`;
+  syncHappyDebug();
+}
+
+function reconcileHappyImageState(): void {
+  if (!happyReference || happyStatus !== 'loading' || !happyReference.complete) return;
+  if (happyReference.naturalWidth > 0) markHappyReady();
+  else markHappyError();
+}
+
 function happyTitleImage(): HTMLImageElement | null {
   if (typeof Image === 'undefined') return null;
   if (!happyReference) {
@@ -119,33 +140,38 @@ function happyTitleImage(): HTMLImageElement | null {
     syncHappyDebug();
     const image = new Image();
     image.decoding = 'async';
-    image.onload = () => {
-      happyStatus = 'ready';
-      happyError = null;
-      syncHappyDebug();
-    };
-    image.onerror = () => {
-      happyStatus = 'error';
-      happyError = `Failed to load ${HAPPY_TITLE_SPLASH_SRC}`;
-      syncHappyDebug();
-    };
+    image.onload = markHappyReady;
+    image.onerror = markHappyError;
     image.src = HAPPY_TITLE_SPLASH_SRC;
     happyReference = image;
   }
+
+  reconcileHappyImageState();
   return happyStatus === 'ready' && happyReference.naturalWidth > 0 ? happyReference : null;
 }
 
-function drawHappyReference(ctx: CanvasRenderingContext2D, reveal: number): void {
-  const image = happyTitleImage();
+export function forceTitleReady(elapsedMs: number): void {
+  skipRequested = true;
+  if (happyStatus === 'ready' && happyReadyAtElapsed !== null) {
+    happyReadyAtElapsed = Math.max(0, elapsedMs - TITLE_ADVANCE_MS);
+  }
+}
+
+function drawHappyReference(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement | null,
+  reveal: number,
+): void {
   ctx.save();
-  ctx.globalAlpha = smoothstep(reveal);
   ctx.imageSmoothingEnabled = true;
 
+  ctx.globalAlpha = 1;
+  rect(ctx, 0, 0, TITLE_VIEW_WIDTH, 382, '#bce9dc');
+  rect(ctx, 0, 382, TITLE_VIEW_WIDTH, TITLE_VIEW_HEIGHT - 382, '#6fa36e');
+
   if (image) {
+    ctx.globalAlpha = smoothstep(reveal);
     ctx.drawImage(image, 0, 0, TITLE_VIEW_WIDTH, TITLE_VIEW_HEIGHT);
-  } else {
-    rect(ctx, 0, 0, TITLE_VIEW_WIDTH, 382, '#bce9dc');
-    rect(ctx, 0, 382, TITLE_VIEW_WIDTH, TITLE_VIEW_HEIGHT - 382, '#6fa36e');
   }
 
   ctx.restore();
@@ -212,14 +238,24 @@ export function drawCorruptionOverlay(ctx: CanvasRenderingContext2D, options: Co
 }
 
 export function drawTitleScreen(ctx: CanvasRenderingContext2D, elapsedMs: number): TitleVisualState {
-  const state = titleVisualState(elapsedMs);
+  const image = happyTitleImage();
+  if (image && happyReadyAtElapsed === null) {
+    happyReadyAtElapsed = skipRequested ? Math.max(0, elapsedMs - TITLE_ADVANCE_MS) : elapsedMs;
+  }
+
+  const visualElapsed =
+    happyStatus === 'ready' && happyReadyAtElapsed !== null
+      ? Math.max(0, elapsedMs - happyReadyAtElapsed)
+      : 0;
+  const state = titleVisualState(visualElapsed);
+
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  drawHappyReference(ctx, state.reveal);
+  drawHappyReference(ctx, image, state.reveal);
 
-  if (state.corruption > 0) {
-    drawDarkReference(ctx, state.corruption, elapsedMs);
-    drawCorruptionOverlay(ctx, { amount: state.corruption, elapsedMs });
+  if (image && state.corruption > 0) {
+    drawDarkReference(ctx, state.corruption, visualElapsed);
+    drawCorruptionOverlay(ctx, { amount: state.corruption, elapsedMs: visualElapsed });
   }
 
   if (state.readyToAdvance) {
