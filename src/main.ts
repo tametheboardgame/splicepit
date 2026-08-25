@@ -16,6 +16,7 @@ import pipRight from './assets/frames/pip-right.txt?raw';
 import pipUp from './assets/frames/pip-up.txt?raw';
 import { ACTIONS } from './input/actions.js';
 import { BrowserSemanticInput } from './input/BrowserSemanticInput.js';
+import { OpeningObjectiveSequenceController } from './onboarding/openingObjectiveSequence.js';
 import {
   OpeningShellController,
   type OpeningObjectiveId,
@@ -102,9 +103,12 @@ type VisualResetDebug = {
   tutorialPromptAlpha: number;
   tutorialHintLabels: string[];
   tutorialCompleted: TutorialPromptId[];
+  openingSequencePromptId: TutorialPromptId | null;
+  openingSequenceComplete: boolean;
   activeOpeningShell: OpeningShellId | null;
   objectiveId: OpeningObjectiveId;
   objectiveTitle: string;
+  objectiveDetail: string;
   objectiveStep: number;
   objectiveCount: number;
   openingInventory: Array<{ id: string; label: string; quantity: number }>;
@@ -145,6 +149,7 @@ context.imageSmoothingEnabled = false;
 const worldInput = new BrowserSemanticInput();
 worldInput.setEnabled(false);
 const tutorial = new TutorialPromptController();
+const openingSequence = new OpeningObjectiveSequenceController();
 const openingShells = new OpeningShellController();
 
 function preferredNameFor(id: ProtagonistId): string {
@@ -192,9 +197,12 @@ const debug: VisualResetDebug = {
   tutorialPromptAlpha: 0,
   tutorialHintLabels: [],
   tutorialCompleted: [],
+  openingSequencePromptId: openingSequence.currentPromptId(),
+  openingSequenceComplete: false,
   activeOpeningShell: null,
   objectiveId: initialObjective.id,
   objectiveTitle: initialObjective.title,
+  objectiveDetail: initialObjective.detail,
   objectiveStep: openingShells.objectiveStep(),
   objectiveCount: openingShells.objectiveCount(),
   openingInventory: openingShells.inventory().map((entry) => ({
@@ -217,9 +225,12 @@ function syncTutorialDebug(prompt: TutorialPromptView | null): void {
 
 function syncOpeningShellDebug(): void {
   const objective = openingShells.currentObjective();
+  debug.openingSequencePromptId = openingSequence.currentPromptId();
+  debug.openingSequenceComplete = openingSequence.isComplete();
   debug.activeOpeningShell = openingShells.activeShell();
   debug.objectiveId = objective.id;
   debug.objectiveTitle = objective.title;
+  debug.objectiveDetail = objective.detail;
   debug.objectiveStep = openingShells.objectiveStep();
   debug.objectiveCount = openingShells.objectiveCount();
   debug.openingInventory = openingShells.inventory().map((entry) => ({
@@ -307,15 +318,42 @@ function resetYardRuntime(): void {
   debug.lastCollision = false;
 }
 
+function activateReadyOpeningPrompt(now: number): void {
+  const promptId = openingSequence.takeReadyPrompt(now);
+  if (promptId) tutorial.activate(promptId);
+}
+
+function progressOpeningObjectiveSequence(now: number): TutorialPromptView | null {
+  let prompt = tutorial.current(now);
+  const expectedPrompt = openingSequence.currentPromptId();
+
+  if (prompt === null && expectedPrompt && tutorial.isCompleted(expectedPrompt)) {
+    openingSequence.acknowledgeCompletedPrompt(expectedPrompt, now);
+    const objectiveId = openingSequence.objectiveId();
+    if (openingShells.currentObjective().id !== objectiveId) openingShells.setObjective(objectiveId);
+  }
+
+  activateReadyOpeningPrompt(now);
+  if (prompt === null) prompt = tutorial.current(now);
+
+  if (openingSequence.isComplete() && openingShells.currentObjective().id !== 'find-master') {
+    openingShells.setObjective('find-master');
+  }
+
+  return prompt;
+}
+
 function enterYard(): void {
   phase = 'confirmed';
   debug.phase = phase;
   debug.selectionRendered = false;
   resetYardRuntime();
+  const now = performance.now();
   tutorial.resetProgress();
-  tutorial.activate('movement');
   openingShells.reset();
-  syncTutorialDebug(tutorial.current(performance.now()));
+  openingSequence.reset(now);
+  activateReadyOpeningPrompt(now);
+  syncTutorialDebug(tutorial.current(now));
   syncOpeningShellDebug();
   worldInput.setEnabled(true);
   playerNameInput.blur();
@@ -326,6 +364,7 @@ function exitYardToSelection(): void {
   debug.phase = phase;
   debug.yardRendered = false;
   tutorial.clearActive();
+  openingSequence.reset();
   openingShells.closeShell();
   syncTutorialDebug(null);
   syncOpeningShellDebug();
@@ -336,6 +375,24 @@ function exitYardToSelection(): void {
 function updateYard(now: number): void {
   const dt = Math.min(0.032, Math.max(0, (now - lastRenderNow) / 1000));
   lastRenderNow = now;
+
+  if (worldInput.justDown(ACTIONS.INTERACT)) {
+    tutorial.observeAction(ACTIONS.INTERACT, now);
+    if (openingSequence.currentPromptId() === 'interact') {
+      player.moving = false;
+      debug.moving = false;
+      return;
+    }
+  }
+
+  if (worldInput.justDown(ACTIONS.CONFIRM)) {
+    tutorial.observeAction(ACTIONS.CONFIRM, now);
+    if (openingSequence.currentPromptId() === 'confirm-cancel') {
+      player.moving = false;
+      debug.moving = false;
+      return;
+    }
+  }
 
   if (worldInput.justDown(ACTIONS.BAG)) {
     tutorial.observeAction(ACTIONS.BAG, now);
@@ -356,11 +413,18 @@ function updateYard(now: number): void {
   }
 
   if (worldInput.justDown(ACTIONS.CANCEL)) {
+    tutorial.observeAction(ACTIONS.CANCEL, now);
+    const teachingConfirmCancel = openingSequence.currentPromptId() === 'confirm-cancel';
     if (openingShells.isOpen()) {
       openingShells.closeShell();
       player.moving = false;
       debug.moving = false;
       syncOpeningShellDebug();
+      return;
+    }
+    if (teachingConfirmCancel) {
+      player.moving = false;
+      debug.moving = false;
       return;
     }
     exitYardToSelection();
@@ -460,6 +524,7 @@ function renderYard(now: number): void {
   drawApprenticeSplicerYardForeground(context, player.y);
   context.restore();
 
+  const tutorialPrompt = progressOpeningObjectiveSequence(now);
   const objective = openingShells.currentObjective();
   drawOpeningObjectiveTracker(
     context,
@@ -468,7 +533,6 @@ function renderYard(now: number): void {
     openingShells.objectiveCount(),
   );
 
-  const tutorialPrompt = tutorial.current(now);
   if (tutorialPrompt) drawTutorialPrompt(context, tutorialPrompt, YARD_VIEW_WIDTH, YARD_VIEW_HEIGHT);
   syncTutorialDebug(tutorialPrompt);
 

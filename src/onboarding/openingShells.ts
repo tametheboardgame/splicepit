@@ -16,6 +16,7 @@ export interface OpeningObjectiveDefinition {
   readonly id: OpeningObjectiveId;
   readonly title: string;
   readonly detail: string;
+  readonly trackerText?: string;
 }
 
 export const OPENING_INVENTORY: readonly OpeningInventoryEntry[] = [
@@ -39,12 +40,14 @@ export const OPENING_OBJECTIVES: readonly OpeningObjectiveDefinition[] = [
   {
     id: 'yard-orientation',
     title: 'Get your bearings',
-    detail: 'Explore the Apprentice Splicer Yard and learn the basic controls.',
+    detail: 'Learn movement, interaction, your Bag and the Map before leaving the Apprentice Splicer Yard.',
+    trackerText: 'Learn the Yard controls before you leave.',
   },
   {
     id: 'find-master',
     title: 'Find your Master',
-    detail: 'Your Master is waiting for you. The opening route will lead you to him.',
+    detail: 'Your Master is waiting for you. The splice fight of his life is about to start, and he owes some very bad people a great deal of money. Follow the marked LAB route and get to him before this gets worse.',
+    trackerText: 'His make-or-break fight is starting. Follow the LAB route.',
   },
 ] as const;
 

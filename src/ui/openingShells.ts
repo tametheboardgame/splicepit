@@ -98,7 +98,7 @@ export function drawOpeningObjectiveTracker(
   context.fillText(objective.title, 42, 73);
   context.fillStyle = '#3f443d';
   context.font = '14px monospace';
-  context.fillText(objective.detail, 42, 96, 365);
+  context.fillText(objective.trackerText ?? objective.detail, 42, 96, 365);
   context.restore();
 }
 
@@ -203,6 +203,17 @@ function drawMap(
   context.lineTo(mapX + 360, mapY + 111);
   context.stroke();
 
+  if (state.objective.id === 'find-master') {
+    context.fillStyle = '#6b2430';
+    context.fillRect(mapX + 352, mapY + 103, 16, 16);
+    context.strokeStyle = '#fff4ca';
+    context.lineWidth = 2;
+    context.strokeRect(mapX + 352, mapY + 103, 16, 16);
+    context.fillStyle = '#5b3027';
+    context.font = '700 13px monospace';
+    context.fillText('MASTER / LAB →', mapX + 302, mapY + 92);
+  }
+
   const px = mapX + 18 + (Math.max(0, Math.min(state.worldWidth, state.playerX)) / state.worldWidth) * (mapWidth - 36);
   const py = mapY + 18 + (Math.max(0, Math.min(state.worldHeight, state.playerY)) / state.worldHeight) * (mapHeight - 36);
   context.fillStyle = '#6b2430';
@@ -235,7 +246,7 @@ function drawMap(
   context.font = '13px monospace';
   drawWrappedText(
     context,
-    'This is the opening route shell, not the final world map. New areas will be added only as the slice reaches them.',
+    'The Map keeps your current objective and opening route together. More of the region will appear as you travel.',
     infoX,
     panel.y + panel.height - 126,
     220,
