@@ -21,6 +21,11 @@ import { PROTAGONIST_IDS, PROTAGONIST_SPRITES, type ProtagonistId } from './play
 import { gameState } from './state/GameState.js';
 import { loadGame, saveGame } from './systems/saveSystem.js';
 import {
+  TutorialPromptController,
+  type TutorialPromptId,
+  type TutorialPromptView,
+} from './tutorial/tutorialFramework.js';
+import {
   drawApprenticeSelection,
   pointInsideSelectionBox,
   SELECT_RENAME_BUTTON,
@@ -29,6 +34,7 @@ import {
   SELECT_VIEW_WIDTH,
   selectionCharacterAt,
 } from './ui/apprenticeSelection.js';
+import { drawTutorialPrompt } from './ui/tutorialPrompt.js';
 import {
   drawApprenticeSplicerYardBase,
   drawApprenticeSplicerYardForeground,
@@ -84,6 +90,12 @@ type VisualResetDebug = {
   viewportHeight: number;
   worldWidth: number;
   worldHeight: number;
+  tutorialPromptId: TutorialPromptId | null;
+  tutorialPromptVisible: boolean;
+  tutorialPromptCompleting: boolean;
+  tutorialPromptAlpha: number;
+  tutorialHintLabels: string[];
+  tutorialCompleted: TutorialPromptId[];
 };
 
 const root = document.getElementById('game') as HTMLElement | null;
@@ -120,6 +132,7 @@ context.imageSmoothingEnabled = false;
 
 const worldInput = new BrowserSemanticInput();
 worldInput.setEnabled(false);
+const tutorial = new TutorialPromptController();
 
 function preferredNameFor(id: ProtagonistId): string {
   if (gameState.avatarId === id && gameState.playerName) return gameState.playerName;
@@ -159,9 +172,24 @@ const debug: VisualResetDebug = {
   viewportHeight: SELECT_VIEW_HEIGHT,
   worldWidth: YARD_WORLD_WIDTH,
   worldHeight: YARD_WORLD_HEIGHT,
+  tutorialPromptId: null,
+  tutorialPromptVisible: false,
+  tutorialPromptCompleting: false,
+  tutorialPromptAlpha: 0,
+  tutorialHintLabels: [],
+  tutorialCompleted: [],
 };
 
 (globalThis as typeof globalThis & { __SPLICEPIT_VISUAL_RESET__?: VisualResetDebug }).__SPLICEPIT_VISUAL_RESET__ = debug;
+
+function syncTutorialDebug(prompt: TutorialPromptView | null): void {
+  debug.tutorialPromptId = prompt?.id ?? null;
+  debug.tutorialPromptVisible = prompt !== null;
+  debug.tutorialPromptCompleting = prompt?.completing ?? false;
+  debug.tutorialPromptAlpha = prompt ? Math.round(prompt.alpha * 1000) / 1000 : 0;
+  debug.tutorialHintLabels = prompt?.hints.map((hint) => hint.label) ?? [];
+  debug.tutorialCompleted = tutorial.completedIds();
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -246,6 +274,9 @@ function enterYard(): void {
   debug.phase = phase;
   debug.selectionRendered = false;
   resetYardRuntime();
+  tutorial.resetProgress();
+  tutorial.activate('movement');
+  syncTutorialDebug(tutorial.current(performance.now()));
   worldInput.setEnabled(true);
   playerNameInput.blur();
 }
@@ -254,6 +285,8 @@ function exitYardToSelection(): void {
   phase = 'select';
   debug.phase = phase;
   debug.yardRendered = false;
+  tutorial.clearActive();
+  syncTutorialDebug(null);
   worldInput.setEnabled(false);
   syncPreferredName();
 }
@@ -273,6 +306,11 @@ function updateYard(now: number): void {
   if (worldInput.isDown(ACTIONS.MOVE_RIGHT)) dx += 1;
   if (worldInput.isDown(ACTIONS.MOVE_UP)) dy -= 1;
   if (worldInput.isDown(ACTIONS.MOVE_DOWN)) dy += 1;
+
+  if (dx < 0) tutorial.observeAction(ACTIONS.MOVE_LEFT, now);
+  else if (dx > 0) tutorial.observeAction(ACTIONS.MOVE_RIGHT, now);
+  if (dy < 0) tutorial.observeAction(ACTIONS.MOVE_UP, now);
+  else if (dy > 0) tutorial.observeAction(ACTIONS.MOVE_DOWN, now);
 
   player.moving = dx !== 0 || dy !== 0;
   lastCollision = false;
@@ -346,6 +384,11 @@ function renderYard(now: number): void {
   drawYardPlayer(now);
   drawApprenticeSplicerYardForeground(context, player.y);
   context.restore();
+
+  const tutorialPrompt = tutorial.current(now);
+  if (tutorialPrompt) drawTutorialPrompt(context, tutorialPrompt, YARD_VIEW_WIDTH, YARD_VIEW_HEIGHT);
+  syncTutorialDebug(tutorialPrompt);
+
   debug.yardRendered = true;
   debug.selectionRendered = false;
 }
@@ -362,6 +405,7 @@ function renderSelection(now: number): void {
   debug.selectionRendered = true;
   debug.viewportWidth = SELECT_VIEW_WIDTH;
   debug.viewportHeight = SELECT_VIEW_HEIGHT;
+  syncTutorialDebug(null);
   lastRenderNow = now;
 }
 
