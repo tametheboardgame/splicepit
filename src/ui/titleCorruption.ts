@@ -5,7 +5,7 @@ export const TITLE_VIEW_HEIGHT = 720;
 export const TITLE_REVEAL_MS = 1250;
 export const TITLE_ADVANCE_MS = 3200;
 
-const HAPPY_TITLE_SPLASH_SRC = '/assets/splicepit-happy-title-v2.webp';
+const HAPPY_TITLE_SPLASH_SRC = '/assets/splicepit-happy-title-v3.webp';
 const FIRST_PULSES = [
   { start: 1650, duration: 120, strength: 0.48 },
   { start: 1880, duration: 280, strength: 1 },
@@ -41,6 +41,7 @@ type HappySplashDebug = { status: HappySplashStatus; error: string | null; src: 
 let happyReference: HTMLImageElement | null = null;
 let happyStatus: HappySplashStatus = 'idle';
 let happyError: string | null = null;
+let happyReadyAtElapsed: number | null = null;
 
 function syncHappyDebug(): void {
   (globalThis as typeof globalThis & { __SPLICEPIT_HAPPY_SPLASH__?: HappySplashDebug }).__SPLICEPIT_HAPPY_SPLASH__ = {
@@ -135,17 +136,23 @@ function happyTitleImage(): HTMLImageElement | null {
   return happyStatus === 'ready' && happyReference.naturalWidth > 0 ? happyReference : null;
 }
 
-function drawHappyReference(ctx: CanvasRenderingContext2D, reveal: number): void {
-  const image = happyTitleImage();
+function drawHappyReference(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement | null,
+  reveal: number,
+): void {
   ctx.save();
-  ctx.globalAlpha = smoothstep(reveal);
   ctx.imageSmoothingEnabled = true;
 
+  // Always keep a bright frame underneath the title art. A slow or failed
+  // asset load must never leave the last dark-corruption frame on screen.
+  ctx.globalAlpha = 1;
+  rect(ctx, 0, 0, TITLE_VIEW_WIDTH, 382, '#bce9dc');
+  rect(ctx, 0, 382, TITLE_VIEW_WIDTH, TITLE_VIEW_HEIGHT - 382, '#6fa36e');
+
   if (image) {
+    ctx.globalAlpha = smoothstep(reveal);
     ctx.drawImage(image, 0, 0, TITLE_VIEW_WIDTH, TITLE_VIEW_HEIGHT);
-  } else {
-    rect(ctx, 0, 0, TITLE_VIEW_WIDTH, 382, '#bce9dc');
-    rect(ctx, 0, 382, TITLE_VIEW_WIDTH, TITLE_VIEW_HEIGHT - 382, '#6fa36e');
   }
 
   ctx.restore();
@@ -212,14 +219,26 @@ export function drawCorruptionOverlay(ctx: CanvasRenderingContext2D, options: Co
 }
 
 export function drawTitleScreen(ctx: CanvasRenderingContext2D, elapsedMs: number): TitleVisualState {
-  const state = titleVisualState(elapsedMs);
+  const image = happyTitleImage();
+  if (image && happyReadyAtElapsed === null) happyReadyAtElapsed = elapsedMs;
+
+  const visualElapsed =
+    happyStatus === 'ready' && happyReadyAtElapsed !== null
+      ? Math.max(0, elapsedMs - happyReadyAtElapsed)
+      : happyStatus === 'error'
+        ? elapsedMs
+        : 0;
+  const state = titleVisualState(visualElapsed);
+
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  drawHappyReference(ctx, state.reveal);
+  drawHappyReference(ctx, image, state.reveal);
 
-  if (state.corruption > 0) {
-    drawDarkReference(ctx, state.corruption, elapsedMs);
-    drawCorruptionOverlay(ctx, { amount: state.corruption, elapsedMs });
+  // Corruption is only permitted after the approved happy splash has actually
+  // loaded. This prevents cold/mobile loads from ever appearing permanently dark.
+  if (image && state.corruption > 0) {
+    drawDarkReference(ctx, state.corruption, visualElapsed);
+    drawCorruptionOverlay(ctx, { amount: state.corruption, elapsedMs: visualElapsed });
   }
 
   if (state.readyToAdvance) {
