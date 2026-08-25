@@ -36,6 +36,19 @@ test('movement help is contextual, non-modal and completes from real movement in
   assert.equal(tutorial.current(1100 + TUTORIAL_PROMPT_FADE_MS), null);
 });
 
+test('WP0.6C choose and back lesson requires both semantic actions', () => {
+  const tutorial = new TutorialPromptController();
+  assert.equal(tutorial.activate('confirm-cancel'), true);
+  assert.deepEqual(tutorial.current(10)?.hints.map((hint) => hint.label), ['ENTER/SPACE', 'ESC']);
+
+  tutorial.observeAction(ACTIONS.CONFIRM, 20);
+  assert.equal(tutorial.isCompleted('confirm-cancel'), false);
+
+  tutorial.observeAction(ACTIONS.CANCEL, 30);
+  assert.equal(tutorial.isCompleted('confirm-cancel'), true);
+  assert.equal(tutorial.current(30)?.completing, true);
+});
+
 test('manual tutorial prompts remain available for authored splice and battle sequences', () => {
   const tutorial = new TutorialPromptController();
   tutorial.activate('splice');
