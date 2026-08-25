@@ -11,10 +11,24 @@ for (let index = 0; index < 5; index += 1) {
   parts.push(match[1]);
 }
 
-const bytes = Buffer.from(parts.join(''), 'base64');
+let bytes = Buffer.from(parts.join(''), 'base64');
 if (bytes.length < 50_000) throw new Error(`Happy title splash is unexpectedly small: ${bytes.length} bytes`);
 if (bytes.subarray(0, 4).toString('ascii') !== 'RIFF' || bytes.subarray(8, 12).toString('ascii') !== 'WEBP') {
   throw new Error('Happy title splash is not a valid WebP payload');
+}
+
+const declaredLength = bytes.readUInt32LE(4) + 8;
+if (bytes.length === declaredLength - 1) {
+  // RIFF chunks are word-aligned. The approved splash source lost its final
+  // padding byte while being split into text-safe repository chunks. Restore
+  // that structural pad from the file's own RIFF length rather than relying on
+  // a hand-maintained byte count.
+  bytes = Buffer.concat([bytes, Buffer.from([0])]);
+}
+if (bytes.length !== declaredLength) {
+  throw new Error(
+    `Happy title splash RIFF length mismatch: declared ${declaredLength}, reconstructed ${bytes.length}`,
+  );
 }
 
 const output = resolve(root, 'public/assets/splicepit-happy-title-v3.webp');
