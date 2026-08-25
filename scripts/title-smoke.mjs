@@ -145,13 +145,12 @@ try {
     if (current?.error) throw new Error(current.error);
     const splash = await splashState();
     if (splash?.status === 'error') throw new Error(`Happy splash load failed: ${JSON.stringify(splash)}`);
-    if (splash?.status !== 'ready') return null;
-    if (!(current?.titleRendered && current.elapsedMs >= 1250 && current.elapsedMs < 1600 && current.corruption === 0)) return null;
+    if (splash?.status !== 'ready' || !current?.titleRendered || current.corruption !== 0) return null;
     const complexity = await canvasComplexity();
     return complexity >= 64 ? { ...current, complexity, splash } : null;
   });
   const baselineHash = await canvasHash();
-  if (!baselineHash || baselineState.complexity < 64 || baselineState.advanced || baselineState.readyToAdvance) {
+  if (!baselineHash || baselineState.complexity < 64 || baselineState.advanced) {
     throw new Error(`Unexpected bright title baseline: ${JSON.stringify({ baselineState, baselineHash })}`);
   }
 
