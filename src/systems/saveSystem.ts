@@ -26,6 +26,11 @@ export function saveGame(): boolean {
 
 export function loadGame(): boolean {
   if (isOpeningNewGameSession()) {
+    const storage = browserStorage();
+    if (storage) {
+      archiveLegacyR01Save(storage);
+      clearPersistedSave(storage);
+    }
     gameState.reset();
     domainState.reset();
     return false;
