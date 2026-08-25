@@ -6,6 +6,8 @@ Introduced by WP0.2D. This is the R0.2 foundation contract for player input, reu
 
 Extended by WP0.6A for opening-world Bag/Map actions and reusable contextual tutorial prompts.
 
+Extended by WP0.6B for real Bag/Map gameplay shells and the opening objective display/progression shell.
+
 ## Semantic input
 
 Gameplay scenes consume semantic actions rather than physical keys.
@@ -55,6 +57,24 @@ The framework supports reusable contextual prompts for:
 
 Prompts resolve their displayed control hints from the binding profile, can complete automatically from observed semantic actions or manually from authored sequences, and fade away without pausing gameplay. The Apprentice Splicer Yard movement prompt is the first real integration. WP0.6C owns the authored onboarding sequence rather than WP0.6A hard-coding one.
 
+## Opening Bag, Map and objective shells
+
+WP0.6B adds `src/onboarding/openingShells.ts` and `src/ui/openingShells.ts`.
+
+Opening-world behaviour is:
+
+- `BAG` toggles the Bag shell;
+- `MAP` toggles the Map shell;
+- Bag and Map are mutually exclusive, so requesting one while the other is open switches directly to it;
+- `CANCEL` closes an open shell before it can exit the Yard runtime;
+- movement is suspended while either shell is open;
+- the Yard displays a compact current-objective tracker when normal world control is active;
+- the Map repeats the current objective beside the route schematic.
+
+The opening inventory and objective model are intentionally narrow. WP0.6B does not establish the future economy, equipment, item-use, crafting, world-map discovery or fast-travel contracts.
+
+The initial objective controller exposes a small progression skeleton for WP0.6C to author against. Objective/tutorial persistence remains deferred to the later save/checkpoint package.
+
 ## Focus and selection
 
 Shared focusable controls expose the same contract for pointer and keyboard navigation.
@@ -97,11 +117,11 @@ Scene-authored narrative, headings, prompts and current prototype UI labels are 
 
 ## Save/schema impact
 
-WP0.2D did **not** change the R0.2 save-envelope schema introduced by WP0.2C. WP0.6A also makes no save/schema change.
+WP0.2D did **not** change the R0.2 save-envelope schema introduced by WP0.2C. WP0.6A and WP0.6B also make no save/schema change.
 
 Input remapping is not yet a supported player feature, so no binding data is persisted here. The separate settings store created by WP0.2C remains the intended future persistence location for remapping, locale, audio and accessibility settings.
 
-Tutorial persistence across reloads is deliberately deferred with the opening-slice save/checkpoint work in R0.10.
+Tutorial and opening-objective persistence across reloads is deliberately deferred with the opening-slice save/checkpoint work in R0.10.
 
 ## Validation gates
 
@@ -115,6 +135,8 @@ Automated coverage verifies:
 - playable Phaser scenes use the shared transition framework;
 - browser smoke exercises the player-facing semantic controls;
 - WP0.6A tutorial unit tests cover prompt definitions, binding-derived hints, action-driven/manual completion and reset behaviour;
-- WP0.6A browser smoke proves the Yard prompt renders without modal interruption, movement remains active, real movement completes the prompt and the prompt fades cleanly.
+- WP0.6A browser smoke proves the Yard prompt renders without modal interruption, movement remains active, real movement completes the prompt and the prompt fades cleanly;
+- WP0.6B unit tests cover opening inventory shape, Bag/Map toggle semantics and objective progression;
+- WP0.6B browser smoke proves Bag and Map render in the real Yard, carry the current objective and close through `CANCEL` without exiting gameplay.
 
 Save/schema impact: none.
