@@ -76,6 +76,10 @@ try {
     return evaluate(`globalThis.__SPLICEPIT_TITLE__ ? ({ ...globalThis.__SPLICEPIT_TITLE__ }) : null`);
   }
 
+  async function splashState() {
+    return evaluate(`globalThis.__SPLICEPIT_HAPPY_SPLASH__ ? ({ ...globalThis.__SPLICEPIT_HAPPY_SPLASH__ }) : null`);
+  }
+
   async function menuState() {
     return evaluate(`globalThis.__SPLICEPIT_MENU__ ? ({ ...globalThis.__SPLICEPIT_MENU__ }) : null`);
   }
@@ -100,6 +104,22 @@ try {
     })()`);
   }
 
+  async function canvasComplexity() {
+    return evaluate(`(() => {
+      const canvas = document.querySelector('#visual-reset-stage');
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) return 0;
+      const colours = new Set();
+      for (let y = 40; y < 680; y += 24) {
+        for (let x = 40; x < 1240; x += 24) {
+          const pixel = ctx.getImageData(x, y, 1, 1).data;
+          colours.add((pixel[0] << 16) | (pixel[1] << 8) | pixel[2]);
+        }
+      }
+      return colours.size;
+    })()`);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', {
@@ -113,6 +133,8 @@ try {
   await waitFor(async () => {
     const current = await titleState();
     if (current?.error) throw new Error(current.error);
+    const splash = await splashState();
+    if (splash?.status === 'error') throw new Error(`Happy splash load failed: ${JSON.stringify(splash)}`);
     return current?.ready && current?.titleRendered ? current : null;
   });
   await evaluate(`localStorage.clear()`);
@@ -121,10 +143,14 @@ try {
   const baselineState = await waitFor(async () => {
     const current = await titleState();
     if (current?.error) throw new Error(current.error);
-    return current?.titleRendered && current.elapsedMs >= 1250 && current.elapsedMs < 1600 && current.corruption === 0 ? current : null;
+    const splash = await splashState();
+    if (splash?.status === 'error') throw new Error(`Happy splash load failed: ${JSON.stringify(splash)}`);
+    if (splash?.status !== 'ready' || !current?.titleRendered || current.corruption !== 0) return null;
+    const complexity = await canvasComplexity();
+    return complexity >= 64 ? { ...current, complexity, splash } : null;
   });
   const baselineHash = await canvasHash();
-  if (!baselineHash || baselineState.advanced || baselineState.readyToAdvance) {
+  if (!baselineHash || baselineState.complexity < 64 || baselineState.advanced) {
     throw new Error(`Unexpected bright title baseline: ${JSON.stringify({ baselineState, baselineHash })}`);
   }
 
@@ -161,7 +187,12 @@ try {
 
   // Fresh reload: one early input skips the reveal/corruption sequence but does not advance; the next advances.
   await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => (await titleState())?.titleRendered === true);
+  await waitFor(async () => {
+    const current = await titleState();
+    const splash = await splashState();
+    if (splash?.status === 'error') throw new Error(`Happy splash load failed after reload: ${JSON.stringify(splash)}`);
+    return current?.titleRendered === true && splash?.status === 'ready';
+  });
   await key(' ', 'Space', 32);
   const skipped = await waitFor(async () => {
     const current = await titleState();
@@ -179,7 +210,7 @@ try {
     throw new Error(`Title did not hand off cleanly to WP0.5B menu: ${JSON.stringify({ finalTitle, menu })}`);
   }
 
-  console.log('WP0.5A bright title, visible corruption, clean recovery, skip and main-menu handoff smoke passed.');
+  console.log('WP0.5A illustrated bright title, visible corruption, clean recovery, skip and main-menu handoff smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
