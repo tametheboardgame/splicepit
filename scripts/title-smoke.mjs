@@ -120,6 +120,35 @@ try {
     })()`);
   }
 
+  async function assetDiagnostic() {
+    return evaluate(`(async () => {
+      try {
+        const response = await fetch('/assets/splicepit-happy-title-v3.webp', { cache: 'no-store' });
+        const blob = await response.blob();
+        let bitmap = null;
+        let decodeError = null;
+        try {
+          bitmap = await createImageBitmap(blob);
+        } catch (error) {
+          decodeError = String(error);
+        }
+        const result = {
+          ok: response.ok,
+          status: response.status,
+          type: blob.type,
+          size: blob.size,
+          width: bitmap?.width ?? 0,
+          height: bitmap?.height ?? 0,
+          decodeError,
+        };
+        bitmap?.close();
+        return result;
+      } catch (error) {
+        return { fetchError: String(error) };
+      }
+    })()`);
+  }
+
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', {
@@ -140,15 +169,27 @@ try {
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
 
-  const baselineState = await waitFor(async () => {
-    const current = await titleState();
-    if (current?.error) throw new Error(current.error);
-    const splash = await splashState();
-    if (splash?.status === 'error') throw new Error(`Happy splash load failed: ${JSON.stringify(splash)}`);
-    if (splash?.status !== 'ready' || !current?.titleRendered || current.corruption !== 0) return null;
-    const complexity = await canvasComplexity();
-    return complexity >= 64 ? { ...current, complexity, splash } : null;
-  });
+  let baselineState;
+  try {
+    baselineState = await waitFor(async () => {
+      const current = await titleState();
+      if (current?.error) throw new Error(current.error);
+      const splash = await splashState();
+      if (splash?.status === 'error') throw new Error(`Happy splash load failed: ${JSON.stringify(splash)}`);
+      if (splash?.status !== 'ready' || !current?.titleRendered || current.corruption !== 0) return null;
+      const complexity = await canvasComplexity();
+      return complexity >= 64 ? { ...current, complexity, splash } : null;
+    });
+  } catch (error) {
+    const observation = {
+      title: await titleState(),
+      splash: await splashState(),
+      complexity: await canvasComplexity(),
+      asset: await assetDiagnostic(),
+    };
+    throw new Error(`Bright title baseline wait failed: ${JSON.stringify(observation)}; ${String(error)}`);
+  }
+
   const baselineHash = await canvasHash();
   if (!baselineHash || baselineState.complexity < 64 || baselineState.advanced) {
     throw new Error(`Unexpected bright title baseline: ${JSON.stringify({ baselineState, baselineHash })}`);
