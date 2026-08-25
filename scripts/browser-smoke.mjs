@@ -76,7 +76,7 @@ try {
     return waitFor(async () => {
       const state = await evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
       if (state?.error) throw new Error(`SplicePit stage failed to start: ${state.error}`);
-      return state?.ready ? state : null;
+      return state?.ready && state?.selectionRendered ? state : null;
     }, 20000);
   }
 
