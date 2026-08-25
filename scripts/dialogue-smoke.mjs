@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
-const chromePort = 9226;
-const gamePort = 8084;
+const chromePort = 9227;
+const gamePort = 8085;
 let nextId = 0;
 const pending = new Map();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -72,25 +72,18 @@ try {
     return result.result?.value;
   }
 
-  async function menuState() {
-    return evaluate(`globalThis.__SPLICEPIT_MENU__ ? ({ ...globalThis.__SPLICEPIT_MENU__ }) : null`);
-  }
-
   async function dialogueState() {
     return evaluate(`globalThis.__SPLICEPIT_DIALOGUE__ ? ({ ...globalThis.__SPLICEPIT_DIALOGUE__ }) : null`);
+  }
+
+  async function gameState() {
+    return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
 
   async function key(key, code, vk) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await sleep(70);
-  }
-
-  async function click(x, y) {
-    await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
-    await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-    await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
-    await sleep(100);
+    await sleep(80);
   }
 
   await cdp('Page.enable');
@@ -101,15 +94,15 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?menuTest=1` });
 
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?dialogueTest=1&dialogueSpeed=slow` });
   const initial = await waitFor(async () => {
-    const current = await menuState();
+    const current = await dialogueState();
     if (current?.error) throw new Error(current.error);
     return current?.ready && current?.rendered ? current : null;
   });
-  if (initial.screen !== 'menu' || initial.selectedId !== 'new-game' || initial.continueEnabled !== false) {
-    throw new Error(`Unexpected main menu initial state: ${JSON.stringify(initial)}`);
+  if (initial.sequenceId !== 'opening-welcome' || initial.pageIndex !== 0 || initial.textSpeed !== 'slow') {
+    throw new Error(`Unexpected opening dialogue state: ${JSON.stringify(initial)}`);
   }
 
   const layout = await evaluate(`(() => {
@@ -122,54 +115,67 @@ try {
       viewportWidth: innerWidth,
     } : null;
   })()`);
-  if (!layout || layout.width !== 1280 || layout.height !== 720 || !String(layout.aria).includes('main menu') || layout.bodyWidth > layout.viewportWidth) {
-    throw new Error(`Main menu canvas/layout contract failed: ${JSON.stringify(layout)}`);
-  }
-
-  await key('ArrowDown', 'ArrowDown', 40);
-  const keyboardSelected = await waitFor(async () => {
-    const current = await menuState();
-    return current?.selectedId === 'settings' ? current : null;
-  });
-  if (keyboardSelected.selectedId === 'continue') {
-    throw new Error(`Keyboard navigation should skip disabled Continue: ${JSON.stringify(keyboardSelected)}`);
+  if (!layout || layout.width !== 1280 || layout.height !== 720 || !String(layout.aria).includes('opening narration') || layout.bodyWidth > layout.viewportWidth) {
+    throw new Error(`Opening dialogue canvas/layout contract failed: ${JSON.stringify(layout)}`);
   }
 
   await key('Enter', 'Enter', 13);
-  const settings = await waitFor(async () => {
-    const current = await menuState();
-    return current?.screen === 'settings' && current?.selectedId === 'back' ? current : null;
+  const revealed = await waitFor(async () => {
+    const current = await dialogueState();
+    return current?.pageIndex === 0 && current?.textComplete ? current : null;
   });
-  if (!settings.settingsOpened || settings.newGameStarted) {
-    throw new Error(`Settings shell did not open cleanly: ${JSON.stringify(settings)}`);
+  if (revealed.pageId !== 'welcome') throw new Error(`Early advance should reveal, not change page: ${JSON.stringify(revealed)}`);
+
+  await key('Enter', 'Enter', 13);
+  await waitFor(async () => {
+    const current = await dialogueState();
+    return current?.pageIndex === 1 && current?.pageId === 'science' ? current : null;
+  });
+
+  const corrupted = await waitFor(async () => {
+    const current = await dialogueState();
+    return current?.pageIndex === 1 && current?.maxCorruption > 0.7 && current?.corruptionEventsPassed >= 2 ? current : null;
+  }, 5000);
+  if (corrupted.error) throw new Error(corrupted.error);
+  await waitFor(async () => {
+    const current = await dialogueState();
+    return current?.pageIndex === 1 && current?.corruptionEventsPassed >= 2 && current?.corruption === 0 ? current : null;
+  }, 5000);
+
+  await key('Enter', 'Enter', 13);
+  await key('Enter', 'Enter', 13);
+  await waitFor(async () => (await dialogueState())?.pageIndex === 2);
+  await key('Enter', 'Enter', 13);
+  await key('Enter', 'Enter', 13);
+  await waitFor(async () => (await dialogueState())?.pageIndex === 3);
+  await key('Enter', 'Enter', 13);
+  await key('Enter', 'Enter', 13);
+
+  const selector = await waitFor(async () => {
+    const current = await gameState();
+    return current?.ready && current?.phase === 'select' && current?.selectionRendered ? current : null;
+  });
+  const completed = await dialogueState();
+  if (!completed?.completed || completed.skipped || !completed.handedOffToSelector || selector.selectionPresentation !== 'yard-arrival') {
+    throw new Error(`Completed narration did not hand off cleanly: ${JSON.stringify({ completed, selector })}`);
   }
 
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?dialogueTest=1&dialogueSpeed=instant` });
+  await waitFor(async () => {
+    const current = await dialogueState();
+    return current?.ready && current?.rendered && current?.textSpeed === 'instant' ? current : null;
+  });
   await key('Escape', 'Escape', 27);
   await waitFor(async () => {
-    const current = await menuState();
-    return current?.screen === 'menu' && current?.selectedId === 'settings' ? current : null;
+    const current = await gameState();
+    return current?.ready && current?.phase === 'select' ? current : null;
   });
-
-  await click(640, 456);
-  const disabledContinue = await waitFor(async () => {
-    const current = await menuState();
-    return current?.selectedId === 'continue' && String(current?.statusText).includes('checkpoint') ? current : null;
-  });
-  if (disabledContinue.newGameStarted || disabledContinue.continueEnabled) {
-    throw new Error(`Disabled Continue became actionable: ${JSON.stringify(disabledContinue)}`);
+  const skipped = await dialogueState();
+  if (!skipped?.completed || !skipped.skipped || !skipped.handedOffToSelector) {
+    throw new Error(`Escape did not skip opening narration cleanly: ${JSON.stringify(skipped)}`);
   }
 
-  await click(640, 376);
-  const dialogue = await waitFor(async () => {
-    const current = await dialogueState();
-    return current?.ready && current?.rendered && current?.pageIndex === 0 ? current : null;
-  });
-  const finalMenu = await menuState();
-  if (!finalMenu?.newGameStarted || finalMenu.rendered || dialogue.sequenceId !== 'opening-welcome' || dialogue.pageId !== 'welcome') {
-    throw new Error(`New Game did not hand off to opening narration: ${JSON.stringify({ finalMenu, dialogue })}`);
-  }
-
-  console.log('WP0.5B main menu keyboard, pointer, disabled Continue, Settings and New Game narration handoff smoke passed.');
+  console.log('WP0.5C opening narration reveal, corruption, completion, speed hook and skip smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {

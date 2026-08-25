@@ -13,6 +13,14 @@ import {
   settingsBackHitTest,
   type MainMenuScreen,
 } from './ui/mainMenu.js';
+import {
+  dialoguePageVisualState,
+  dialogueRevealDurationMs,
+  isDialogueTextSpeed,
+  type DialogueTextSpeed,
+} from './dialogue/presentation.js';
+import { openingNarrationSequence } from './dialogue/openingNarration.js';
+import { drawDialogueScreen } from './ui/dialoguePresentation.js';
 
 type TitleDebug = {
   ready: boolean;
@@ -38,14 +46,39 @@ type MenuDebug = {
   newGameStarted: boolean;
 };
 
+type DialogueDebug = {
+  ready: boolean;
+  error: string | null;
+  rendered: boolean;
+  sequenceId: string;
+  pageIndex: number;
+  pageId: string;
+  visibleCharacters: number;
+  textLength: number;
+  textComplete: boolean;
+  corruption: number;
+  corruptionEventsPassed: number;
+  maxCorruption: number;
+  textSpeed: DialogueTextSpeed;
+  skipped: boolean;
+  completed: boolean;
+  handedOffToSelector: boolean;
+};
+
 type BootGlobal = typeof globalThis & {
   __SPLICEPIT_TITLE__?: TitleDebug;
   __SPLICEPIT_MENU__?: MenuDebug;
+  __SPLICEPIT_DIALOGUE__?: DialogueDebug;
 };
 
 const query = new URLSearchParams(window.location.search);
 const skipTitle = query.get('skipTitle') === '1';
 const menuTest = query.get('menuTest') === '1';
+const dialogueTest = query.get('dialogueTest') === '1';
+const requestedDialogueSpeed = query.get('dialogueSpeed');
+const dialogueSpeed: DialogueTextSpeed = isDialogueTextSpeed(requestedDialogueSpeed)
+  ? requestedDialogueSpeed
+  : 'normal';
 
 if (skipTitle) {
   void import('./main.js');
@@ -66,6 +99,140 @@ if (skipTitle) {
   const context = canvas?.getContext('2d', { alpha: false });
   if (!canvas || !context) throw new Error('SplicePit opening stage failed to mount');
   context.imageSmoothingEnabled = false;
+
+  const handOffToSelector = (dialogueDebug?: DialogueDebug): void => {
+    if (dialogueDebug) dialogueDebug.handedOffToSelector = true;
+    void import('./main.js').catch((error: unknown) => {
+      if (dialogueDebug) dialogueDebug.error = error instanceof Error ? error.message : String(error);
+      console.error('Failed to hand off opening flow to apprentice selection', error);
+    });
+  };
+
+  const startOpeningDialogue = (): void => {
+    canvas.setAttribute('aria-label', 'SplicePit opening narration');
+    const sequence = openingNarrationSequence();
+    const firstPage = sequence.pages[0];
+    if (!firstPage) {
+      handOffToSelector();
+      return;
+    }
+
+    const debug: DialogueDebug = {
+      ready: true,
+      error: null,
+      rendered: false,
+      sequenceId: sequence.id,
+      pageIndex: 0,
+      pageId: firstPage.id,
+      visibleCharacters: 0,
+      textLength: firstPage.text.length,
+      textComplete: false,
+      corruption: 0,
+      corruptionEventsPassed: 0,
+      maxCorruption: 0,
+      textSpeed: dialogueSpeed,
+      skipped: false,
+      completed: false,
+      handedOffToSelector: false,
+    };
+    (globalThis as BootGlobal).__SPLICEPIT_DIALOGUE__ = debug;
+
+    let pageIndex = 0;
+    let pageStartedAt = performance.now();
+    const sequenceStartedAt = pageStartedAt;
+    let frameHandle = 0;
+    let active = true;
+
+    const syncDebug = (now: number): void => {
+      const page = sequence.pages[pageIndex];
+      if (!page) return;
+      const state = dialoguePageVisualState(page, Math.max(0, now - pageStartedAt), dialogueSpeed);
+      debug.pageIndex = pageIndex;
+      debug.pageId = page.id;
+      debug.visibleCharacters = state.visibleCharacters;
+      debug.textLength = page.text.length;
+      debug.textComplete = state.textComplete;
+      debug.corruption = state.corruption;
+      debug.corruptionEventsPassed = state.corruptionEventsPassed;
+      debug.maxCorruption = Math.max(debug.maxCorruption, state.corruption);
+    };
+
+    const renderDialogue = (now: number): void => {
+      if (!active) return;
+      const page = sequence.pages[pageIndex];
+      if (!page) return;
+      const pageElapsedMs = Math.max(0, now - pageStartedAt);
+      const state = dialoguePageVisualState(page, pageElapsedMs, dialogueSpeed);
+      drawDialogueScreen(context, page, state, pageIndex, sequence.pages.length, Math.max(0, now - sequenceStartedAt));
+      debug.rendered = true;
+      syncDebug(now);
+      frameHandle = requestAnimationFrame(renderDialogue);
+    };
+
+    const cleanupDialogue = (): void => {
+      active = false;
+      cancelAnimationFrame(frameHandle);
+      window.removeEventListener('keydown', onDialogueKeyDown);
+      canvas.removeEventListener('pointerdown', onDialoguePointerDown);
+    };
+
+    const finishDialogue = (skipped: boolean): void => {
+      if (!active) return;
+      debug.skipped = skipped;
+      debug.completed = true;
+      debug.rendered = false;
+      cleanupDialogue();
+      handOffToSelector(debug);
+    };
+
+    const advanceDialogue = (): void => {
+      if (!active) return;
+      const page = sequence.pages[pageIndex];
+      if (!page) {
+        finishDialogue(false);
+        return;
+      }
+      const now = performance.now();
+      const pageElapsedMs = Math.max(0, now - pageStartedAt);
+      const state = dialoguePageVisualState(page, pageElapsedMs, dialogueSpeed);
+      if (!state.textComplete) {
+        pageStartedAt = now - dialogueRevealDurationMs(page.text, dialogueSpeed);
+        syncDebug(now);
+        return;
+      }
+
+      if (pageIndex >= sequence.pages.length - 1) {
+        finishDialogue(false);
+        return;
+      }
+
+      pageIndex += 1;
+      pageStartedAt = now;
+      syncDebug(now);
+    };
+
+    function onDialogueKeyDown(event: KeyboardEvent): void {
+      if (!active) return;
+      if (event.code === 'Escape') {
+        event.preventDefault();
+        finishDialogue(true);
+        return;
+      }
+      if (event.code !== 'Enter' && event.code !== 'Space') return;
+      event.preventDefault();
+      advanceDialogue();
+    }
+
+    function onDialoguePointerDown(event: PointerEvent): void {
+      if (!active) return;
+      event.preventDefault();
+      advanceDialogue();
+    }
+
+    window.addEventListener('keydown', onDialogueKeyDown);
+    canvas.addEventListener('pointerdown', onDialoguePointerDown);
+    frameHandle = requestAnimationFrame(renderDialogue);
+  };
 
   const startMainMenu = (): void => {
     canvas.setAttribute('aria-label', 'SplicePit main menu');
@@ -116,10 +283,7 @@ if (skipTitle) {
       debug.newGameStarted = true;
       debug.rendered = false;
       cleanupMenu();
-      void import('./main.js').catch((error: unknown) => {
-        debug.error = error instanceof Error ? error.message : String(error);
-        console.error('Failed to start New Game from main menu', error);
-      });
+      startOpeningDialogue();
     };
 
     const activateMenuIndex = (index: number): void => {
@@ -223,7 +387,9 @@ if (skipTitle) {
     frameHandle = requestAnimationFrame(renderMenu);
   };
 
-  if (menuTest) {
+  if (dialogueTest) {
+    startOpeningDialogue();
+  } else if (menuTest) {
     startMainMenu();
   } else {
     const debug: TitleDebug = {

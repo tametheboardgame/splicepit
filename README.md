@@ -19,7 +19,7 @@ Human review has accepted the foundation established across WP0.4C–G and WP0.4
 - four-direction movement, collision and camera feel;
 - in-world character-selection presentation.
 
-WP0.5A has now established the accepted bright/corrupted SplicePit title treatment. WP0.5B is the current implementation/review package, adding the world-native Main Menu shell between the title and existing character-selection runtime.
+WP0.5A established the accepted bright/corrupted SplicePit title treatment. WP0.5B added the world-native Main Menu shell. WP0.5C is the current implementation/review package, inserting a reusable bright/corrupted narration and dialogue presentation between New Game and the existing character-selection runtime.
 
 The old player-facing Lab/Splice/Battle presentation and the rejected dark registration-form character selector are prototype history and must not return.
 
@@ -41,9 +41,9 @@ Proper New Game / Continue / autosave behaviour is deliberately scheduled near t
 
 ## Current / next executable work package
 
-> **Current human-review package: WP0.5B — Main Menu Shell**
+> **Current human-review package: WP0.5C — Opening Narration / Dialogue Presentation**
 >
-> **Once WP0.5B is accepted: start WP0.5C — Opening Narration / Dialogue Presentation**
+> **Once WP0.5C is accepted: start WP0.5D — Character Selection Integrated into New Game**
 
 ## Planning source of truth
 
