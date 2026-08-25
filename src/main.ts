@@ -16,6 +16,11 @@ import pipRight from './assets/frames/pip-right.txt?raw';
 import pipUp from './assets/frames/pip-up.txt?raw';
 import { ACTIONS } from './input/actions.js';
 import { BrowserSemanticInput } from './input/BrowserSemanticInput.js';
+import {
+  OpeningShellController,
+  type OpeningObjectiveId,
+  type OpeningShellId,
+} from './onboarding/openingShells.js';
 import { normalisePlayerName, PLAYER_NAME_MAX_LENGTH } from './player/identity.js';
 import { PROTAGONIST_IDS, PROTAGONIST_SPRITES, type ProtagonistId } from './player/protagonists.js';
 import { gameState } from './state/GameState.js';
@@ -34,6 +39,7 @@ import {
   SELECT_VIEW_WIDTH,
   selectionCharacterAt,
 } from './ui/apprenticeSelection.js';
+import { drawOpeningObjectiveTracker, drawOpeningShell } from './ui/openingShells.js';
 import { drawTutorialPrompt } from './ui/tutorialPrompt.js';
 import {
   drawApprenticeSplicerYardBase,
@@ -96,6 +102,12 @@ type VisualResetDebug = {
   tutorialPromptAlpha: number;
   tutorialHintLabels: string[];
   tutorialCompleted: TutorialPromptId[];
+  activeOpeningShell: OpeningShellId | null;
+  objectiveId: OpeningObjectiveId;
+  objectiveTitle: string;
+  objectiveStep: number;
+  objectiveCount: number;
+  openingInventory: Array<{ id: string; label: string; quantity: number }>;
 };
 
 const root = document.getElementById('game') as HTMLElement | null;
@@ -133,6 +145,7 @@ context.imageSmoothingEnabled = false;
 const worldInput = new BrowserSemanticInput();
 worldInput.setEnabled(false);
 const tutorial = new TutorialPromptController();
+const openingShells = new OpeningShellController();
 
 function preferredNameFor(id: ProtagonistId): string {
   if (gameState.avatarId === id && gameState.playerName) return gameState.playerName;
@@ -147,6 +160,7 @@ const camera = { x: 0, y: 0 };
 let lastRenderNow = performance.now();
 let collisionCount = 0;
 let lastCollision = false;
+const initialObjective = openingShells.currentObjective();
 
 const debug: VisualResetDebug = {
   ready: false,
@@ -178,6 +192,16 @@ const debug: VisualResetDebug = {
   tutorialPromptAlpha: 0,
   tutorialHintLabels: [],
   tutorialCompleted: [],
+  activeOpeningShell: null,
+  objectiveId: initialObjective.id,
+  objectiveTitle: initialObjective.title,
+  objectiveStep: openingShells.objectiveStep(),
+  objectiveCount: openingShells.objectiveCount(),
+  openingInventory: openingShells.inventory().map((entry) => ({
+    id: entry.id,
+    label: entry.label,
+    quantity: entry.quantity,
+  })),
 };
 
 (globalThis as typeof globalThis & { __SPLICEPIT_VISUAL_RESET__?: VisualResetDebug }).__SPLICEPIT_VISUAL_RESET__ = debug;
@@ -189,6 +213,20 @@ function syncTutorialDebug(prompt: TutorialPromptView | null): void {
   debug.tutorialPromptAlpha = prompt ? Math.round(prompt.alpha * 1000) / 1000 : 0;
   debug.tutorialHintLabels = prompt?.hints.map((hint) => hint.label) ?? [];
   debug.tutorialCompleted = tutorial.completedIds();
+}
+
+function syncOpeningShellDebug(): void {
+  const objective = openingShells.currentObjective();
+  debug.activeOpeningShell = openingShells.activeShell();
+  debug.objectiveId = objective.id;
+  debug.objectiveTitle = objective.title;
+  debug.objectiveStep = openingShells.objectiveStep();
+  debug.objectiveCount = openingShells.objectiveCount();
+  debug.openingInventory = openingShells.inventory().map((entry) => ({
+    id: entry.id,
+    label: entry.label,
+    quantity: entry.quantity,
+  }));
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -276,7 +314,9 @@ function enterYard(): void {
   resetYardRuntime();
   tutorial.resetProgress();
   tutorial.activate('movement');
+  openingShells.reset();
   syncTutorialDebug(tutorial.current(performance.now()));
+  syncOpeningShellDebug();
   worldInput.setEnabled(true);
   playerNameInput.blur();
 }
@@ -286,7 +326,9 @@ function exitYardToSelection(): void {
   debug.phase = phase;
   debug.yardRendered = false;
   tutorial.clearActive();
+  openingShells.closeShell();
   syncTutorialDebug(null);
+  syncOpeningShellDebug();
   worldInput.setEnabled(false);
   syncPreferredName();
 }
@@ -295,8 +337,41 @@ function updateYard(now: number): void {
   const dt = Math.min(0.032, Math.max(0, (now - lastRenderNow) / 1000));
   lastRenderNow = now;
 
+  if (worldInput.justDown(ACTIONS.BAG)) {
+    tutorial.observeAction(ACTIONS.BAG, now);
+    openingShells.toggle('bag');
+    player.moving = false;
+    debug.moving = false;
+    syncOpeningShellDebug();
+    return;
+  }
+
+  if (worldInput.justDown(ACTIONS.MAP)) {
+    tutorial.observeAction(ACTIONS.MAP, now);
+    openingShells.toggle('map');
+    player.moving = false;
+    debug.moving = false;
+    syncOpeningShellDebug();
+    return;
+  }
+
   if (worldInput.justDown(ACTIONS.CANCEL)) {
+    if (openingShells.isOpen()) {
+      openingShells.closeShell();
+      player.moving = false;
+      debug.moving = false;
+      syncOpeningShellDebug();
+      return;
+    }
     exitYardToSelection();
+    return;
+  }
+
+  if (openingShells.isOpen()) {
+    player.moving = false;
+    debug.moving = false;
+    lastCollision = false;
+    debug.lastCollision = false;
     return;
   }
 
@@ -385,9 +460,30 @@ function renderYard(now: number): void {
   drawApprenticeSplicerYardForeground(context, player.y);
   context.restore();
 
+  const objective = openingShells.currentObjective();
+  drawOpeningObjectiveTracker(
+    context,
+    objective,
+    openingShells.objectiveStep(),
+    openingShells.objectiveCount(),
+  );
+
   const tutorialPrompt = tutorial.current(now);
   if (tutorialPrompt) drawTutorialPrompt(context, tutorialPrompt, YARD_VIEW_WIDTH, YARD_VIEW_HEIGHT);
   syncTutorialDebug(tutorialPrompt);
+
+  drawOpeningShell(context, {
+    activeShell: openingShells.activeShell(),
+    inventory: openingShells.inventory(),
+    objective,
+    objectiveStep: openingShells.objectiveStep(),
+    objectiveCount: openingShells.objectiveCount(),
+    playerX: player.x,
+    playerY: player.y,
+    worldWidth: YARD_WORLD_WIDTH,
+    worldHeight: YARD_WORLD_HEIGHT,
+  }, YARD_VIEW_WIDTH, YARD_VIEW_HEIGHT);
+  syncOpeningShellDebug();
 
   debug.yardRendered = true;
   debug.selectionRendered = false;
