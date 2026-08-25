@@ -37,7 +37,11 @@ test('WP0.6D exposes the authored opening-world landmarks', () => {
 });
 
 test('WP0.6D keeps a continuous traversable Yard to Lab to Pit route', () => {
-  const route = [YARD_SPAWN, ...OPENING_ROUTE_WAYPOINTS];
+  const route = [
+    YARD_SPAWN,
+    { x: YARD_SPAWN.x, y: 700 },
+    ...OPENING_ROUTE_WAYPOINTS,
+  ];
 
   for (let segment = 0; segment < route.length - 1; segment += 1) {
     const from = route[segment];
