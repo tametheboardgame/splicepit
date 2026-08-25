@@ -76,8 +76,8 @@ try {
     return evaluate(`globalThis.__SPLICEPIT_MENU__ ? ({ ...globalThis.__SPLICEPIT_MENU__ }) : null`);
   }
 
-  async function gameState() {
-    return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
+  async function dialogueState() {
+    return evaluate(`globalThis.__SPLICEPIT_DIALOGUE__ ? ({ ...globalThis.__SPLICEPIT_DIALOGUE__ }) : null`);
   }
 
   async function key(key, code, vk) {
@@ -160,16 +160,16 @@ try {
   }
 
   await click(640, 376);
-  const selector = await waitFor(async () => {
-    const current = await gameState();
-    return current?.ready && current?.phase === 'select' && current?.selectionRendered ? current : null;
+  const dialogue = await waitFor(async () => {
+    const current = await dialogueState();
+    return current?.ready && current?.rendered && current?.pageIndex === 0 ? current : null;
   });
   const finalMenu = await menuState();
-  if (!finalMenu?.newGameStarted || finalMenu.rendered || selector.selectionPresentation !== 'yard-arrival') {
-    throw new Error(`New Game did not hand off to the existing selector: ${JSON.stringify({ finalMenu, selector })}`);
+  if (!finalMenu?.newGameStarted || finalMenu.rendered || dialogue.sequenceId !== 'opening-welcome' || dialogue.pageId !== 'welcome') {
+    throw new Error(`New Game did not hand off to opening narration: ${JSON.stringify({ finalMenu, dialogue })}`);
   }
 
-  console.log('WP0.5B main menu keyboard, pointer, disabled Continue, Settings and New Game handoff smoke passed.');
+  console.log('WP0.5B main menu keyboard, pointer, disabled Continue, Settings and New Game narration handoff smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
