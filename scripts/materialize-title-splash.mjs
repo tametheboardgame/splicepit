@@ -17,7 +17,7 @@ if (bytes.subarray(0, 4).toString('ascii') !== 'RIFF' || bytes.subarray(8, 12).t
   throw new Error('Happy title splash is not a valid WebP payload');
 }
 
-const output = resolve(root, 'public/assets/splicepit-happy-title.webp');
+const output = resolve(root, 'public/assets/splicepit-happy-title-v2.webp');
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, bytes);
 console.log(`Materialised approved happy title splash (${bytes.length} bytes).`);
