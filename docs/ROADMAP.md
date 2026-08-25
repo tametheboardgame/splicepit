@@ -2,510 +2,545 @@
 
 ## Purpose
 
-This is the canonical execution order for SplicePit. It answers **what gets built next, what is deliberately deferred, and what must be approved before later systems proceed**.
+This is the canonical development roadmap for SplicePit.
 
-`DECISION_LOG.md` remains the authority for locked product decisions. This roadmap controls development sequence. `docs/VISUAL_DIRECTION_2026-08-23.md` controls the active visual target, with explicit human corrections recorded later taking precedence.
+It answers:
 
-Where older documents, prototype scenes, tests or work-package descriptions conflict with this roadmap after the graphics-first reset, **this roadmap wins**.
+- what is accepted;
+- what gets built next;
+- what is deliberately deferred;
+- which dated planning document controls the current work;
+- where human playtest gates stop autonomous implementation.
 
-The numbered forward plan contains 80 implementation work packages from R0.2 through release candidate. A repair package may be inserted without renumbering the wider roadmap when human review proves an already-numbered presentation contract was wrong.
+`docs/DECISION_LOG.md` remains the product/canon authority. This roadmap controls execution order. Newer explicitly dated human-review records override older prototype execution assumptions.
 
 ---
 
-# 23–24 August 2026 graphics-first reset and correction
+# Current authority — 25 August 2026
 
-Human review confirmed that the underlying SplicePit idea remains strong, but the existing player-facing visual implementations do not represent the game we want to build.
+The graphics-first reset has succeeded. The project is no longer trying to prove whether the game should use the current protagonist/world direction; that foundation has now received explicit human approval.
 
-The approved direction is anchored by:
+The current detailed execution plan is:
+
+- `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-25.md` — **authoritative from the accepted graphics-first foundation through the first local Pit fight**.
+
+Supporting visual/history authority:
 
 - `docs/VISUAL_DIRECTION_2026-08-23.md`;
-- `docs/visual-reference/splicepit-protagonists-biotech-v2.webp`;
-- `docs/VISUAL_RESET_CORRECTION_2026-08-24.md` for the explicit rejection of the first visible WP0.4E screen;
-- `docs/work-packages/R0_VISUAL_FIRST_REBASE_CORRECTION_2026-08-24.md` for the corrected WP0.4E–H execution order.
+- `docs/VISUAL_RESET_CORRECTION_2026-08-24.md`;
+- `docs/work-packages/R0_VISUAL_FIRST_REBASE_CORRECTION_2026-08-24.md`;
+- `docs/visual-reference/splicepit-protagonists-biotech-v2.webp`.
 
-The corrected immediate development order is:
+Where the 25 August opening-slice roadmap conflicts with older R0.4I/J or old R0.5–R0.8 sequencing, **the 25 August roadmap wins**.
 
-**approved protagonist art direction → accepted runtime protagonists → identity/save plumbing retained → rejected terminal/form boot removed → brand-new concept-derived Apprentice Splicer Yard → real in-world scale/movement/collision/depth/camera language → character-choice presentation redesigned from that game language → HUMAN PLAYTEST STOP → only then expand presentation/systems**
+## Next executable work package
 
-The eventual first successful playable remains intentionally tiny:
+> **Start WP0.5A — Splash / Title Corruption System**
 
-`Boot → accepted Character Select → Apprentice Splicer Yard`
-
-But the **development order is now world before final character-select presentation**. The first WP0.4E screen proved that designing the interface in isolation pulled the project back toward the rejected web/admin aesthetic.
-
-No splice system, battle system, economy, quest flow or large menu system should be added before this walking-around gate is accepted.
-
-## Explicitly superseded visual work
-
-The following are not target designs and must not be extended:
-
-- the old `VisualDirectionScene` presentation;
-- the existing player-facing Lab/Splice/Battle presentation;
-- the previous oversized/high-saturation visual pivot;
-- the old dark-terminal presentation language;
-- the 24 August `APPRENTICE REGISTRATION` screen;
-- dark brown/olive admin-screen character selection;
-- character tabs plus boxed preview as the default character-choice metaphor;
-- giant web-style cards/panels as the dominant interface;
-- visible HTML-form composition as the default game boot;
-- procedural placeholder art that conflicts with the locked visual direction;
-- previous visual-reference boards removed on 23 August 2026;
-- the prior WP0.4D Interface Style System contract;
-- the prior WP0.4E combined Creature and Player Sprite Design Pipeline contract;
-- the prior WP0.4F modular Character Creation Prototype contract;
-- the earlier provisional assumption that the accepted protagonist runtime must be redrawn to 24 × 32 px before world integration;
-- any assumption that existing player-facing code must survive because it already exists.
-
-Useful domain logic, deterministic systems, save infrastructure, content models, input abstractions and technical tests may be reused when genuinely presentation-independent. Reuse does **not** imply visual or gameplay approval.
-
-Automated technical success does **not** self-approve subjective presentation.
+A new development chat should begin there unless repository/PR state shows that package has already advanced.
 
 ---
 
-# How to use this roadmap
+# Accepted graphics-first foundation — LOCKED FORWARD
 
-A development conversation should begin with the next READY work package, currently:
+Human review has accepted the following foundation:
 
-> Start WP0.4F
-
-The execution process should then:
-
-1. read this roadmap;
-2. read `docs/VISUAL_DIRECTION_2026-08-23.md`;
-3. read `docs/VISUAL_RESET_CORRECTION_2026-08-24.md`;
-4. read `DECISION_LOG.md`;
-5. read the current WP contract plus the 24 August correction where relevant;
-6. re-check repository, open PR and CI state;
-7. create a dedicated branch/PR unless the WP explicitly belongs to an existing one;
-8. implement only the defined scope;
-9. run the acceptance flow;
-10. stop at human gates rather than self-approving subjective art/game-feel decisions;
-11. merge only when the WP gate passes.
-
-Prototype implementation must never silently become canon.
-
----
-
-# Work-package authority
-
-- `work-packages/R0_FOUNDATIONS.md` — historical/technical contracts through WP0.4B only.
-- `work-packages/R0_VISUAL_FIRST_REBASE.md` — base contracts from WP0.4C onward.
-- `work-packages/R0_VISUAL_FIRST_REBASE_CORRECTION_2026-08-24.md` — **authoritative override for affected WP0.4E–H presentation/sequencing**.
-- `work-packages/R1_ACT1.md` — WP1A through WP1I.
-- `work-packages/R2_ACT2.md` — WP2A through WP2H.
-- `work-packages/R3_BETA.md` — WP3A through WP3G.
-- `work-packages/R4_RELEASE.md` — WP4A through WP4F.
-
-If an older document assigns WP0.4C or later to a conflicting purpose, it is superseded.
-
----
-
-# Status key
-
-- **COMPLETE** — technical/defined gate passed and merged.
-- **ACCEPTED** — explicit human subjective approval where required.
-- **READY** — next executable work.
-- **PLANNED** — sequenced but later dependencies remain.
-- **HUMAN GATE** — requires explicit visual/gameplay approval.
-- **REJECTED** — implementation exists or existed but human review says do not continue it.
-- **SUPERSEDED** — evidence/history only; do not continue as target design.
-
----
-
-# R0.1 — First Playable Vertical Slice — COMPLETE
-
-Browser viability and the minimum loop were proven. R0.1-specific mechanics, visuals and formulas are historical prototypes only.
-
----
-
-# R0.2 — Architecture Hardening — COMPLETE
-
-**Goal:** production browser/tooling/state/input/testing foundation.
-
-1. **WP0.2A — Toolchain Migration**
-2. **WP0.2B — Domain, IDs and Content Boundaries**
-3. **WP0.2C — State, Save Versioning and Persistence Contract**
-4. **WP0.2D — Semantic Input, UI Shell and Localisable Dialogue Framework**
-5. **WP0.2E — Deterministic RNG, Diagnostics and CI Hardening**
-
-**Release result:** typed, deterministic, versioned and testable foundation.
-
----
-
-# R0.3 — Biological/Splicing Technical Prototype — COMPLETE AS TECHNICAL EXPERIMENT
-
-**Goal achieved:** prove that cumulative biology, uncertain outcomes, research/material separation, mutations and phenotype composition are technically viable.
-
-6. **WP0.3A — Source Package Taxonomy and Biological Data Model**
-7. **WP0.3B — Physical Material, Reagents and Research-Knowledge Model**
-8. **WP0.3C — Compatibility and Epistasis Engine**
-9. **WP0.3D — Splice Resolution, Outcome Bands, Variance and Stability**
-10. **WP0.3E — Cumulative Creature Biology and Capability Derivation**
-11. **WP0.3F — Mutation Research Prototype**
-12. **WP0.3G — Hybrid Phenotype Composition Prototype**
-13. **WP0.3H — Lab Experimentation UX and Splicing Playtest Gate** — **player-facing UX/mechanic outcome superseded**.
-
-R0.3 domain work is reusable infrastructure. Its player-facing splice-bench experience is not approved and must not constrain the later redesign.
-
----
-
-# R0.4 — Graphics-First Player and World Foundation — IN PROGRESS
-
-**Goal:** prove that choosing a protagonist and moving around a small SplicePit environment already feels like the right videogame before more systems return.
-
-Historical experiments:
-
-14. **WP0.4A — Combat Metrics and Capability Action Model** — technical experiment retained; combat design not locked by implementation.
-15. **WP0.4B — Turn Structure and Action Economy** — **SUPERSEDED / NOT LOCKED**.
-
-Current authoritative graphics-first sequence:
-
-16. **WP0.4C — Visual Direction and Protagonist Lock** — **COMPLETE / LOCKED**
-17. **WP0.4D — Runtime Protagonist Sprite Production** — **COMPLETE / HUMAN ACCEPTED**
-18. **WP0.4E — Character Selection and Identity Persistence** — **TECHNICAL IDENTITY WORK COMPLETE; VISIBLE PRESENTATION REJECTED**
-19. **WP0.4F — Apprentice Splicer Yard Rebuild** — **READY**
-20. **WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish** — **PLANNED**
-- **WP0.4E-R — Character-Selection Presentation Redesign** — **PLANNED REPAIR PACKAGE, after F/G and before H**
-21. **WP0.4H — Graphics-First Playable Gate** — **HUMAN GATE**
-22. **WP0.4I — Post-Gate Presentation Expansion** — **PLANNED, MUST NOT START BEFORE WP0.4H APPROVAL**
-23. **WP0.4J — Visual Direction Lock for Mechanic Re-entry** — **HUMAN GATE**
-
-## WP0.4C result — LOCKED
-
-The approved visual target is documented in `docs/VISUAL_DIRECTION_2026-08-23.md`.
-
-Locked player-facing direction:
-
-- premium original GBA-era top-down RPG readability;
-- nearest-neighbour pixel presentation;
 - four authored protagonists: Milo, Theo, Ada and Pip;
-- cute-but-concerning apprentice gene-splicer styling;
-- warm attractive environments containing increasingly questionable biotech detail;
-- compact UI that does not dominate the world;
-- no return to removed visual references or old player-facing presentation.
+- accepted 64 × 96 directional protagonist source art;
+- 1× protagonist display scale in the world;
+- 1280 × 720 gameplay viewport direction;
+- wider world density / more world visible at once;
+- Apprentice Splicer Yard visual direction;
+- four-direction movement;
+- feet-based collision;
+- camera follow and current gameplay-scale feel;
+- in-world character-selection direction;
+- authored/default protagonist name with optional rename.
 
-## WP0.4D result — ACCEPTED AND MERGED 24 AUGUST 2026
+The project should **not** restart these decisions merely because later art gets more detailed.
 
-Human visual review accepted the current Milo, Theo, Ada and Pip movement presentation as the player foundation to carry forward.
+## Explicit visual-quality correction
 
-Accepted implementation facts:
+The current Yard/world implementation is an accepted **direction, scale and composition foundation**, not final environment fidelity.
 
-- runtime uses the approved **64 × 96 directional protagonist source art**;
-- Milo, Theo, Ada and Pip are all available and recognisable;
-- four-direction movement is accepted for the current foundation;
-- movement uses the current integer-pixel walk treatment built from approved directional art;
-- the black movement sandbox was a temporary review harness only;
-- the sandbox's 2× display scale was a review scale, not a final world-scale lock;
-- the small body/leg seam found during human review was corrected before acceptance;
-- broken/generated `*-hd-v2.png` secondary walk cells remain rejected as runtime animation sources.
+The user explicitly wants the game substantially more detailed than the present blockout-like environment art.
 
-**Do not redraw, shrink or replace the accepted protagonists merely to satisfy the earlier 24 × 32 planning assumption.** Any future sprite re-authoring must be justified by an actual visual/gameplay problem and pass human review.
+Future art should move towards the same care and personality as the protagonist sprites:
 
-The next unresolved visual question is how large these accepted protagonists should appear relative to the actual concept-derived world. That is answered in WP0.4F/G by seeing them inside the real environment.
+- richer authored ground/material texture;
+- better buildings;
+- improved foliage;
+- better water;
+- detailed props;
+- convincing biotech/containment equipment;
+- stronger depth/shadow cues;
+- environmental storytelling;
+- small animated detail where useful.
 
-## WP0.4E result — TECHNICAL FOUNDATION RETAINED, PRESENTATION REJECTED 24 AUGUST 2026
+The target remains **premium detailed pixel art with GBA-era readability**, not crude chunky 8-bit-looking scenery.
 
-The first WP0.4E implementation correctly established identity persistence but made a bad visual decision.
-
-Retained technical facts:
-
-- player identity is normalised and persisted as `avatarId` plus `playerName` in the existing `GameStateSnapshot` and normal save payload;
-- this remains an additive schema-v2 gameplay extension;
-- existing saves without identity hydrate safely to `null`;
-- refresh/load restores the same protagonist and player name;
-- there are no protagonist-specific mechanical differences and no modular appearance creator;
-- keyboard-safe name capture is retained as infrastructure.
-
-Explicitly rejected visible implementation:
-
-- dark brown/olive monospace `APPRENTICE REGISTRATION` presentation;
-- character tabs;
-- boxed sprite preview;
-- visible web-form layout as the game boot;
-- any claim that the screen was visually accepted because CI/browser tests passed.
-
-The rejected screen must not be polished or restored.
-
-A temporary canvas-only protagonist harness may be used while the Yard is built solely so the rejected page is no longer the default boot and identity persistence remains testable. That harness is **non-canon** and cannot pass the later character-selection human gate.
-
-## WP0.4F–H corrected immediate milestone
-
-### WP0.4F — Apprentice Splicer Yard Rebuild — READY
-
-Build a **completely new** small top-down environment from the approved concept work.
-
-This is the broader **Apprentice Splicer Yard/workshop environment** shown by the approved visual direction. It is **not** the old Lab scene and must not become a reskin of it.
-
-Hard rules:
-
-- do not resurrect the old player-facing Lab layout;
-- do not reuse the old Lab presentation, colour treatment, procedural scenery or interface shell merely because it exists;
-- do not begin from the old Lab and "improve" it;
-- do not wrap the Yard in the rejected WP0.4E interface;
-- build the new location from the concept direction outward;
-- presentation-independent technical utilities may be reused only when they do not drag old visual assumptions back in.
-
-Required visual ingredients:
-
-- attractive compact workshop/lab building;
-- grass and dirt paths;
-- trees, shrubs, flowers and strange plants;
-- pond/stream or other water feature and small bridge where composition supports it;
-- crates, barrels and specimen tables;
-- fenced test pens/cages;
-- creature husbandry and containment details;
-- improvised biotech equipment and visibly questionable experiments;
-- warm, inviting scenery at first glance with increasingly concerning biological detail on inspection;
-- enough uncluttered walking space to judge the protagonist properly.
-
-The accepted protagonist must be placed into the scene at a **provisional gameplay display scale** during this package so proportions are designed around the actual character rather than an empty map.
-
-No splice system, battle system, economy, quest system or major interaction layer is implemented here.
-
-**Human-facing visual gate:** with an accepted protagonist visibly present, the environment already looks like a specific SplicePit location derived from the concept work rather than generic prototype scenery or the discarded old Lab.
-
-### WP0.4G — In-World Scale, Movement, Collision, Depth and Camera Polish
-
-Take the accepted protagonist movement from WP0.4D and make it belong inside the new Yard.
-
-Required:
-
-- determine and lock actual gameplay display scale by judging protagonist/world proportion in the new environment;
-- responsive four-direction movement;
-- correct directional walk/idle presentation;
-- collision against buildings, fences, trees, water and props;
-- sensible player hitbox/feet origin;
-- layered depth so the player can move behind canopies, awnings and tall props where appropriate;
-- smooth camera follow;
-- nearest-neighbour pixel presentation without shimmer/blur;
-- keyboard baseline using existing semantic input architecture;
-- preserve accepted sprite identity/readability while scaling it into the world.
-
-**Gate:** the protagonist looks correctly scaled, embedded in the Yard rather than pasted over it, and simply moving around feels pleasant without needing another system to make it interesting.
-
-### WP0.4E-R — Character-Selection Presentation Redesign — PLANNED REPAIR PACKAGE
-
-Only after the Yard and movement language exist, redesign the visible way the player chooses Milo/Theo/Ada/Pip and enters a name.
-
-Reuse the technical identity plumbing from WP0.4E. Start the **visible design** again.
-
-Requirements:
-
-- choose Milo, Theo, Ada or Pip;
-- player name entry;
-- persisted identity/load restoration;
-- no mechanical differences;
-- keyboard-safe text entry;
-- practical mouse/touch interaction;
-- presentation must feel native to SplicePit and visually related to the accepted Yard;
-- no dark-terminal admin screen;
-- no giant web cards/panels;
-- no boxed character tabs/preview simply because code already exists.
-
-Candidate approaches may be in-world, spatial, scene-based or another game-native solution. Nothing is pre-approved.
-
-**Human gate:** explicit approval of the character-choice presentation is required before WP0.4H can pass.
-
-### WP0.4H — Graphics-First Playable Gate — HUMAN GATE
-
-This is a **hard stop**.
-
-The playable should effectively be:
-
-`Boot → accepted Character Select → Apprentice Splicer Yard`
-
-Human review must approve:
-
-1. protagonist in-world size and readability;
-2. character-choice presentation;
-3. player-name entry feel;
-4. walking responsiveness;
-5. animation personality;
-6. camera behaviour;
-7. collision/depth feeling;
-8. environment richness;
-9. fidelity to the approved concept-world direction;
-10. biotech wrongness / SplicePit specificity;
-11. absence of rejected legacy presentation;
-12. overall desire to keep moving around even when there is nothing else to do.
-
-The target feeling remains: **choose one of four questionable little gene-splicing apprentices, enter their attractive but increasingly dubious workshop yard, and already want to explore it even though there is almost nothing to do yet.**
-
-If this gate fails, return to WP0.4D/F/G/E-R as appropriate. Do not compensate by adding systems.
-
-## WP0.4I–J after the walking gate
-
-**WP0.4I — Post-Gate Presentation Expansion** may only begin after WP0.4H approval. Its exact scope must be revalidated against the playtest. Likely work includes minimal title/opening integration, dialogue/interface proof and first creature visual proof, but none of those should constrain the walking prototype beforehand.
-
-**WP0.4J — Visual Direction Lock for Mechanic Re-entry** confirms that the player/world/sprite/UI language is coherent enough for splice-mechanic redesign to resume.
-
-**R0.4 release gate:** the visual/game-feel baseline receives explicit human approval. Splice and battle mechanics remain deferred until WP0.4J passes.
+Do not solve this by changing the accepted world scale back to a close view. Improve the assets at the accepted scale.
 
 ---
 
-# R0.5 — Core Mechanic Redesign — PLANNED
+# Permanently rejected presentation direction
 
-**Goal:** redesign the defining mechanics from first principles against the approved visual/game-feel baseline.
+Do not restore or extend:
 
-24. **WP0.5A — Splice Mechanics Design Reset** — design/specification first; identify actual player decisions, testing loop, risk, pacing and information model before coding the bench.
-25. **WP0.5B — Splice Bench Interaction Prototype** — implement only the newly approved splice model and validate it through human playtest.
-26. **WP0.5C — Battle Mechanics Design Reset** — revisit cadence, spatial presentation, actions, resource pressure, readability and stakes after splice design is understood.
-27. **WP0.5D — Battle Interaction Prototype** — implement only the newly approved battle model and validate it through human playtest.
+- old `VisualDirectionScene` presentation;
+- legacy player-facing Lab/Splice/Battle presentation;
+- old dark-terminal styling;
+- the dark brown/olive `APPRENTICE REGISTRATION` screen;
+- character tabs plus boxed preview as the default character-choice metaphor;
+- giant browser/web cards as the main game UI;
+- visible HTML-form composition as the default game boot;
+- previous oversized/high-saturation visual experiments;
+- any assumption that existing prototype UI deserves to survive because it already exists.
 
-**R0.5 release gate:** both central mechanics are explicitly accepted as enjoyable/readable. Existing mechanic prototypes are references, not requirements.
-
----
-
-# R0.6 — World, Quests, Acquisition and Pit Progression — PLANNED
-
-**Goal:** connect the approved player/workshop/splice/battle experience into the actual RPG loop.
-
-28. **WP0.6A — Authored World/Map Runtime**
-29. **WP0.6B — Dialogue, NPC and Relationship State**
-30. **WP0.6C — Quest, Story Clock and Branch-State Framework**
-31. **WP0.6D — Acquisition, Inventory and Economy Framework** — Buy / Harvest / Win / Trade.
-32. **WP0.6E — Test Stock, Housing and Physical Creature Handling**
-33. **WP0.6F — Pit Upgrade Framework**
-34. **WP0.6G — Fit Pit Ladder, Circuits and Reward Progression Framework**
-35. **WP0.6H — Integrated World Loop Prototype**
-
-**R0.6 release gate:** leave workshop → acquire material/animals → experiment → prepare/fight → earn/upgrade → progress works end-to-end without bespoke scene hacks.
+Presentation-independent domain logic, saves, input abstractions, deterministic systems and tests can be reused where appropriate.
 
 ---
 
-# R0.7 — Production Presentation Pipeline — PLANNED
+# Core tonal direction — LOCKED
 
-**Goal:** turn the approved visual prototype into a scalable production-quality asset/UI/audio pipeline.
+SplicePit presents a bright, colourful, inviting monster-RPG surface while something darker repeatedly tries to break through.
 
-36. **WP0.7A — Production Art Specification and Content-Warning Treatment**
-37. **WP0.7B — Environment, Player and NPC Asset Pipeline**
-38. **WP0.7C — Production Creature Phenotype Renderer**
-39. **WP0.7D — Production UI, World and Dialogue Pass**
-40. **WP0.7E — Production Lab and Combat Presentation**
-41. **WP0.7F — Audio, Settings, Accessibility and Localisation Runtime**
-42. **WP0.7G — Asset Performance and Presentation Integration Gate**
+The contrast is part of the game's identity:
 
-**R0.7 release gate:** production assets replace temporary prototype drawing without changing the approved visual language.
+- cheerful world;
+- readable colourful environments;
+- enthusiasm for wildly unethical gene splicing;
+- comic moral vacancy;
+- genuine animal brutality and consequences;
+- brief visual ruptures revealing a darker layer underneath.
 
----
+The game should not become permanently grimdark. The darker moments work because the normal world remains attractive and optimistic.
 
-# R0.8 — Integrated Pre-Alpha Slice — PLANNED
-
-**Goal:** prove all foundations together in one intentionally authored, production-quality slice.
-
-43. **WP0.8A — Pre-Alpha Content Lock and Slice Manifest**
-44. **WP0.8B — Opening Disaster and Emergency Starter**
-45. **WP0.8C — Inherited Workshop/Pit Production Location**
-46. **WP0.8D — Starting Hub and Routes**
-47. **WP0.8E — Authored Acquisition and Experimentation Loop**
-48. **WP0.8F — First Fit Pit, Debt Pressure and Early Upgrades**
-49. **WP0.8G — Save, Onboarding and End-to-End Integration**
-50. **WP0.8H — Structured Pre-Alpha Playtest and Hardening**
-
-**R0 gate:** a fresh player understands the intended game from play, the opening/workshop/creatures feel visually coherent, and no high-severity foundational blocker remains.
+The reusable visual language begins at the title screen: bright `SplicePit` presentation → brief corruption/flicker into the darker concept-art identity → snap back to normal.
 
 ---
 
-# R1 — Alpha 1 / Complete Act 1 — PLANNED
+# First real game vertical slice
 
-**Goal:** first complete authored chapter.
+The next major human-playable target is:
 
-51. **WP1A — Act 1 Canon and Production Content Lock**
-52. **WP1B — Act 1 Geography and Environmental Content**
-53. **WP1C — Act 1 NPCs, Dialogue, Relationships and Suspicion Arc**
-54. **WP1D — Act 1 Base Animals, Source Packages and Biological Content Roster**
-55. **WP1E — Act 1 Quests, Acquisition Economy and Optional Work**
-56. **WP1F — Act 1 Fit Pit Circuit and Water/Air Introduction**
-57. **WP1G — Act 1 Pit Upgrades, Training, Recovery and Creature Management**
-58. **WP1H — Debt Deadline and Paid/Unpaid Act 1 Resolution**
-59. **WP1I — Alpha 1 Integration, Balance, Onboarding and QA**
+`Splash / Title → Main Menu → New Game → Opening narration → Character choice → Basic onboarding → Find Master → RinoCow disaster → Debt confrontation → First splice tutorial → First local Pit fight → result / next hook`
 
-**Release gate:** a fresh player can complete Act 1 through either major debt outcome with no progression/save blocker.
+This is the first milestone to judge as **the actual game**, rather than an isolated movement or mechanics prototype.
+
+## Locked opening story frame
+
+Exact final dialogue can still be tightened, but these beats are locked for the slice:
+
+1. **Title / menu**
+   - bright monster-RPG presentation;
+   - dark flicker/corruption underneath;
+   - New Game / Continue / Settings.
+
+2. **Satirical opening narration**
+   - deliberately parody the optimistic monster-RPG introduction without directly copying another game's protected text, characters or exact presentation;
+   - establish immediately that the world regards gene alteration and animal brutality with absurd enthusiasm.
+
+3. **Choose apprentice**
+   - Milo / Theo / Ada / Pip;
+   - authored name accepted immediately;
+   - optional rename;
+   - no class/stat difference between protagonists.
+
+4. **Basic onboarding**
+   - movement;
+   - interact/confirm/cancel;
+   - Bag;
+   - Map;
+   - objective/help language.
+
+5. **Master objective**
+   - the Master is waiting;
+   - he is about to undertake the splice fight of his life;
+   - he owes dangerous people a large amount of money;
+   - losing is likely to leave him comprehensively fucked.
+
+6. **RinoCow disaster**
+   - the Master's own spliced RinoCow turns on him;
+   - the Master is mauled to death;
+   - the bright world briefly ruptures into the darker underlying visual state;
+   - the player is left with the workshop and consequences.
+
+7. **Debt inheritance**
+   - the people the Master owed confront the player between the aftermath and first Pit progression;
+   - they make clear death did not erase the obligation;
+   - the debt is now effectively the player's problem.
+
+8. **First splice**
+   - player learns the newly designed splice bench;
+   - opening biological foundation uses Rabbit / Goat / Pig;
+   - tutorial must create a viable creature;
+   - player learns the real mental model, not a fake one-off interaction.
+
+9. **First local Pit fight**
+   - take the viable creature to the local Pit;
+   - learn first battle model;
+   - both tutorial win and loss must progress cleanly;
+   - result establishes the next debt/progression pressure.
 
 ---
 
-# R2 — Alpha 2 / Act 2 Expansion — PLANNED
+# Save / Continue direction
 
-60. **WP2A — Act 2 Branch Architecture and Content Lock**
-61. **WP2B — Independent/Free Act 2 Route**
-62. **WP2C — Creditor-Controlled Act 2 Route**
-63. **WP2D — Water, Air and Specialist Circuit Expansion**
-64. **WP2E — Advanced Biology, Rare Bases and Mutation Research Content**
-65. **WP2F — Advanced Pit, Training, Recovery and High-Risk Competition**
-66. **WP2G — Act 2 Progression, Economy and Branch Convergence Tuning**
-67. **WP2H — Alpha 2 Integration, Scale, Save and Performance QA**
+The current prototype returning to character selection on browser refresh is **not a blocker** for the present development stage.
 
-**Release gate:** both major Act 2 routes are completable, meaningfully different and primarily content/data expansion rather than core-engine rewrites.
+Proper save behaviour becomes mandatory in R0.10 after the actual opening flow exists.
 
----
+Final opening-slice persistence must cover:
 
-# R3 — Content-Complete Beta — PLANNED
+- New Game reset semantics;
+- Continue availability;
+- protagonist/name;
+- story/event flags;
+- location/checkpoints;
+- first creature/tutorial progress;
+- first battle progress/result;
+- safe browser reload.
 
-68. **WP3A — Content Completion and Canon Audit**
-69. **WP3B — Splicing, Knowledge and Biological Balance Pass**
-70. **WP3C — Combat, Arena and Pit Balance Pass**
-71. **WP3D — Economy, Progression and Branch-Coherence Pass**
-72. **WP3E — UX, Accessibility, Controller and Localisation Beta Pass**
-73. **WP3F — Browser Performance, Asset and Compatibility Beta Pass**
-74. **WP3G — Full-Game Beta Regression and Feature Freeze Gate**
-
-**Release gate:** intended content is present, major routes repeatedly complete and development enters feature freeze except blocker-driven change.
+Do not spend early packages polishing prototype refresh behaviour instead of building the game.
 
 ---
 
-# R4 — Release Candidate — PLANNED
+# Authoritative opening-slice sequence
 
-75. **WP4A — Release Feature Freeze, Defect Triage and RC Branch Discipline**
-76. **WP4B — Save Compatibility, Migration and Failure Recovery Certification**
-77. **WP4C — Deployment, Rollback and Browser Compatibility Certification**
-78. **WP4D — Legal, Licensing, Credits, Warning and Attribution Closure**
-79. **WP4E — Final Performance, Presentation and Localisation Polish**
-80. **WP4F — Release Candidate Full-Game Certification**
+## R0.5 — Front Door, Tone and New Game Flow — NEXT
 
-**Release gate:** exact deployed artifact has no unresolved release-blocking defect, save corruption, progression blocker or supported-platform failure.
+**Goal:** make SplicePit boot like an actual game and establish the bright/dark tonal thesis.
+
+### WP0.5A — Splash / Title Corruption System — READY
+
+Build the bright title/splash, dark flicker identity and reusable corruption transition.
+
+**Human/visual gate:** the title alone should communicate "appealing colourful monster RPG with something badly wrong underneath".
+
+### WP0.5B — Main Menu Shell
+
+New Game / Continue / Settings with keyboard and pointer support. Continue may remain unavailable until real saves arrive.
+
+### WP0.5C — Opening Narration / Dialogue Presentation
+
+Reusable game-native authored-text presentation plus the first satirical opening sequence.
+
+### WP0.5D — Character Selection Integrated into New Game
+
+Put the accepted in-world Milo/Theo/Ada/Pip selector into the real New Game flow.
+
+### Graphics Tightening Pass A
+
+Title/logo, title background, corruption effect, main menu, dialogue frame and visible character-selection scene.
+
+**R0.5 gate:** boot → New Game → narration → character selection feels like one coherent opening.
 
 ---
 
-# Current decision gates
+## R0.6 — Onboarding and Opening World Route
 
-- **DG-GRAPHICS-FIRST-PLAYABLE:** immediate hard gate at WP0.4H. Choosing a protagonist and simply walking around the concept-derived Apprentice Splicer Yard must feel good before presentation or mechanics expand.
-- **DG-PLAYER-SPRITE:** Milo/Theo/Ada/Pip and their accepted WP0.4D runtime appearance/movement are locked for the current foundation. Final **in-world display scale** is deliberately unresolved until WP0.4F/G and requires human visual approval.
-- **DG-CHARACTER-SELECT:** WP0.4E identity/save plumbing is retained; its first visible registration-form presentation is rejected. Final character-choice presentation is redesigned in WP0.4E-R after Yard/movement language exists and requires human approval.
-- **DG-PLAYER-CUSTOMISATION:** broad modular appearance customisation is deferred. Current identity contract is Milo/Theo/Ada/Pip plus player-entered name.
-- **DG-YARD-VISUAL:** the next environment is the approved concept-derived Apprentice Splicer Yard/workshop. The discarded old Lab scene is not a base asset, layout reference or reskin target.
-- **DG-VISUAL-DIRECTION:** final mechanic-re-entry lock occurs at WP0.4J after the graphics-first playable is accepted.
-- **DG-SPLICE-PLAY:** current bench is superseded; player-facing splice loop must be redesigned in WP0.5A and accepted in WP0.5B.
-- **DG-BATTLE-PLAY:** current battle/cadence implementation is superseded; battle must be redesigned in WP0.5C and accepted in WP0.5D.
-- **DG-ARENA-THRESHOLDS:** Land/Water/Air functional qualification remains a later mechanic decision after battle redesign.
-- **DG-INJURY-RISK:** exact competition injury/death model remains later tuning.
-- **DG-WORLD:** final Act 1 geography/names lock no later than WP1A; subset approved for R0.8.
-- **DG-CREDITOR / DG-DEBT / DG-UPGRADES:** lock at the latest safe authored-content gate, not during the graphics-first rebuild.
-- **DG-MUSIC:** final supplied music remains separable from current visual/mechanic work.
+**Goal:** teach navigation and connect the physical opening locations.
+
+### WP0.6A — Controls / Help Tutorial Framework
+
+Contextual reusable prompts for movement, interaction, Bag, Map and later mechanics.
+
+### WP0.6B — Bag, Map and Objective Shells
+
+Only enough real functionality for the opening slice.
+
+### WP0.6C — Opening Objective Sequence
+
+Teach basics and send player to the Master with the debt/fight setup.
+
+### WP0.6D — Authored Opening Route
+
+Connect Apprentice Splicer Yard → Master/Lab → route towards local Pit, including a suitable debt encounter location.
+
+### WP0.6E — Master Lab Interior
+
+Detailed lab suitable for the RinoCow event, splice bench and post-death state.
+
+### WP0.6F — Local Pit Exterior / Interior Foundation
+
+Enough authored Pit space to support arrival, first fight and result.
+
+### Graphics Tightening Pass B
+
+Yard, routes, Lab and Pit receive a substantial authored-detail pass.
+
+**R0.6 gate:** character onboarding → Master's location works as a coherent playable world route.
+
+---
+
+## R0.7 — Disaster, Cutscenes and Debt
+
+**Goal:** deliver the inciting story event and inherit the central pressure.
+
+### WP0.7A — Cutscene Runtime
+
+Control lock/release, camera focus, scripted movement/facing, dialogue timing, event flags and corruption hooks.
+
+### WP0.7B — Master / RinoCow Disaster Cutscene
+
+Author and implement the fatal mauling.
+
+### WP0.7C — Dark-Layer Flicker Story Language
+
+Generalise title corruption into a reusable in-world story effect.
+
+### WP0.7D — Post-Death Lab State
+
+Changed environment and objective state after Master death.
+
+### WP0.7E — Debt Collector Encounter
+
+Confront player and make inherited debt pressure explicit.
+
+### Graphics Tightening Pass C
+
+RinoCow, cutscene staging, Lab aftermath, corruption effects and debt encounter receive a dedicated polish pass.
+
+**R0.7 gate:** player understands why they are now forced to splice and fight.
+
+---
+
+## R0.8 — First Real Splice Loop
+
+**Goal:** rebuild the defining experimentation mechanic against the accepted game presentation.
+
+### WP0.8A — Splice Mechanics Design Lock for Opening
+
+Design first. Decide the minimum real player decisions, uncertainty, information, risk and viability model. Reuse useful R0.3 biology infrastructure but not its rejected player-facing UX.
+
+### WP0.8B — Splice Bench Interaction v1
+
+Build only the newly accepted bench interaction.
+
+### WP0.8C — Starter Biological Content
+
+Rabbit / Goat / Pig and the already-approved opening source-package foundation.
+
+### WP0.8D — Guided First Viable Creature
+
+Tutorial with enough agency to teach the actual system and guarantee a usable path forward.
+
+### WP0.8E — Creature Roster / Basic Condition State
+
+Minimum creature identity, phenotype summary and battle-relevant state.
+
+### Graphics Tightening Pass D
+
+Splice machinery, specimen handling, source selection, creature output and biological feedback.
+
+**R0.8 gate:** a fresh player creates a viable creature and understands why experimentation is interesting.
+
+---
+
+## R0.9 — First Local Pit Fight
+
+**Goal:** rebuild the defining battle mechanic and complete the first core loop.
+
+### WP0.9A — Battle Mechanics Design Lock for Opening
+
+Design first. Settle the minimum first-fight decision model, capability readability, condition consequences and tutorial-loss progression.
+
+### WP0.9B — Pit Battle Runtime / UI v1
+
+Implement only the accepted first-fight design.
+
+### WP0.9C — First Opponent and Battle Tutorial
+
+One readable opponent and guided first battle.
+
+### WP0.9D — Win / Loss / Reward Resolution
+
+Both outcomes progress without a hard lock.
+
+### WP0.9E — Debt / Progression Hook After Fight
+
+End the slice with clear future pressure/reward.
+
+### Graphics Tightening Pass E
+
+Arena, crowd/background life, creature presentation, actions/effects, damage feedback, combat UI and results.
+
+**R0.9 gate:** first splice → first Pit fight feels like one coherent game loop.
+
+---
+
+## R0.10 — Save/Continue, Settings and Vertical-Slice Hardening
+
+**Goal:** turn the assembled opening into a repeatable, resumable first game slice.
+
+### WP0.10A — Real New Game / Continue Save Flow
+
+Autosave/checkpoints, state persistence and safe reload.
+
+### WP0.10B — Settings Completion
+
+Music, SFX, text speed and essential display/accessibility settings justified by the slice.
+
+### WP0.10C — End-to-End Opening Flow Integration
+
+Prove:
+
+`Title → New Game → narration → character → onboarding → Master → RinoCow death → first splice → debt confrontation → local Pit → first fight → result → continue/reload`
+
+### Graphics Tightening Pass F — Final Opening Art Pass
+
+Final pre-gate visual pass over title/menu, Yard, route, Lab, RinoCow event, debt encounter, bench, Pit, battle and UI consistency.
+
+### WP0.10D — Opening Slice QA / Soft-Lock Hardening
+
+Test event sequencing, saves, battle win/loss, tutorial paths, controls, collision/camera and legacy-UI regression.
+
+### WP0.10E — FIRST REAL GAMEPLAY SLICE — HUMAN GATE
+
+Human approval required for:
+
+- title/menu tone;
+- corruption/flicker language;
+- writing tone;
+- character selection integration;
+- tutorial clarity;
+- environment art fidelity;
+- RinoCow event;
+- debt pressure;
+- first splice;
+- first battle;
+- save/continue;
+- desire to continue beyond the first Pit fight.
+
+Do not begin broad Act 1 production until this gate passes.
+
+---
+
+# Opening-slice scope lock
+
+Build only what the slice needs:
+
+- one title/main-menu flow;
+- one opening narration;
+- one character-selection flow;
+- Apprentice Splicer Yard;
+- one opening route;
+- one Master lab;
+- one local Pit;
+- one Master/RinoCow disaster;
+- one debt confrontation;
+- one splice tutorial;
+- Rabbit/Goat/Pig starter biological content;
+- one viable player creature path;
+- one first opponent;
+- one battle tutorial;
+- win/loss resolution;
+- final save/continue checkpoints.
+
+Do not expand yet into:
+
+- full regional map production;
+- many towns;
+- large bestiary production;
+- deep economy;
+- broad quest trees;
+- multiple Pit circuits;
+- large NPC relationship systems;
+- full Act 1 content.
+
+---
+
+# Later roadmap after the opening slice
+
+The earlier long-range planning remains useful at a strategic level but is not allowed to override the opening-slice work above.
+
+## R1 — Alpha 1 / Complete Act 1 — PLANNED
+
+After R0.10 human approval:
+
+- lock Act 1 canon and production content;
+- expand geography;
+- build NPC/dialogue/relationships;
+- expand biological content;
+- add acquisition economy/quests;
+- introduce full Pit progression and Water/Air content;
+- build pit upgrades/training/recovery;
+- deliver the debt deadline and major Act 1 outcomes;
+- complete Alpha 1 integration/QA.
+
+## R2 — Alpha 2 / Act 2 Expansion — PLANNED
+
+- branch architecture;
+- independent/creditor-controlled routes;
+- Water/Air/specialist circuits;
+- advanced biology/mutations;
+- high-risk Pit progression;
+- branch convergence tuning;
+- integration/scale/save/performance QA.
+
+## R3 — Content-Complete Beta — PLANNED
+
+- content completion;
+- biology balance;
+- battle balance;
+- economy/progression balance;
+- UX/accessibility/controller/localisation;
+- browser performance;
+- full-game regression and feature freeze.
+
+## R4 — Release Candidate — PLANNED
+
+- defect triage / release discipline;
+- save compatibility and recovery;
+- deployment/browser certification;
+- licensing/credits/warnings;
+- final presentation/localisation/performance polish;
+- release candidate certification.
+
+---
+
+# Core decision gates
+
+- **DG-PLAYER-SPRITE — LOCKED:** Milo/Theo/Ada/Pip and accepted current sprite foundation.
+- **DG-WORLD-SCALE — LOCKED:** 1280 × 720 gameplay view direction, 1× protagonist scale, wider-world presentation.
+- **DG-YARD-VISUAL — LOCKED DIRECTION / FIDELITY OPEN:** accepted visual language; environment requires repeated quality passes.
+- **DG-CHARACTER-SELECT — ACCEPTED:** in-world selection direction; integrate into New Game.
+- **DG-SAVE-OPENING — DEFERRED TO R0.10:** prototype refresh behaviour is not a current blocker.
+- **DG-TITLE-TONE — LOCKED DIRECTION:** bright presentation with darker corruption/flicker underneath.
+- **DG-OPENING-STORY — LOCKED FRAME:** satire → Master/debt setup → RinoCow death → inherited debt → first splice → first Pit.
+- **DG-SPLICE-PLAY — OPEN UNTIL WP0.8A:** old bench UX is superseded; design the first real interaction before coding it.
+- **DG-BATTLE-PLAY — OPEN UNTIL WP0.9A:** old battle UX is superseded; design the first real fight before coding it.
+- **DG-OPENING-GATE — HARD HUMAN STOP AT WP0.10E.**
 
 ---
 
 # Parallelism rule
 
-Do not parallelise work that is still defining the contract consumed by the next package.
+Do not parallelise work where one package is still defining the contract consumed by the next.
 
 In particular:
 
-- WP0.4F → WP0.4G → WP0.4E-R are sequential visual-definition work;
-- WP0.4F and WP0.4G form one continuous visual goal: accepted protagonist visibly inhabiting the concept-derived Yard at the correct gameplay scale;
-- WP0.4E-R consumes that accepted world language rather than inventing UI in isolation;
-- WP0.4H is a hard human stop;
-- do not build WP0.4I or later presentation work before WP0.4H approval;
-- do not build more splice mechanics during WP0.4C–J;
-- do not build more battle mechanics during WP0.4C–J;
-- do not expand world content before the visual lock and mechanic redesigns are accepted;
-- do not mass-produce NPC/creature/environment assets before the graphics-first gate validates scale and movement.
+- title/menu/narration/character-flow packages should remain sequential enough to establish one presentation language;
+- splice design WP0.8A must precede splice implementation;
+- battle design WP0.9A must precede battle implementation;
+- graphics tightening happens repeatedly after each introduced content cluster rather than as one late art dump;
+- do not mass-produce later world/NPC/creature content before WP0.10E passes.
 
-Technical cleanup that does not constrain design may continue only when required by the active WP.
+Technical cleanup may proceed only when it does not silently constrain unresolved design.
 
 ---
 
 # Change-control rule
 
-Playtest rejection is evidence, not failure. When a prototype reveals that the direction is wrong, stop extending it, record what was learned, supersede it explicitly and move the roadmap back to the earliest unresolved design contract.
+Human playtest is authority on subjective presentation/game feel.
 
-The 24 August 2026 WP0.4E rejection is now a concrete example of this rule: technical identity persistence survived, the visible registration-form presentation did not, and development was reordered so the world defines the interface language before character selection is visually locked.
+When a prototype reveals a wrong direction:
+
+1. stop extending it;
+2. record what survived;
+3. explicitly supersede the rejected part;
+4. return to the earliest unresolved design contract;
+5. do not compensate for weak fundamentals by adding more systems.
+
+The 24 August character-select rejection and the successful Yard-first correction remain the model for this process.
