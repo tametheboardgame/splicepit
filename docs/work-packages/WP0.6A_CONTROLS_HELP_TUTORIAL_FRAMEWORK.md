@@ -1,6 +1,6 @@
 # WP0.6A — Controls / Help Tutorial Framework
 
-Status: **IMPLEMENTED — VALIDATION PENDING**
+Status: **IMPLEMENTED**
 
 Authority: `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-25.md`
 
@@ -42,6 +42,8 @@ Automated coverage includes:
 - unit coverage for prompt catalogue, semantic hints, completion/fade behaviour, manual future hooks and reset behaviour;
 - browser smoke proving the Yard prompt visibly renders, world movement remains active while it is shown, real movement completes it, it fades cleanly, and no modal tutorial DOM is introduced;
 - the tutorial smoke is part of the normal `npm run smoke` gate.
+
+The normal repository CI remains the merge gate for this implementation.
 
 ## Save/schema impact
 
