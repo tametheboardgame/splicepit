@@ -19,6 +19,8 @@ Human review has accepted the foundation established across WP0.4C–G and WP0.4
 - four-direction movement, collision and camera feel;
 - in-world character-selection presentation.
 
+WP0.5A has now established the accepted bright/corrupted SplicePit title treatment. WP0.5B is the current implementation/review package, adding the world-native Main Menu shell between the title and existing character-selection runtime.
+
 The old player-facing Lab/Splice/Battle presentation and the rejected dark registration-form character selector are prototype history and must not return.
 
 The current environment art is **not final fidelity**. Its direction and scale are approved, but future work must progressively replace the blockout-like low-detail environment treatment with richer, more authored pixel art matching the care and personality of the protagonist sprites.
@@ -31,15 +33,17 @@ Development now proceeds towards the first real opening vertical slice:
 
 The core tonal thesis is a bright, colourful, inviting monster-RPG surface with biological horror, brutality and a darker visual layer repeatedly trying to break through.
 
-The title screen should establish this immediately: cheerful `SplicePit` presentation, brief corruption/flicker into the darker concept-art identity, then back to normal.
+The title screen establishes this immediately: cheerful `SplicePit` presentation, brief corruption/flicker into the darker concept-art identity, then back to normal.
 
 The opening deliberately satirises the optimistic monster-RPG introduction, then teaches controls, Bag, Map and objectives before sending the player to their Master. The Master is killed by his own spliced **RinoCow**, the inherited debt becomes the player's problem, the player learns the splice bench, creates a viable first creature, and completes the first local Pit fight.
 
 Proper New Game / Continue / autosave behaviour is deliberately scheduled near the end of this opening-slice build. Current refresh behaviour is not a blocker.
 
-## Next executable work package
+## Current / next executable work package
 
-> **Start WP0.5A — Splash / Title Corruption System**
+> **Current human-review package: WP0.5B — Main Menu Shell**
+>
+> **Once WP0.5B is accepted: start WP0.5C — Opening Narration / Dialogue Presentation**
 
 ## Planning source of truth
 

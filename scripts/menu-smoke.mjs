@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
-const chromePort = 9225;
-const gamePort = 8083;
+const chromePort = 9226;
+const gamePort = 8084;
 let nextId = 0;
 const pending = new Map();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -72,12 +72,12 @@ try {
     return result.result?.value;
   }
 
-  async function titleState() {
-    return evaluate(`globalThis.__SPLICEPIT_TITLE__ ? ({ ...globalThis.__SPLICEPIT_TITLE__ }) : null`);
-  }
-
   async function menuState() {
     return evaluate(`globalThis.__SPLICEPIT_MENU__ ? ({ ...globalThis.__SPLICEPIT_MENU__ }) : null`);
+  }
+
+  async function gameState() {
+    return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
 
   async function key(key, code, vk) {
@@ -86,18 +86,11 @@ try {
     await sleep(70);
   }
 
-  async function canvasHash() {
-    return evaluate(`(() => {
-      const canvas = document.querySelector('#visual-reset-stage');
-      const ctx = canvas?.getContext('2d');
-      if (!canvas || !ctx) return 0;
-      const data = ctx.getImageData(80, 70, 1120, 560).data;
-      let hash = 0;
-      for (let i = 0; i < data.length; i += 96) {
-        hash = (hash + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7) % 2147483647;
-      }
-      return hash;
-    })()`);
+  async function click(x, y) {
+    await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+    await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+    await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+    await sleep(100);
   }
 
   await cdp('Page.enable');
@@ -108,41 +101,15 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/` });
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?menuTest=1` });
 
-  await waitFor(async () => {
-    const current = await titleState();
+  const initial = await waitFor(async () => {
+    const current = await menuState();
     if (current?.error) throw new Error(current.error);
-    return current?.ready && current?.titleRendered ? current : null;
+    return current?.ready && current?.rendered ? current : null;
   });
-  await evaluate(`localStorage.clear()`);
-  await cdp('Page.reload', { ignoreCache: true });
-
-  const baselineState = await waitFor(async () => {
-    const current = await titleState();
-    if (current?.error) throw new Error(current.error);
-    return current?.titleRendered && current.elapsedMs >= 1250 && current.elapsedMs < 1600 && current.corruption === 0 ? current : null;
-  });
-  const baselineHash = await canvasHash();
-  if (!baselineHash || baselineState.advanced || baselineState.readyToAdvance) {
-    throw new Error(`Unexpected bright title baseline: ${JSON.stringify({ baselineState, baselineHash })}`);
-  }
-
-  const corruptState = await waitFor(async () => {
-    const current = await titleState();
-    return current?.corruption > 0.55 ? current : null;
-  });
-  const corruptHash = await canvasHash();
-  if (!corruptHash || corruptHash === baselineHash || corruptState.corruptionEventsPassed < 2) {
-    throw new Error(`Corruption did not visibly interrupt the title: ${JSON.stringify({ corruptState, baselineHash, corruptHash })}`);
-  }
-
-  const recovered = await waitFor(async () => {
-    const current = await titleState();
-    return current?.readyToAdvance && current.corruption < 0.01 && current.corruptionEventsPassed >= 3 ? current : null;
-  });
-  if (recovered.maxCorruption < 0.65 || recovered.advanced) {
-    throw new Error(`Title did not recover cleanly after corruption: ${JSON.stringify(recovered)}`);
+  if (initial.screen !== 'menu' || initial.selectedId !== 'new-game' || initial.continueEnabled !== false) {
+    throw new Error(`Unexpected main menu initial state: ${JSON.stringify(initial)}`);
   }
 
   const layout = await evaluate(`(() => {
@@ -155,31 +122,54 @@ try {
       viewportWidth: innerWidth,
     } : null;
   })()`);
-  if (!layout || layout.width !== 1280 || layout.height !== 720 || !String(layout.aria).includes('title') || layout.bodyWidth > layout.viewportWidth) {
-    throw new Error(`Title canvas/layout contract failed: ${JSON.stringify(layout)}`);
+  if (!layout || layout.width !== 1280 || layout.height !== 720 || !String(layout.aria).includes('main menu') || layout.bodyWidth > layout.viewportWidth) {
+    throw new Error(`Main menu canvas/layout contract failed: ${JSON.stringify(layout)}`);
   }
 
-  // Fresh reload: one early input skips the reveal/corruption sequence but does not advance; the next advances.
-  await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => (await titleState())?.titleRendered === true);
-  await key(' ', 'Space', 32);
-  const skipped = await waitFor(async () => {
-    const current = await titleState();
-    return current?.readyToAdvance ? current : null;
+  await key('ArrowDown', 'ArrowDown', 40);
+  const keyboardSelected = await waitFor(async () => {
+    const current = await menuState();
+    return current?.selectedId === 'settings' ? current : null;
   });
-  if (skipped.advanced) throw new Error(`First early input should skip, not advance: ${JSON.stringify(skipped)}`);
+  if (keyboardSelected.selectedId === 'continue') {
+    throw new Error(`Keyboard navigation should skip disabled Continue: ${JSON.stringify(keyboardSelected)}`);
+  }
 
   await key('Enter', 'Enter', 13);
-  const menu = await waitFor(async () => {
+  const settings = await waitFor(async () => {
     const current = await menuState();
-    return current?.ready && current?.rendered && current?.screen === 'menu' ? current : null;
+    return current?.screen === 'settings' && current?.selectedId === 'back' ? current : null;
   });
-  const finalTitle = await titleState();
-  if (!finalTitle?.advanced || finalTitle.titleRendered || menu.selectedId !== 'new-game' || menu.continueEnabled !== false) {
-    throw new Error(`Title did not hand off cleanly to WP0.5B menu: ${JSON.stringify({ finalTitle, menu })}`);
+  if (!settings.settingsOpened || settings.newGameStarted) {
+    throw new Error(`Settings shell did not open cleanly: ${JSON.stringify(settings)}`);
   }
 
-  console.log('WP0.5A bright title, visible corruption, clean recovery, skip and main-menu handoff smoke passed.');
+  await key('Escape', 'Escape', 27);
+  await waitFor(async () => {
+    const current = await menuState();
+    return current?.screen === 'menu' && current?.selectedId === 'settings' ? current : null;
+  });
+
+  await click(640, 456);
+  const disabledContinue = await waitFor(async () => {
+    const current = await menuState();
+    return current?.selectedId === 'continue' && String(current?.statusText).includes('checkpoint') ? current : null;
+  });
+  if (disabledContinue.newGameStarted || disabledContinue.continueEnabled) {
+    throw new Error(`Disabled Continue became actionable: ${JSON.stringify(disabledContinue)}`);
+  }
+
+  await click(640, 376);
+  const selector = await waitFor(async () => {
+    const current = await gameState();
+    return current?.ready && current?.phase === 'select' && current?.selectionRendered ? current : null;
+  });
+  const finalMenu = await menuState();
+  if (!finalMenu?.newGameStarted || finalMenu.rendered || selector.selectionPresentation !== 'yard-arrival') {
+    throw new Error(`New Game did not hand off to the existing selector: ${JSON.stringify({ finalMenu, selector })}`);
+  }
+
+  console.log('WP0.5B main menu keyboard, pointer, disabled Continue, Settings and New Game handoff smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
