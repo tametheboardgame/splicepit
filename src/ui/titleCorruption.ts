@@ -1,5 +1,5 @@
 import { drawCorruptionPolish } from './frontDoorArt.js';
-import { HAPPY_TITLE_SPLASH_DATA_URI } from './titleSplashAsset.js';
+import { getHappyTitleSplashImage } from './titleSplashAsset.js';
 
 export const TITLE_VIEW_WIDTH = 1280;
 export const TITLE_VIEW_HEIGHT = 720;
@@ -97,19 +97,8 @@ function rect(
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
 }
 
-let happyReference: HTMLImageElement | null = null;
-function happyTitleImage(): HTMLImageElement | null {
-  if (typeof Image === 'undefined') return null;
-  if (!happyReference) {
-    happyReference = new Image();
-    happyReference.decoding = 'async';
-    happyReference.src = HAPPY_TITLE_SPLASH_DATA_URI;
-  }
-  return happyReference.complete && happyReference.naturalWidth > 0 ? happyReference : null;
-}
-
 function drawHappyReference(ctx: CanvasRenderingContext2D, reveal: number): void {
-  const image = happyTitleImage();
+  const image = getHappyTitleSplashImage();
   ctx.save();
   ctx.globalAlpha = smoothstep(reveal);
   ctx.imageSmoothingEnabled = true;
