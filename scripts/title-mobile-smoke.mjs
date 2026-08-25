@@ -123,7 +123,7 @@ try {
   if (firstStable.canvasCssWidth > firstStable.viewportWidth + 1 || firstStable.scrollWidth > firstStable.viewportWidth) {
     throw new Error(`Mobile title overflows viewport: ${JSON.stringify(firstStable)}`);
   }
-  if (!String(firstStable.splash?.src).includes('splicepit-happy-title-v2.webp')) {
+  if (!String(firstStable.splash?.src).includes('splicepit-happy-title-v3.webp')) {
     throw new Error(`Mobile title is not using the static happy asset: ${JSON.stringify(firstStable.splash)}`);
   }
 
