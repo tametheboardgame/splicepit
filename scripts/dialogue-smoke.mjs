@@ -105,6 +105,17 @@ try {
     throw new Error(`Unexpected opening dialogue state: ${JSON.stringify(initial)}`);
   }
 
+  const portraitAssets = await evaluate(`Promise.all([
+    '/art/portraits/viktor-splicenstein.svg',
+    '/art/portraits/viktor-splicenstein-corrupted.svg',
+  ].map(async (src) => {
+    const response = await fetch(src);
+    return { src, ok: response.ok, type: response.headers.get('content-type') };
+  }))`);
+  if (!portraitAssets?.every((asset) => asset.ok && String(asset.type).includes('image/svg'))) {
+    throw new Error(`Viktor portrait assets failed production serving contract: ${JSON.stringify(portraitAssets)}`);
+  }
+
   const layout = await evaluate(`(() => {
     const canvas = document.querySelector('#visual-reset-stage');
     return canvas ? {
@@ -175,7 +186,7 @@ try {
     throw new Error(`Escape did not skip opening narration cleanly: ${JSON.stringify(skipped)}`);
   }
 
-  console.log('WP0.5C opening narration reveal, corruption, completion, speed hook and skip smoke passed.');
+  console.log('WP0.5C opening narration, Viktor portraits, corruption, completion, speed hook and skip smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {
