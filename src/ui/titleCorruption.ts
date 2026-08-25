@@ -1,11 +1,11 @@
 import { drawCorruptionPolish } from './frontDoorArt.js';
-import { getHappyTitleSplashImage } from './titleSplashAsset.js';
 
 export const TITLE_VIEW_WIDTH = 1280;
 export const TITLE_VIEW_HEIGHT = 720;
 export const TITLE_REVEAL_MS = 1250;
 export const TITLE_ADVANCE_MS = 3200;
 
+const HAPPY_TITLE_SPLASH_SRC = '/assets/splicepit-happy-title-v2.webp';
 const FIRST_PULSES = [
   { start: 1650, duration: 120, strength: 0.48 },
   { start: 1880, duration: 280, strength: 1 },
@@ -34,6 +34,21 @@ export type CorruptionOverlayOptions = {
   height?: number;
   seed?: number;
 };
+
+type HappySplashStatus = 'idle' | 'loading' | 'ready' | 'error';
+type HappySplashDebug = { status: HappySplashStatus; error: string | null; src: string };
+
+let happyReference: HTMLImageElement | null = null;
+let happyStatus: HappySplashStatus = 'idle';
+let happyError: string | null = null;
+
+function syncHappyDebug(): void {
+  (globalThis as typeof globalThis & { __SPLICEPIT_HAPPY_SPLASH__?: HappySplashDebug }).__SPLICEPIT_HAPPY_SPLASH__ = {
+    status: happyStatus,
+    error: happyError,
+    src: HAPPY_TITLE_SPLASH_SRC,
+  };
+}
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -97,8 +112,31 @@ function rect(
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
 }
 
+function happyTitleImage(): HTMLImageElement | null {
+  if (typeof Image === 'undefined') return null;
+  if (!happyReference) {
+    happyStatus = 'loading';
+    syncHappyDebug();
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      happyStatus = 'ready';
+      happyError = null;
+      syncHappyDebug();
+    };
+    image.onerror = () => {
+      happyStatus = 'error';
+      happyError = `Failed to load ${HAPPY_TITLE_SPLASH_SRC}`;
+      syncHappyDebug();
+    };
+    image.src = HAPPY_TITLE_SPLASH_SRC;
+    happyReference = image;
+  }
+  return happyStatus === 'ready' && happyReference.naturalWidth > 0 ? happyReference : null;
+}
+
 function drawHappyReference(ctx: CanvasRenderingContext2D, reveal: number): void {
-  const image = getHappyTitleSplashImage();
+  const image = happyTitleImage();
   ctx.save();
   ctx.globalAlpha = smoothstep(reveal);
   ctx.imageSmoothingEnabled = true;
@@ -199,3 +237,5 @@ export function drawTitleScreen(ctx: CanvasRenderingContext2D, elapsedMs: number
   }
   return state;
 }
+
+syncHappyDebug();
