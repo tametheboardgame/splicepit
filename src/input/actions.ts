@@ -7,6 +7,8 @@ export const ACTIONS = {
   CONFIRM: 'CONFIRM',
   CANCEL: 'CANCEL',
   MENU: 'MENU',
+  BAG: 'BAG',
+  MAP: 'MAP',
   LAB_INTERACT: 'LAB_INTERACT',
   LAB_CANCEL: 'LAB_CANCEL',
   BATTLE_PRIMARY: 'BATTLE_PRIMARY',
@@ -26,6 +28,7 @@ export type KeyboardControl =
   | 'KeyS'
   | 'KeyD'
   | 'KeyE'
+  | 'KeyB'
   | 'Enter'
   | 'Space'
   | 'Escape'
@@ -54,7 +57,9 @@ export const DEFAULT_BINDINGS: SemanticBindingProfile = {
     INTERACT: ['KeyE', 'Space'],
     CONFIRM: ['Enter', 'Space'],
     CANCEL: ['Escape'],
-    MENU: ['Tab', 'KeyM'],
+    MENU: ['Tab'],
+    BAG: ['KeyB'],
+    MAP: ['KeyM'],
     LAB_INTERACT: ['KeyE', 'Space'],
     LAB_CANCEL: ['Escape'],
     BATTLE_PRIMARY: ['Digit1'],
@@ -75,6 +80,7 @@ const CONTROL_LABELS: Readonly<Record<KeyboardControl, string>> = {
   KeyS: 'S',
   KeyD: 'D',
   KeyE: 'E',
+  KeyB: 'B',
   Enter: 'ENTER',
   Space: 'SPACE',
   Escape: 'ESC',
