@@ -57,7 +57,7 @@ export const DEFAULT_BINDINGS: SemanticBindingProfile = {
     INTERACT: ['KeyE', 'Space'],
     CONFIRM: ['Enter', 'Space'],
     CANCEL: ['Escape'],
-    MENU: ['Tab', 'KeyM'],
+    MENU: ['Tab'],
     BAG: ['KeyB'],
     MAP: ['KeyM'],
     LAB_INTERACT: ['KeyE', 'Space'],
