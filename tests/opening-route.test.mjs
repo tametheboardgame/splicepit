@@ -9,7 +9,7 @@ import {
   YARD_WORLD_WIDTH,
   isYardPositionBlocked,
   nearestOpeningRouteLandmark,
-} from '../world/yard.js';
+} from '../src/world/yard.js';
 
 function sampleSegment(from, to, spacing = 12) {
   const distance = Math.hypot(to.x - from.x, to.y - from.y);
