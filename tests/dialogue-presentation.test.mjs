@@ -20,6 +20,18 @@ test('opening narration carries the locked satirical story handoff', () => {
   assert.match(sequence.pages[3].text, /choose your Splice apprentice/i);
 });
 
+test('Dr. Viktor Splicenstein narrates the opening with paired normal and corrupted portraits', () => {
+  const pages = openingNarrationSequence().pages;
+  for (const page of pages) {
+    assert.equal(page.speaker, 'Dr. Viktor Splicenstein');
+    assert.equal(page.portrait?.src, '/art/portraits/viktor-splicenstein.svg');
+    assert.equal(page.portrait?.corruptedSrc, '/art/portraits/viktor-splicenstein-corrupted.svg');
+    assert.equal(page.portrait?.alt, 'Dr. Viktor Splicenstein');
+  }
+  assert.ok((pages[1].corruption?.length ?? 0) > 0);
+  assert.ok((pages[2].corruption?.length ?? 0) > 0);
+});
+
 test('text speed hooks reveal deterministically and instant mode completes immediately', () => {
   const text = '123456789012345678901234';
   assert.ok(dialogueRevealDurationMs(text, 'slow') > dialogueRevealDurationMs(text, 'normal'));
@@ -53,10 +65,15 @@ test('dialogue model supports optional speakers and portraits without requiring 
     id: 'voiced',
     text: 'Portrait-ready.',
     speaker: 'Dr Example',
-    portrait: { src: '/portrait.png', alt: 'Dr Example' },
+    portrait: {
+      src: '/portrait.png',
+      corruptedSrc: '/portrait-corrupted.png',
+      alt: 'Dr Example',
+    },
   };
   assert.equal(dialoguePageVisualState(plain, 9999, 'normal').textComplete, true);
   assert.equal(dialoguePageVisualState(voiced, 9999, 'normal').textComplete, true);
   assert.equal(voiced.speaker, 'Dr Example');
   assert.equal(voiced.portrait.alt, 'Dr Example');
+  assert.equal(voiced.portrait.corruptedSrc, '/portrait-corrupted.png');
 });
