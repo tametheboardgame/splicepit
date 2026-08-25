@@ -75,7 +75,7 @@ try {
   async function waitForReady() {
     return waitFor(async () => {
       const state = await evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
-      if (state?.error) throw new Error(`Visual reset stage failed to start: ${state.error}`);
+      if (state?.error) throw new Error(`SplicePit stage failed to start: ${state.error}`);
       return state?.ready ? state : null;
     }, 20000);
   }
@@ -120,9 +120,11 @@ try {
   const initial = await state();
   if (
     initial.selectedAvatarId !== 'milo' || initial.playerName !== 'Milo' ||
-    initial.loadedFromSave || initial.saved || initial.phase !== 'select'
+    initial.loadedFromSave || initial.saved || initial.phase !== 'select' ||
+    !initial.selectionRendered || initial.selectionPresentation !== 'yard-arrival' ||
+    initial.viewportWidth !== 1280 || initial.viewportHeight !== 720
   ) {
-    throw new Error(`Unexpected clean visual-reset state: ${JSON.stringify(initial)}`);
+    throw new Error(`Unexpected clean in-world selection state: ${JSON.stringify(initial)}`);
   }
 
   const rejectedUiPresent = await evaluate(`Boolean(
@@ -131,28 +133,33 @@ try {
   )`);
   if (rejectedUiPresent) throw new Error('Rejected WP0.4E terminal/form presentation is still reachable at boot.');
 
-  const layout = await evaluate(`({
-    canvases: document.querySelectorAll('#visual-reset-stage').length,
-    captureInputs: document.querySelectorAll('#player-name-capture').length,
-    width: innerWidth,
-    bodyWidth: document.body.scrollWidth,
-  })`);
-  if (layout.canvases !== 1 || layout.captureInputs !== 1 || layout.bodyWidth > layout.width) {
-    throw new Error(`Visual reset layout contract failed: ${JSON.stringify(layout)}`);
+  const layout = await evaluate(`(() => {
+    const canvas = document.querySelector('#visual-reset-stage');
+    return {
+      canvases: document.querySelectorAll('#visual-reset-stage').length,
+      captureInputs: document.querySelectorAll('#player-name-capture').length,
+      canvasWidth: canvas?.width,
+      canvasHeight: canvas?.height,
+      width: innerWidth,
+      bodyWidth: document.body.scrollWidth,
+    };
+  })()`);
+  if (layout.canvases !== 1 || layout.captureInputs !== 1 || layout.canvasWidth !== 1280 || layout.canvasHeight !== 720 || layout.bodyWidth > layout.width) {
+    throw new Error(`In-world selection layout contract failed: ${JSON.stringify(layout)}`);
   }
 
   const canvasHash = await evaluate(`(() => {
     const canvas = document.querySelector('#visual-reset-stage');
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return 0;
-    const data = ctx.getImageData(100, 100, 760, 340).data;
+    const data = ctx.getImageData(120, 100, 1000, 500).data;
     let hash = 0;
-    for (let i = 0; i < data.length; i += 64) {
+    for (let i = 0; i < data.length; i += 80) {
       hash = (hash + data[i] * 3 + data[i + 1] * 5 + data[i + 2] * 7) % 2147483647;
     }
     return hash;
   })()`);
-  if (!canvasHash) throw new Error('Visual reset canvas did not render.');
+  if (!canvasHash) throw new Error('In-world selection canvas did not render.');
 
   await key('ArrowRight', 'ArrowRight', 39);
   let current = await state();
@@ -160,10 +167,13 @@ try {
     throw new Error(`Keyboard selection did not move to Theo with default name: ${JSON.stringify(current)}`);
   }
 
-  // Enter accepts the authored name without forcing the rename flow.
+  // Enter accepts the authored name and transitions directly into the accepted Yard.
   await key('Enter', 'Enter', 13);
-  current = await state();
-  if (current.phase !== 'confirmed' || !current.saved || current.playerName !== 'Theo') {
+  current = await waitFor(async () => {
+    const value = await state();
+    return value.phase === 'confirmed' && value.yardRendered ? value : null;
+  });
+  if (!current.saved || current.playerName !== 'Theo') {
     throw new Error(`Default-name confirmation failed: ${JSON.stringify(current)}`);
   }
   let persisted = await persistedIdentity();
@@ -171,14 +181,15 @@ try {
     throw new Error(`Default identity was not persisted: ${JSON.stringify(persisted)}`);
   }
 
-  // Reload restores the authored/default identity.
+  // Reload restores the authored/default identity in the in-world selector.
   await cdp('Page.reload', { ignoreCache: true });
   let restored = await waitForReady();
-  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Theo') {
-    throw new Error(`Default identity was not restored after reload: ${JSON.stringify(restored)}`);
+  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Theo' ||
+      restored.phase !== 'select' || !restored.selectionRendered || restored.selectionPresentation !== 'yard-arrival') {
+    throw new Error(`Default identity was not restored into in-world selector: ${JSON.stringify(restored)}`);
   }
 
-  // Rename is optional, explicitly entered with N, and starts pre-filled with the current/default name.
+  // Rename remains optional and starts pre-filled with the selected/default name.
   await key('n', 'KeyN', 78);
   current = await state();
   const renameInput = await evaluate(`document.querySelector('#player-name-capture').value`);
@@ -186,7 +197,6 @@ try {
     throw new Error(`Optional rename did not start pre-filled: ${JSON.stringify({ current, renameInput })}`);
   }
 
-  // The input is selected on entry, so ordinary typing replaces the default and movement letters are not intercepted.
   await key('w', 'KeyW', 87, 'w');
   await key('a', 'KeyA', 65, 'a');
   await key('s', 'KeyS', 83, 's');
@@ -204,7 +214,7 @@ try {
   })()`);
   await waitFor(async () => {
     const value = await state();
-    return value.saved && value.phase === 'confirmed' ? value : null;
+    return value.saved && value.phase === 'confirmed' && value.yardRendered ? value : null;
   });
 
   persisted = await persistedIdentity();
@@ -214,11 +224,12 @@ try {
 
   await cdp('Page.reload', { ignoreCache: true });
   restored = await waitForReady();
-  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Rook') {
+  if (!restored.loadedFromSave || !restored.saved || restored.selectedAvatarId !== 'theo' || restored.playerName !== 'Rook' ||
+      restored.phase !== 'select' || !restored.selectionRendered) {
     throw new Error(`Renamed identity was not restored after reload: ${JSON.stringify(restored)}`);
   }
 
-  console.log('Visual-reset default-name confirmation, optional rename and identity persistence smoke passed.');
+  console.log('WP0.4E-R in-world selection, default-name confirmation, optional rename and persistence smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {

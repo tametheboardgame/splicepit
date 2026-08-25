@@ -105,6 +105,14 @@ try {
   await waitFor(async () => (await state())?.ready === true, 20000);
   await cdp('Page.bringToFront');
 
+  const selector = await waitFor(async () => {
+    const current = await state();
+    return current?.ready && current?.selectionRendered ? current : null;
+  });
+  if (selector.selectionPresentation !== 'yard-arrival' || selector.viewportWidth !== 1280 || selector.viewportHeight !== 720) {
+    throw new Error(`WP0.4E-R selector was not ready before Yard entry: ${JSON.stringify(selector)}`);
+  }
+
   await key('Enter', 'Enter', 13);
   const initial = await waitFor(async () => {
     const current = await state();
@@ -164,7 +172,6 @@ try {
     throw new Error(`Expanded Yard visual contract failed: ${JSON.stringify(visualStats)}`);
   }
 
-  // Move south into open space. This proves held semantic movement and gives the camera room to follow.
   await holdKey('s', 'KeyS', 83, 850);
   const south = await state();
   if (!(south.playerY > initial.playerY + 70) || south.facing !== 'down') {
@@ -174,7 +181,6 @@ try {
     throw new Error(`Camera did not follow southward movement: ${JSON.stringify({ initial, south })}`);
   }
 
-  // Move right while below the pond so the player can traverse a wider part of the expanded Yard.
   await holdKey('d', 'KeyD', 68, 1200);
   const east = await state();
   if (!(east.playerX > south.playerX + 120) || east.facing !== 'right') {
@@ -184,7 +190,6 @@ try {
     throw new Error(`Camera did not follow eastward movement: ${JSON.stringify({ south, east })}`);
   }
 
-  // Walking north from here runs into the pond edge. It must stop rather than crossing the water.
   const beforeCollision = east.collisionCount;
   await holdKey('w', 'KeyW', 87, 1200);
   const north = await state();
@@ -201,17 +206,16 @@ try {
   )`);
   if (rejectedUiPresent) throw new Error('Rejected legacy presentation returned during Yard movement.');
 
-  // Escape remains a review-only route back to the temporary chooser and restores its original logical canvas.
   await key('Escape', 'Escape', 27);
   const returned = await waitFor(async () => {
     const current = await state();
-    return current?.phase === 'select' ? current : null;
+    return current?.phase === 'select' && current?.selectionRendered ? current : null;
   });
-  if (returned.viewportWidth !== 960 || returned.viewportHeight !== 540 || returned.yardRendered) {
-    throw new Error(`Escape did not restore temporary chooser cleanly: ${JSON.stringify(returned)}`);
+  if (returned.viewportWidth !== 1280 || returned.viewportHeight !== 720 || returned.yardRendered || returned.selectionPresentation !== 'yard-arrival') {
+    throw new Error(`Escape did not restore in-world selector cleanly: ${JSON.stringify(returned)}`);
   }
 
-  console.log(`WP0.4G movement/camera/collision/scale smoke passed: ${JSON.stringify({ visualStats, south, east, north })}`);
+  console.log(`WP0.4G movement remains intact through WP0.4E-R: ${JSON.stringify({ visualStats, south, east, north })}`);
   ws.close();
   cleanup();
 } catch (error) {
