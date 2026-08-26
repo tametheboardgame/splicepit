@@ -1,7 +1,7 @@
 import {
   ACTIONS,
   DEFAULT_BINDINGS,
-  keyboardHint,
+  preferredInputHint,
   type SemanticAction,
   type SemanticBindingProfile,
 } from '../input/actions.js';
@@ -180,7 +180,7 @@ export class TutorialPromptController {
       id: definition.id,
       title: definition.title,
       body: definition.body,
-      hints: definition.actions.map((action) => ({ action, label: keyboardHint(action, this.bindings) })),
+      hints: definition.actions.map((action) => ({ action, label: preferredInputHint(action, this.bindings) })),
       alpha,
       completing: this.completedAt !== null,
     };
