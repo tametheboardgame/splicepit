@@ -1,6 +1,14 @@
+import {
+  DEFAULT_ENVIRONMENT_TRANSITION_MS,
+  environmentVisualController,
+  refreshEnvironmentVisualDebug,
+  type EnvironmentTransitionPhase,
+  type EnvironmentVisualState,
+} from './environment/environmentVisualContract.js';
+
 const GLITCH_CANVAS_ID = 'local-pit-entry-glitch';
 const PIT_CANVAS_ID = 'local-pit-stage';
-const GLITCH_DURATION_MS = 760;
+const GLITCH_DURATION_MS = DEFAULT_ENVIRONMENT_TRANSITION_MS;
 
 type PitDebug = {
   active?: boolean;
@@ -15,6 +23,8 @@ type PitGlitchDebug = {
   glitchCount: number;
   phase: PitGlitchPhase;
   elapsedMs: number;
+  environmentVisualState: EnvironmentVisualState;
+  environmentPhase: EnvironmentTransitionPhase;
 };
 
 type DebugGlobal = typeof globalThis & {
@@ -32,6 +42,8 @@ const debug: PitGlitchDebug = {
   glitchCount: 0,
   phase: 'idle',
   elapsedMs: 0,
+  environmentVisualState: 'bright',
+  environmentPhase: 'steady',
 };
 (globalThis as DebugGlobal).__SPLICEPIT_PIT_ENTRY_GLITCH__ = debug;
 
@@ -88,30 +100,6 @@ function drawScanNoise(ctx: CanvasRenderingContext2D, elapsed: number, strength:
   }
 }
 
-function drawWrongLayer(ctx: CanvasRenderingContext2D, elapsed: number, strength: number): void {
-  const pulse = Math.floor(elapsed / 70) % 2;
-  ctx.fillStyle = `rgba(18, 5, 9, ${0.28 + strength * 0.24})`;
-  ctx.fillRect(0, 0, 1280, 720);
-
-  ctx.fillStyle = `rgba(104, 19, 30, ${0.32 + strength * 0.22})`;
-  for (const [x, y, w, h] of [
-    [80, 118, 210, 12], [242, 166, 8, 180], [1030, 92, 12, 196], [880, 560, 240, 9],
-    [470, 604, 16, 78], [640, 40, 8, 132], [718, 180, 186, 7],
-  ] as const) ctx.fillRect(x + (pulse ? 4 : -3), y, w, h);
-
-  ctx.fillStyle = `rgba(228, 205, 164, ${0.18 + strength * 0.18})`;
-  for (const [x, y] of [[210, 310], [262, 338], [996, 374], [1040, 402], [612, 540]] as const) {
-    ctx.fillRect(x, y, 34, 7);
-    ctx.fillRect(x + 9, y - 8, 18, 7);
-    ctx.fillRect(x + 13, y + 7, 10, 12);
-  }
-
-  ctx.fillStyle = `rgba(8, 4, 7, ${0.36 + strength * 0.25})`;
-  for (const [x, y, w] of [[0, 188, 340], [890, 232, 390], [180, 462, 430], [740, 506, 330]] as const) {
-    ctx.fillRect(x + (pulse ? 10 : -8), y, w, 18);
-  }
-}
-
 function drawGlitchFrame(ctx: CanvasRenderingContext2D, source: HTMLCanvasElement, elapsed: number): void {
   const phase = phaseFor(elapsed);
   const progress = Math.min(1, elapsed / GLITCH_DURATION_MS);
@@ -123,12 +111,8 @@ function drawGlitchFrame(ctx: CanvasRenderingContext2D, source: HTMLCanvasElemen
 
   ctx.clearRect(0, 0, 1280, 720);
   ctx.save();
-  ctx.globalAlpha = phase === 'recovery' ? 0.82 * strength : 0.92;
-  ctx.filter = phase === 'wrong-layer'
-    ? 'contrast(190%) saturate(65%) hue-rotate(305deg) brightness(58%)'
-    : 'contrast(150%) saturate(140%) brightness(78%)';
+  ctx.globalAlpha = phase === 'recovery' ? Math.max(0.2, 0.82 * strength) : 0.92;
   ctx.drawImage(source, jitterX, jitterY, 1280, 720);
-  ctx.filter = 'none';
 
   for (let y = 34; y < 690; y += 74) {
     const shift = (((tick + y) * 11) % 42) - 21;
@@ -136,7 +120,6 @@ function drawGlitchFrame(ctx: CanvasRenderingContext2D, source: HTMLCanvasElemen
     ctx.drawImage(source, 0, y, 1280, 14, shift, y + ((tick + y) % 3) - 1, 1280, 14);
   }
 
-  drawWrongLayer(ctx, elapsed, strength);
   drawScanNoise(ctx, elapsed, strength);
 
   if (phase === 'rupture') {
@@ -152,6 +135,8 @@ function render(now: number): void {
   if (active && !lastActive) {
     glitchStartedAt = now;
     glitchCount += 1;
+    environmentVisualController.forceTransition('local-pit', now, GLITCH_DURATION_MS);
+    refreshEnvironmentVisualDebug(now);
   }
   lastActive = active;
 
@@ -160,11 +145,14 @@ function render(now: number): void {
   const source = document.getElementById(PIT_CANVAS_ID) as HTMLCanvasElement | null;
   const elapsed = now - glitchStartedAt;
   const glitching = active && elapsed >= 0 && elapsed < GLITCH_DURATION_MS && Boolean(source);
+  const sharedVisual = environmentVisualController.sample('local-pit', now);
 
   debug.glitching = glitching;
   debug.glitchCount = glitchCount;
   debug.phase = glitching ? phaseFor(elapsed) : 'idle';
   debug.elapsedMs = glitching ? Math.round(elapsed) : 0;
+  debug.environmentVisualState = sharedVisual.visualState;
+  debug.environmentPhase = sharedVisual.phase;
 
   if (canvas && ctx) {
     canvas.setAttribute('aria-hidden', glitching ? 'false' : 'true');
