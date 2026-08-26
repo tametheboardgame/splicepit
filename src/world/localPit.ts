@@ -245,6 +245,87 @@ function drawAmbientInterior(ctx: CanvasRenderingContext2D, now: number): void {
   for (let i = 0; i < 6; i += 1) rect(ctx, 330 + i * 46, 192, 26, 12, i === pulse ? P.yellow : P.tealDark);
 }
 
+function drawHappyLayerGrime(ctx: CanvasRenderingContext2D): void {
+  const grime = '#5b5847';
+  const grimeDark = '#45463b';
+  const rust = '#8e553f';
+  const rustDark = '#68443a';
+  const damp = '#657356';
+  const oldBlood = '#744044';
+  const oil = '#3d4741';
+
+  // Exterior: churned mud, old tyre tracks, patched boards and rust bleed.
+  for (const [x, y, w] of [[1058, 1018, 96], [1160, 1088, 112], [1098, 1180, 136], [1148, 1358, 94]] as const) {
+    rect(ctx, x, y, w, 9, grime);
+    rect(ctx, x + 18, y + 8, Math.max(18, w - 38), 5, grimeDark);
+  }
+  for (const [x, y] of [[996, 1210], [1334, 1210], [120, 1134], [330, 1134], [2000, 1134]] as const) {
+    rect(ctx, x, y, 10, 34, rustDark);
+    rect(ctx, x + 3, y + 12, 7, 24, rust);
+  }
+  for (const [x, y, w] of [[748, 1162, 198], [1408, 1160, 188]] as const) {
+    rect(ctx, x, y, w, 4, grimeDark);
+    rect(ctx, x + 22, y + 5, 42, 3, rust);
+    rect(ctx, x + w - 68, y + 6, 46, 3, rustDark);
+  }
+
+  // Interior floor: damp staining and scuffs around the traffic lanes.
+  for (const [x, y, w, h] of [
+    [188, 830, 250, 24], [1040, 820, 320, 20], [1310, 720, 124, 22],
+    [934, 560, 180, 18], [1178, 424, 174, 18], [516, 574, 194, 16],
+  ] as const) {
+    rect(ctx, x, y, w, h, damp);
+    rect(ctx, x + 18, y + h - 5, Math.max(20, w - 42), 5, grimeDark);
+  }
+  for (const [x, y, w] of [[228, 742, 108], [400, 812, 88], [1010, 610, 122], [1260, 684, 96], [1820, 872, 138]] as const) {
+    rect(ctx, x, y, w, 5, grimeDark);
+    rect(ctx, x + 16, y + 7, Math.max(14, w - 44), 3, grime);
+  }
+
+  // Prep bay: dirty machinery, cage runoff and old stains nobody has cleaned properly.
+  rect(ctx, 348, 462, 486, 8, oil);
+  rect(ctx, 390, 456, 118, 5, oldBlood);
+  rect(ctx, 446, 468, 44, 4, oldBlood);
+  for (const x of [330, 378, 426, 474, 770, 826, 876]) {
+    rect(ctx, x, 686, 8, 14, grimeDark);
+    rect(ctx, x + 2, 686, 5, 9, damp);
+  }
+  rect(ctx, 748, 576, 10, 110, grimeDark);
+  rect(ctx, 752, 616, 7, 70, damp);
+  rect(ctx, 820, 674, 58, 7, '#7f805e');
+
+  // Reception and results: sticky counter edges and badly wiped surfaces.
+  rect(ctx, 538, 758, 462, 8, grimeDark);
+  rect(ctx, 578, 752, 142, 5, grime);
+  rect(ctx, 842, 752, 96, 4, oldBlood);
+  rect(ctx, 1008, 344, 314, 8, grimeDark);
+  rect(ctx, 1190, 339, 82, 5, rustDark);
+
+  // Arena: rusted rails, filthy sand edges, drain-like dark patches and historic blood.
+  for (const x of [1512, 1600, 1732, 1864, 1996, 2088]) {
+    rect(ctx, x, 212, 8, 30, rustDark);
+    rect(ctx, x + 2, 222, 6, 19, rust);
+  }
+  rect(ctx, 1532, 612, 548, 9, grimeDark);
+  rect(ctx, 1580, 604, 168, 6, oil);
+  rect(ctx, 1938, 602, 104, 6, oldBlood);
+  rect(ctx, 1678, 456, 72, 10, oldBlood);
+  rect(ctx, 1694, 466, 42, 6, '#663b3e');
+  rect(ctx, 1886, 328, 86, 7, grime);
+  rect(ctx, 1904, 335, 48, 5, grimeDark);
+
+  // Wall damage: small cracks and damp streaks, visible but still readable as the bright layer.
+  for (const [x, y] of [[210, 224], [458, 166], [970, 198], [1360, 168], [2110, 256], [2060, 704]] as const) {
+    rect(ctx, x, y, 4, 34, grimeDark);
+    rect(ctx, x + 4, y + 20, 18, 4, grimeDark);
+    rect(ctx, x + 18, y + 20, 4, 16, grimeDark);
+  }
+  for (const [x, y, h] of [[174, 286, 118], [2168, 326, 164], [146, 720, 124], [2190, 742, 108]] as const) {
+    rect(ctx, x, y, 7, h, damp);
+    rect(ctx, x + 5, y + 36, 4, Math.max(18, h - 52), grime);
+  }
+}
+
 export const LOCAL_PIT_COLLIDERS: readonly LocalPitRect[] = [
   { x: 120, y: 90, width: 2120, height: 34 },
   { x: 120, y: 90, width: 34, height: 844 },
@@ -309,6 +390,7 @@ export function drawLocalPitBase(ctx: CanvasRenderingContext2D, now: number): vo
   drawResultDesk(ctx);
   drawArena(ctx, now);
   drawAmbientInterior(ctx, now);
+  drawHappyLayerGrime(ctx);
   ctx.restore();
 }
 
