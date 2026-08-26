@@ -153,7 +153,8 @@ const TOUCH_CONTROL_LABELS: Readonly<Record<TouchControl, string>> = {
 };
 
 export function keyboardHint(action: SemanticAction, profile: SemanticBindingProfile = DEFAULT_BINDINGS): string {
-  return profile.keyboard[action].map((control) => CONTROL_LABELS[control]).join('/');
+  const labels = profile.keyboard[action].map((control) => CONTROL_LABELS[control]);
+  return [...new Set(labels)].join('/');
 }
 
 export function touchHint(action: SemanticAction, profile: SemanticBindingProfile = DEFAULT_BINDINGS): string {
