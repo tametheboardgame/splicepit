@@ -10,9 +10,18 @@ import {
   MAIN_MENU_ITEMS,
   mainMenuHitTest,
   moveMainMenuSelection,
-  settingsBackHitTest,
+  moveSettingsSelection,
+  SETTINGS_ITEM_IDS,
+  settingsHitTest,
   type MainMenuScreen,
 } from './ui/mainMenu.js';
+import {
+  getDisplaySettings,
+  fullscreenSupported,
+  isFullscreen,
+  toggleDimScreen,
+  toggleFullscreen,
+} from './settings/displaySettings.js';
 import {
   dialoguePageVisualState,
   dialogueRevealDurationMs,
@@ -44,6 +53,9 @@ type MenuDebug = {
   statusText: string;
   settingsOpened: boolean;
   newGameStarted: boolean;
+  dimScreen: boolean;
+  fullscreen: boolean;
+  fullscreenSupported: boolean;
 };
 
 type DialogueDebug = {
@@ -236,6 +248,9 @@ if (skipTitle) {
 
   const startMainMenu = (): void => {
     canvas.setAttribute('aria-label', 'SplicePit main menu');
+    let displaySettings = getDisplaySettings();
+    let fullscreen = isFullscreen();
+    const canFullscreen = fullscreenSupported();
     const debug: MenuDebug = {
       ready: true,
       error: null,
@@ -246,11 +261,15 @@ if (skipTitle) {
       statusText: '',
       settingsOpened: false,
       newGameStarted: false,
+      dimScreen: displaySettings.dimScreen,
+      fullscreen,
+      fullscreenSupported: canFullscreen,
     };
     (globalThis as BootGlobal).__SPLICEPIT_MENU__ = debug;
 
     let screen: MainMenuScreen = 'menu';
     let selectedIndex = firstEnabledMenuIndex();
+    let settingsSelectedIndex = 0;
     let statusText = '';
     let frameHandle = 0;
     let active = true;
@@ -258,22 +277,40 @@ if (skipTitle) {
 
     const syncDebug = (): void => {
       debug.screen = screen;
-      debug.selectedId = screen === 'settings' ? 'back' : (MAIN_MENU_ITEMS[selectedIndex]?.id ?? null);
+      debug.selectedId = screen === 'settings'
+        ? (SETTINGS_ITEM_IDS[settingsSelectedIndex] ?? null)
+        : (MAIN_MENU_ITEMS[selectedIndex]?.id ?? null);
       debug.statusText = statusText;
+      debug.dimScreen = displaySettings.dimScreen;
+      debug.fullscreen = fullscreen;
     };
 
     const renderMenu = (now: number): void => {
       if (!active) return;
-      drawMainMenuScreen(context, { screen, selectedIndex, statusText }, Math.max(0, now - startedAt));
+      drawMainMenuScreen(context, {
+        screen,
+        selectedIndex,
+        settingsSelectedIndex,
+        dimScreen: displaySettings.dimScreen,
+        fullscreen,
+        fullscreenSupported: canFullscreen,
+        statusText,
+      }, Math.max(0, now - startedAt));
       debug.rendered = true;
       syncDebug();
       frameHandle = requestAnimationFrame(renderMenu);
+    };
+
+    const onFullscreenChange = (): void => {
+      fullscreen = isFullscreen();
+      syncDebug();
     };
 
     const cleanupMenu = (): void => {
       active = false;
       cancelAnimationFrame(frameHandle);
       window.removeEventListener('keydown', onMenuKeyDown);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
       canvas.removeEventListener('pointermove', onMenuPointerMove);
       canvas.removeEventListener('pointerdown', onMenuPointerDown);
     };
@@ -302,6 +339,7 @@ if (skipTitle) {
       }
       if (item.id === 'settings') {
         screen = 'settings';
+        settingsSelectedIndex = 0;
         debug.settingsOpened = true;
         syncDebug();
       }
@@ -313,6 +351,31 @@ if (skipTitle) {
       if (settingsIndex >= 0) selectedIndex = settingsIndex;
       statusText = '';
       syncDebug();
+    };
+
+    const activateSettingsIndex = (index: number): void => {
+      const id = SETTINGS_ITEM_IDS[index];
+      if (!id) return;
+      settingsSelectedIndex = index;
+      statusText = '';
+      if (id === 'dim-screen') {
+        displaySettings = toggleDimScreen();
+        syncDebug();
+        return;
+      }
+      if (id === 'fullscreen') {
+        if (!canFullscreen) {
+          statusText = 'Full screen is unavailable in this browser.';
+          syncDebug();
+          return;
+        }
+        void toggleFullscreen().then(() => {
+          fullscreen = isFullscreen();
+          syncDebug();
+        });
+        return;
+      }
+      returnToMenu();
     };
 
     const pointerPosition = (event: PointerEvent): { x: number; y: number } => {
@@ -328,9 +391,28 @@ if (skipTitle) {
     function onMenuKeyDown(event: KeyboardEvent): void {
       if (!active) return;
       if (screen === 'settings') {
-        if (event.code === 'Escape' || event.code === 'Backspace' || event.code === 'Enter' || event.code === 'Space') {
+        if (event.code === 'Escape' || event.code === 'Backspace') {
           event.preventDefault();
           returnToMenu();
+          return;
+        }
+        if (event.code === 'ArrowUp' || event.code === 'KeyW') {
+          event.preventDefault();
+          settingsSelectedIndex = moveSettingsSelection(settingsSelectedIndex, -1, canFullscreen);
+          statusText = '';
+          syncDebug();
+          return;
+        }
+        if (event.code === 'ArrowDown' || event.code === 'KeyS') {
+          event.preventDefault();
+          settingsSelectedIndex = moveSettingsSelection(settingsSelectedIndex, 1, canFullscreen);
+          statusText = '';
+          syncDebug();
+          return;
+        }
+        if (event.code === 'Enter' || event.code === 'Space') {
+          event.preventDefault();
+          activateSettingsIndex(settingsSelectedIndex);
         }
         return;
       }
@@ -356,8 +438,16 @@ if (skipTitle) {
     }
 
     function onMenuPointerMove(event: PointerEvent): void {
-      if (!active || screen !== 'menu') return;
+      if (!active) return;
       const { x, y } = pointerPosition(event);
+      if (screen === 'settings') {
+        const hit = settingsHitTest(x, y);
+        if (hit === null) return;
+        settingsSelectedIndex = hit;
+        statusText = hit === 1 && !canFullscreen ? 'Full screen is unavailable in this browser.' : '';
+        syncDebug();
+        return;
+      }
       const hit = mainMenuHitTest(x, y);
       if (hit === null) return;
       selectedIndex = hit;
@@ -369,10 +459,10 @@ if (skipTitle) {
       if (!active) return;
       const { x, y } = pointerPosition(event);
       if (screen === 'settings') {
-        if (settingsBackHitTest(x, y)) {
-          event.preventDefault();
-          returnToMenu();
-        }
+        const hit = settingsHitTest(x, y);
+        if (hit === null) return;
+        event.preventDefault();
+        activateSettingsIndex(hit);
         return;
       }
       const hit = mainMenuHitTest(x, y);
@@ -382,6 +472,7 @@ if (skipTitle) {
     }
 
     window.addEventListener('keydown', onMenuKeyDown);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
     canvas.addEventListener('pointermove', onMenuPointerMove);
     canvas.addEventListener('pointerdown', onMenuPointerDown);
     frameHandle = requestAnimationFrame(renderMenu);
