@@ -65,7 +65,7 @@ test('WP0.6F keeps arrival, reception, prep, arena and result routes walkable', 
   assert.ok(reception && prep && gate && floor && result);
 
   assertRouteIsWalkable([LOCAL_PIT_ENTRY_SPAWN, { x: 1180, y: 980 }, reception], 'Arrival to reception');
-  assertRouteIsWalkable([reception, { x: 1120, y: 720 }, { x: 680, y: 720 }, prep], 'Reception to prep bay');
+  assertRouteIsWalkable([reception, { x: 1120, y: 560 }, { x: 680, y: 560 }, prep], 'Reception to prep bay');
   assertRouteIsWalkable([reception, { x: 1320, y: 700 }, gate], 'Reception to arena gate');
   assertRouteIsWalkable([gate, { x: 1550, y: 540 }, floor], 'Arena gate to tutorial battle floor');
   assertRouteIsWalkable([floor, { x: 1550, y: 540 }, { x: 1340, y: 540 }, result], 'Battle floor to results desk');
