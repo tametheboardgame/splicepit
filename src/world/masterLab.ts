@@ -21,7 +21,7 @@ export const MASTER_LAB_EXTERIOR_RETURN = { x: 2506, y: 566 } as const;
 export const MASTER_LAB_EXTERIOR_ENTRY_ZONE: MasterLabRect = { x: 2446, y: 522, width: 120, height: 92 };
 
 export const MASTER_LAB_STAGES: readonly MasterLabStage[] = [
-  { id: 'entry', label: 'Lab Entrance', x: MASTER_LAB_ENTRY_SPAWN.x, y: MASTER_LAB_ENTRY_SPAWN.y, radius: 110 },
+  { id: 'entry', label: 'Lab Entrance', x: 980, y: 1040, radius: 110 },
   { id: 'master-stage', label: "Viktor's Demonstration Floor", x: 980, y: 620, radius: 170 },
   { id: 'rinocow-containment', label: 'RinoCow Containment', x: 1500, y: 760, radius: 170 },
   { id: 'splice-bench', label: 'Primary Splice Bench', x: 650, y: 600, radius: 160 },
@@ -31,38 +31,16 @@ export const MASTER_LAB_STAGES: readonly MasterLabStage[] = [
 const FLOOR: MasterLabRect = { x: 82, y: 78, width: 1796, height: 1036 };
 
 const P = {
-  void: '#1e2e2a',
-  wall: '#d9c78f',
-  wallShade: '#ae9668',
-  wallDark: '#665849',
-  tile: '#c9c69e',
-  tileLight: '#dfdcb7',
-  tileDark: '#a7a47f',
-  teal: '#4d8e84',
-  tealDark: '#315f5b',
-  tealLight: '#77afa1',
-  glass: '#9dc8bc',
-  glassLight: '#d0e4cf',
-  wood: '#896443',
-  woodDark: '#554234',
-  woodLight: '#b18a58',
-  steel: '#727b75',
-  steelDark: '#4d5752',
-  steelLight: '#a6ada0',
-  cream: '#f2dfae',
-  ink: '#25362f',
-  red: '#b95546',
-  redDark: '#783c39',
-  orange: '#d47a45',
-  yellow: '#e1bd5b',
-  purple: '#795b7e',
-  pink: '#c77b85',
-  slime: '#91c673',
-  fluid: '#79b88f',
-  fluidDark: '#53866e',
-  bone: '#ddcfaa',
-  blood: '#7f3438',
-  bloodBright: '#a34543',
+  void: '#1e2e2a', wall: '#d9c78f', wallShade: '#ae9668', wallDark: '#665849',
+  tile: '#c9c69e', tileLight: '#dfdcb7', tileDark: '#a7a47f',
+  teal: '#4d8e84', tealDark: '#315f5b', tealLight: '#77afa1',
+  glass: '#9dc8bc', glassLight: '#d0e4cf',
+  wood: '#896443', woodDark: '#554234', woodLight: '#b18a58',
+  steel: '#727b75', steelDark: '#4d5752', steelLight: '#a6ada0',
+  cream: '#f2dfae', ink: '#25362f', red: '#b95546', redDark: '#783c39',
+  orange: '#d47a45', yellow: '#e1bd5b', purple: '#795b7e', pink: '#c77b85',
+  slime: '#91c673', fluid: '#79b88f', fluidDark: '#53866e', bone: '#ddcfaa',
+  bloodDark: '#7f3438', bloodBright: '#a34543',
 } as const;
 
 function rect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, colour: string): void {
@@ -75,7 +53,7 @@ function outlineRect(ctx: CanvasRenderingContext2D, box: MasterLabRect, fill: st
   rect(ctx, box.x + thickness, box.y + thickness, box.width - thickness * 2, box.height - thickness * 2, fill);
 }
 
-function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, colour = P.cream, size = 13): void {
+function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, colour: string = P.cream, size = 13): void {
   ctx.fillStyle = colour;
   ctx.font = `700 ${size}px "Trebuchet MS", "Segoe UI", sans-serif`;
   ctx.textAlign = 'center';
@@ -86,29 +64,22 @@ function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number
 function drawFloor(ctx: CanvasRenderingContext2D): void {
   rect(ctx, 0, 0, MASTER_LAB_WORLD_WIDTH, MASTER_LAB_WORLD_HEIGHT, P.void);
   outlineRect(ctx, FLOOR, P.tile, P.wallDark, 8);
-  rect(ctx, FLOOR.x + 10, FLOOR.y + 10, FLOOR.width - 20, 76, P.wall);
-  rect(ctx, FLOOR.x + 10, FLOOR.y + 86, FLOOR.width - 20, 18, P.wallShade);
-
+  rect(ctx, 92, 88, 1776, 76, P.wall);
+  rect(ctx, 92, 164, 1776, 18, P.wallShade);
   for (let y = 186; y < 1080; y += 56) {
     for (let x = 112; x < 1840; x += 56) {
-      const alternate = ((x / 56) + (y / 56)) % 2 === 0;
-      rect(ctx, x, y, 52, 52, alternate ? P.tileLight : P.tile);
+      const light = ((x / 56) + (y / 56)) % 2 === 0;
+      rect(ctx, x, y, 52, 52, light ? P.tileLight : P.tile);
       rect(ctx, x, y + 49, 52, 3, P.tileDark);
       rect(ctx, x + 49, y, 3, 52, P.tileDark);
     }
   }
-
   rect(ctx, 860, 994, 240, 116, P.tileDark);
   rect(ctx, 882, 994, 196, 116, P.tileLight);
   rect(ctx, 936, 1076, 88, 34, P.wood);
-
-  for (let x = 160; x < 1800; x += 212) {
-    rect(ctx, x, 110, 124, 12, P.tealDark);
-    rect(ctx, x + 10, 114, 104, 5, P.tealLight);
-  }
 }
 
-function drawOverheadPipes(ctx: CanvasRenderingContext2D, now: number): void {
+function drawPipesAndWall(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, 128, 150, 704, 14, P.steelDark);
   rect(ctx, 142, 154, 676, 6, P.steelLight);
   rect(ctx, 1160, 150, 650, 14, P.steelDark);
@@ -118,29 +89,21 @@ function drawOverheadPipes(ctx: CanvasRenderingContext2D, now: number): void {
     rect(ctx, x + 3, 148, 4, 30, P.steelLight);
   }
   const pulse = Math.floor(now / 380) % 5;
-  for (let index = 0; index < 5; index += 1) {
-    rect(ctx, 874 + index * 42, 146, 22, 18, index === pulse ? P.yellow : P.tealDark);
-  }
-}
+  for (let i = 0; i < 5; i += 1) rect(ctx, 874 + i * 42, 146, 22, 18, i === pulse ? P.yellow : P.tealDark);
 
-function drawWallDetails(ctx: CanvasRenderingContext2D, now: number): void {
   outlineRect(ctx, { x: 760, y: 96, width: 440, height: 74 }, P.wood, P.woodDark, 4);
   label(ctx, "DR VIKTOR SPLICENSTEIN'S MASTER LAB", 980, 133, P.cream, 15);
-
   for (const x of [160, 430, 1460, 1730]) {
     outlineRect(ctx, { x, y: 102, width: 126, height: 62 }, P.glass, P.tealDark, 3);
     rect(ctx, x + 8, 110, 110, 46, P.glassLight);
     rect(ctx, x + 60, 108, 4, 50, P.tealDark);
   }
-
   outlineRect(ctx, { x: 104, y: 202, width: 114, height: 64 }, P.tealDark, P.wallDark, 3);
   label(ctx, 'BIOHAZARD', 161, 225, P.cream, 10);
   label(ctx, 'LEVEL: MOSTLY', 161, 245, '#d7c87f', 9);
-
   outlineRect(ctx, { x: 1736, y: 202, width: 114, height: 64 }, P.redDark, P.wallDark, 3);
   label(ctx, 'DON’T OPEN', 1793, 225, '#f2d3c2', 10);
   label(ctx, 'THE RED ONE', 1793, 245, '#f2d3c2', 9);
-
   if (Math.floor(now / 800) % 2 === 0) {
     rect(ctx, 110, 276, 12, 12, P.yellow);
     rect(ctx, 1832, 276, 12, 12, P.yellow);
@@ -150,11 +113,10 @@ function drawWallDetails(ctx: CanvasRenderingContext2D, now: number): void {
 function drawSpliceBench(ctx: CanvasRenderingContext2D, now: number, state: MasterLabState): void {
   const x = 236;
   const y = 310;
-  rect(ctx, x - 38, y - 54, 448, 400, '#b9b68e');
-  outlineRect(ctx, { x: x - 20, y: y - 36, width: 412, height: 364 }, '#c7c49b', P.steelDark, 5);
+  rect(ctx, 198, 256, 448, 400, '#b9b68e');
+  outlineRect(ctx, { x: 216, y: 274, width: 412, height: 364 }, '#c7c49b', P.steelDark, 5);
   rect(ctx, x, y - 14, 372, 22, P.tealDark);
   label(ctx, 'PRIMARY SPLICE BAY', x + 186, y - 3, P.cream, 12);
-
   outlineRect(ctx, { x: x + 34, y: y + 104, width: 300, height: 108 }, P.steel, P.steelDark, 5);
   rect(ctx, x + 46, y + 116, 276, 76, P.steelLight);
   rect(ctx, x + 62, y + 132, 244, 32, '#d6d2aa');
@@ -162,30 +124,23 @@ function drawSpliceBench(ctx: CanvasRenderingContext2D, now: number, state: Mast
   for (const lx of [72, 118, 164, 210, 256, 296]) {
     rect(ctx, x + lx, y + 122, 10, 7, lx === 164 && Math.floor(now / 520) % 2 === 0 ? P.yellow : P.tealDark);
   }
-
   outlineRect(ctx, { x: x + 320, y: y + 28, width: 54, height: 174 }, P.glass, P.tealDark, 4);
   rect(ctx, x + 330, y + 40, 34, 148, P.fluid);
   const bubble = Math.floor(now / 180) % 100;
   for (const [bx, base] of [[337, 160], [350, 132], [342, 100]] as const) {
     const by = y + 54 + ((base - bubble + 100) % 100);
-    rect(ctx, x + bx - x, by, 5, 5, P.glassLight);
+    rect(ctx, bx, by, 5, 5, P.glassLight);
   }
-
   outlineRect(ctx, { x: x + 26, y: y + 236, width: 128, height: 70 }, P.wood, P.woodDark, 4);
-  rect(ctx, x + 36, y + 246, 108, 16, P.woodLight);
   for (const sx of [48, 80, 112]) {
     outlineRect(ctx, { x: x + sx, y: y + 270, width: 18, height: 28 }, P.glass, P.tealDark, 2);
     rect(ctx, x + sx + 4, y + 282, 10, 12, sx === 80 ? P.pink : P.slime);
   }
-
   rect(ctx, x + 190, y + 248, 140, 12, P.woodDark);
   rect(ctx, x + 202, y + 234, 116, 16, P.woodLight);
-  rect(ctx, x + 208, y + 260, 9, 42, P.woodDark);
-  rect(ctx, x + 306, y + 260, 9, 42, P.woodDark);
   rect(ctx, x + 226, y + 212, 58, 20, P.bone);
   rect(ctx, x + 240, y + 198, 32, 16, P.bone);
   rect(ctx, x + 254, y + 204, 8, 6, P.pink);
-
   if (state === 'aftermath') {
     rect(ctx, x + 86, y + 152, 126, 8, P.bloodDark);
     rect(ctx, x + 132, y + 162, 74, 6, P.bloodBright);
@@ -200,21 +155,16 @@ function drawViktorStage(ctx: CanvasRenderingContext2D, now: number, state: Mast
   rect(ctx, x + 14, y + 14, 408, 304, '#d8d5ac');
   for (let gx = x + 30; gx < x + 410; gx += 46) rect(ctx, gx, y + 24, 2, 280, '#b1ae88');
   for (let gy = y + 38; gy < y + 306; gy += 46) rect(ctx, x + 24, gy, 384, 2, '#b1ae88');
-
   outlineRect(ctx, { x: x + 114, y: y + 30, width: 208, height: 54 }, P.wood, P.woodDark, 4);
   label(ctx, state === 'pre-disaster' ? 'DEMONSTRATION FLOOR' : 'INCIDENT AREA', x + 218, y + 57, state === 'pre-disaster' ? P.cream : '#f0c2b4', 12);
-
   for (const sx of [54, 362]) {
     rect(ctx, x + sx, y + 112, 20, 126, P.steelDark);
     rect(ctx, x + sx + 5, y + 116, 10, 118, P.steelLight);
     rect(ctx, x + sx - 12, y + 98, 44, 18, P.tealDark);
     if (Math.floor(now / 700) % 2 === 0) rect(ctx, x + sx + 2, y + 102, 16, 8, P.yellow);
   }
-
   outlineRect(ctx, { x: x + 40, y: y + 254, width: 142, height: 54 }, P.steel, P.steelDark, 4);
-  rect(ctx, x + 52, y + 266, 118, 12, '#d0cda3');
   for (const px of [64, 94, 124, 154]) rect(ctx, x + px, y + 286, 10, 9, px === 124 ? P.red : P.tealDark);
-
   if (state === 'aftermath') {
     rect(ctx, x + 182, y + 126, 94, 20, P.bloodDark);
     rect(ctx, x + 152, y + 146, 156, 15, P.bloodBright);
@@ -224,7 +174,7 @@ function drawViktorStage(ctx: CanvasRenderingContext2D, now: number, state: Mast
   }
 }
 
-function drawRinoCowSilhouette(ctx: CanvasRenderingContext2D, x: number, y: number, state: MasterLabState, now: number): void {
+function drawRinoCow(ctx: CanvasRenderingContext2D, x: number, y: number, state: MasterLabState, now: number): void {
   const shift = state === 'pre-disaster' && Math.floor(now / 900) % 5 === 0 ? 2 : 0;
   rect(ctx, x + 26 + shift, y + 34, 112, 58, '#756d58');
   rect(ctx, x + 2 + shift, y + 48, 50, 42, '#857a61');
@@ -240,7 +190,7 @@ function drawRinoCowSilhouette(ctx: CanvasRenderingContext2D, x: number, y: numb
   rect(ctx, x + 84 + shift, y + 60, 18, 12, '#d7c8a5');
 }
 
-function drawRinoCowContainment(ctx: CanvasRenderingContext2D, now: number, state: MasterLabState): void {
+function drawContainment(ctx: CanvasRenderingContext2D, now: number, state: MasterLabState): void {
   const x = 1288;
   const y = 264;
   rect(ctx, x - 44, y - 60, 530, 500, '#9e9b79');
@@ -249,15 +199,11 @@ function drawRinoCowContainment(ctx: CanvasRenderingContext2D, now: number, stat
   rect(ctx, x + 50, y + 56, 342, 252, '#9ec7ac');
   for (let gx = x + 66; gx < x + 390; gx += 44) rect(ctx, gx, y + 56, 3, 252, P.tealDark);
   rect(ctx, x + 50, y + 268, 342, 40, state === 'pre-disaster' ? P.fluidDark : '#687c6a');
-  drawRinoCowSilhouette(ctx, x + 118, y + 108, state, now);
-
+  drawRinoCow(ctx, x + 118, y + 108, state, now);
   rect(ctx, x + 10, y - 22, 420, 42, P.tealDark);
   label(ctx, 'RINOCOW // CONTAINMENT 03', x + 220, y - 1, P.cream, 12);
-
   outlineRect(ctx, { x: x + 134, y: y + 346, width: 174, height: 70 }, P.steel, P.steelDark, 4);
-  rect(ctx, x + 148, y + 360, 146, 16, '#d0cda3');
   for (const bx of [162, 198, 234, 270]) rect(ctx, x + bx, y + 390, 12, 10, bx === 234 && Math.floor(now / 420) % 2 === 0 ? P.red : P.tealDark);
-
   if (state === 'aftermath') {
     rect(ctx, x + 178, y + 42, 12, 280, P.void);
     rect(ctx, x + 182, y + 80, 34, 18, '#64756d');
@@ -272,7 +218,6 @@ function drawSpecimenPrep(ctx: CanvasRenderingContext2D, now: number): void {
   outlineRect(ctx, { x, y, width: 500, height: 180 }, '#c3c096', P.wallDark, 5);
   rect(ctx, x + 20, y + 18, 460, 20, P.tealDark);
   label(ctx, 'SPECIMEN PREP // IF IT TWITCHES, LABEL IT', x + 250, y + 28, P.cream, 11);
-
   for (const cx of [256, 368, 480, 592]) {
     outlineRect(ctx, { x: cx, y: y + 58, width: 66, height: 78 }, P.glass, P.tealDark, 3);
     rect(ctx, cx + 8, y + 68, 50, 58, '#9bc59e');
@@ -280,8 +225,6 @@ function drawSpecimenPrep(ctx: CanvasRenderingContext2D, now: number): void {
     rect(ctx, cx + 18, y + 100, 30, 20, fill);
     if ((Math.floor(now / 640) + cx) % 3 === 0) rect(ctx, cx + 28, y + 84, 7, 7, P.glassLight);
   }
-  rect(ctx, x + 58, y + 146, 384, 9, P.woodDark);
-  rect(ctx, x + 70, y + 137, 360, 11, P.woodLight);
 }
 
 function drawColdStorage(ctx: CanvasRenderingContext2D): void {
@@ -385,11 +328,10 @@ export function drawMasterLabBase(ctx: CanvasRenderingContext2D, now: number, st
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   drawFloor(ctx);
-  drawOverheadPipes(ctx, now);
-  drawWallDetails(ctx, now);
+  drawPipesAndWall(ctx, now);
   drawSpliceBench(ctx, now, state);
   drawViktorStage(ctx, now, state);
-  drawRinoCowContainment(ctx, now, state);
+  drawContainment(ctx, now, state);
   drawSpecimenPrep(ctx, now);
   drawColdStorage(ctx);
   drawFloorTanks(ctx, now);
