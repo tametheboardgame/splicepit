@@ -1,9 +1,11 @@
 import {
   ACTIONS,
+  DEFAULT_BINDINGS,
   SEMANTIC_INPUT_EVENT,
   touchInputAvailable,
   type SemanticAction,
   type SemanticInputEventDetail,
+  type TouchControl,
 } from './actions.js';
 
 type VisualResetState = {
@@ -16,16 +18,26 @@ type DebugGlobal = typeof globalThis & {
 };
 
 type ActivePointer = {
-  readonly action: SemanticAction;
+  readonly control: TouchControl;
   readonly button: HTMLButtonElement;
 };
 
 const CONTROL_ID = 'mobile-gameplay-controls';
 const activePointers = new Map<number, ActivePointer>();
 
-function emit(action: SemanticAction, pressed: boolean): void {
-  const detail: SemanticInputEventDetail = { action, pressed };
-  window.dispatchEvent(new CustomEvent<SemanticInputEventDetail>(SEMANTIC_INPUT_EVENT, { detail }));
+function actionsFor(control: TouchControl): SemanticAction[] {
+  const actions: SemanticAction[] = [];
+  for (const action of Object.values(ACTIONS) as SemanticAction[]) {
+    if ((DEFAULT_BINDINGS.touch?.[action] ?? []).includes(control)) actions.push(action);
+  }
+  return actions;
+}
+
+function emit(control: TouchControl, pressed: boolean): void {
+  for (const action of actionsFor(control)) {
+    const detail: SemanticInputEventDetail = { action, pressed };
+    window.dispatchEvent(new CustomEvent<SemanticInputEventDetail>(SEMANTIC_INPUT_EVENT, { detail }));
+  }
 }
 
 function releasePointer(pointerId: number): void {
@@ -33,18 +45,18 @@ function releasePointer(pointerId: number): void {
   if (!active) return;
   activePointers.delete(pointerId);
   active.button.classList.remove('is-pressed');
-  emit(active.action, false);
+  emit(active.control, false);
 }
 
 function releaseAllPointers(): void {
   for (const pointerId of [...activePointers.keys()]) releasePointer(pointerId);
 }
 
-function controlButton(action: SemanticAction, label: string, className: string, ariaLabel: string): HTMLButtonElement {
+function controlButton(control: TouchControl, label: string, className: string, ariaLabel: string): HTMLButtonElement {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = `mobile-control ${className}`;
-  button.dataset.action = action;
+  button.dataset.control = control;
   button.textContent = label;
   button.setAttribute('aria-label', ariaLabel);
 
@@ -53,14 +65,14 @@ function controlButton(action: SemanticAction, label: string, className: string,
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     event.preventDefault();
     if (activePointers.has(event.pointerId)) releasePointer(event.pointerId);
-    activePointers.set(event.pointerId, { action, button });
+    activePointers.set(event.pointerId, { control, button });
     button.classList.add('is-pressed');
     try {
       button.setPointerCapture(event.pointerId);
     } catch {
       // Some mobile browsers release capture aggressively; global pointer handlers remain a fallback.
     }
-    emit(action, true);
+    emit(control, true);
   });
 
   const release = (event: PointerEvent): void => {
@@ -85,10 +97,10 @@ function buildControls(): HTMLElement {
   dpad.className = 'mobile-dpad';
   dpad.setAttribute('aria-label', 'Movement controls');
   dpad.append(
-    controlButton(ACTIONS.MOVE_UP, '↑', 'mobile-dpad-up', 'Move up'),
-    controlButton(ACTIONS.MOVE_LEFT, '←', 'mobile-dpad-left', 'Move left'),
-    controlButton(ACTIONS.MOVE_RIGHT, '→', 'mobile-dpad-right', 'Move right'),
-    controlButton(ACTIONS.MOVE_DOWN, '↓', 'mobile-dpad-down', 'Move down'),
+    controlButton('move-up', '↑', 'mobile-dpad-up', 'Move up'),
+    controlButton('move-left', '←', 'mobile-dpad-left', 'Move left'),
+    controlButton('move-right', '→', 'mobile-dpad-right', 'Move right'),
+    controlButton('move-down', '↓', 'mobile-dpad-down', 'Move down'),
   );
 
   const actions = document.createElement('div');
@@ -97,15 +109,15 @@ function buildControls(): HTMLElement {
   const utilities = document.createElement('div');
   utilities.className = 'mobile-utility-row';
   utilities.append(
-    controlButton(ACTIONS.BAG, 'BAG', 'mobile-utility-button', 'Open or close Bag'),
-    controlButton(ACTIONS.MAP, 'MAP', 'mobile-utility-button', 'Open or close Map'),
+    controlButton('bag', 'BAG', 'mobile-utility-button', 'Open or close Bag'),
+    controlButton('map', 'MAP', 'mobile-utility-button', 'Open or close Map'),
   );
 
   const primary = document.createElement('div');
   primary.className = 'mobile-primary-row';
   primary.append(
-    controlButton(ACTIONS.CANCEL, 'BACK', 'mobile-back-button', 'Back or cancel'),
-    controlButton(ACTIONS.INTERACT, 'ACTION', 'mobile-action-button', 'Interact or confirm'),
+    controlButton('back', 'BACK', 'mobile-back-button', 'Back or cancel'),
+    controlButton('action', 'ACTION', 'mobile-action-button', 'Interact or confirm'),
   );
 
   actions.append(utilities, primary);
