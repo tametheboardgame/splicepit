@@ -52,7 +52,7 @@ These are geometry/runtime contracts for later packages. WP0.6F does not impleme
 - explicit Yard → Pit and Pit → Yard transitions;
 - debug state for permanent browser regression coverage.
 
-The Local Pit is rendered as its own world overlay so later battle/cutscene work can change presentation without coupling arena logic to Yard geometry.
+The Local Pit is rendered as its own world overlay so later battle/cutscene work can change presentation without coupling arena logic to Yard geometry. The runtime is loaded before the main boot module, matching the Master Lab overlay integration order so its capture-phase input listener is available as soon as gameplay becomes active.
 
 ## Authored stage contract
 
