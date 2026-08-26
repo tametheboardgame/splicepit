@@ -1,6 +1,6 @@
 # WP0.6D2 — Mobile Text Layout & Display Comfort
 
-Status: **IMPLEMENTED — VALIDATION PENDING**
+Status: **IMPLEMENTED**
 
 Authoritative insertion: `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-26_MOBILE_LAYOUT_INSERT.md`
 
@@ -33,10 +33,24 @@ Automated coverage verifies:
 - Full Screen capability is surfaced through Settings;
 - the existing WP0.6D1 touch-only onboarding and Yard → Master Lab route regression continues to run unchanged.
 
+## Validation
+
+The complete repository gate passed on PR #47 after updating the older Settings smoke to the new display-controls contract:
+
+- TypeScript typecheck;
+- content validation;
+- RNG boundary validation;
+- unit/domain/save tests;
+- production build;
+- full player-facing browser smoke suite;
+- portrait `412 × 915` responsive mobile HUD regression;
+- landscape `915 × 412` responsive mobile HUD regression;
+- existing touch-only onboarding and Yard → Master Lab traversal regression.
+
 ## Scope boundary
 
 This package does not redesign Bag/Map shells or future story-dialogue presentation. Those should adopt the responsive mobile text pattern when their real content requires it.
 
 ## Next package
 
-After green validation and merge: `WP0.6E — Master Lab Interior`.
+After merge: `WP0.6E — Master Lab Interior`.
