@@ -3,6 +3,7 @@ import { TITLE_VIEW_HEIGHT, TITLE_VIEW_WIDTH } from './titleCorruption.js';
 
 export type MainMenuItemId = 'new-game' | 'continue' | 'settings';
 export type MainMenuScreen = 'menu' | 'settings';
+export type SettingsItemId = 'dim-screen' | 'fullscreen' | 'back';
 
 export type MainMenuItem = {
   id: MainMenuItemId;
@@ -14,6 +15,10 @@ export type MainMenuItem = {
 export type MainMenuRenderState = {
   screen: MainMenuScreen;
   selectedIndex: number;
+  settingsSelectedIndex?: number;
+  dimScreen?: boolean;
+  fullscreen?: boolean;
+  fullscreenSupported?: boolean;
   statusText?: string;
 };
 
@@ -29,7 +34,10 @@ export const MAIN_MENU_RECTS = [
   { x: 456, y: 504, width: 368, height: 64 },
 ] as const;
 
+export const SETTINGS_DIM_RECT = { x: 466, y: 386, width: 348, height: 54 } as const;
+export const SETTINGS_FULLSCREEN_RECT = { x: 466, y: 454, width: 348, height: 54 } as const;
 export const SETTINGS_BACK_RECT = { x: 500, y: 516, width: 280, height: 58 } as const;
+export const SETTINGS_ITEM_IDS = ['dim-screen', 'fullscreen', 'back'] as const satisfies readonly SettingsItemId[];
 
 function rect(
   ctx: CanvasRenderingContext2D,
@@ -180,48 +188,75 @@ function drawMenu(ctx: CanvasRenderingContext2D, state: MainMenuRenderState): vo
   ctx.restore();
 }
 
-function drawSettings(ctx: CanvasRenderingContext2D): void {
-  rect(ctx, 378, 278, 524, 334, '#26382f');
-  rect(ctx, 386, 286, 508, 318, '#365644');
-  rect(ctx, 396, 296, 488, 298, '#9b7046');
-  rect(ctx, 410, 310, 460, 270, '#b78755');
+function drawSettings(ctx: CanvasRenderingContext2D, state: MainMenuRenderState): void {
+  const selected = Math.max(0, Math.min(SETTINGS_ITEM_IDS.length - 1, state.settingsSelectedIndex ?? 0));
+  const fullscreenDisabled = state.fullscreenSupported === false;
+
+  rect(ctx, 378, 278, 524, 354, '#26382f');
+  rect(ctx, 386, 286, 508, 338, '#365644');
+  rect(ctx, 396, 296, 488, 318, '#9b7046');
+  rect(ctx, 410, 310, 460, 290, '#b78755');
   rect(ctx, 428, 330, 424, 6, '#c89a64');
-  rect(ctx, 428, 466, 424, 5, '#7e5639');
-  rect(ctx, 398, 344, 8, 160, '#315f5b');
-  rect(ctx, 874, 344, 8, 160, '#315f5b');
+  rect(ctx, 398, 344, 8, 224, '#315f5b');
+  rect(ctx, 874, 344, 8, 224, '#315f5b');
 
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#fff5cf';
-  ctx.font = '900 34px "Trebuchet MS", "Segoe UI", sans-serif';
-  ctx.fillText('SETTINGS', 640, 368);
-  ctx.font = '800 17px "Trebuchet MS", "Segoe UI", sans-serif';
-  ctx.fillStyle = '#f2dfae';
-  ctx.fillText('The useful knobs arrive with the systems they control.', 640, 416);
-  ctx.font = '700 14px "Trebuchet MS", "Segoe UI", sans-serif';
+  ctx.font = '900 32px "Trebuchet MS", "Segoe UI", sans-serif';
+  ctx.fillText('SETTINGS', 640, 354);
+  ctx.font = '700 12px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.fillStyle = '#ead59e';
-  ctx.fillText('For now, please refrain from licking the machinery.', 640, 448);
+  ctx.fillText('Display controls for phones, tablets and tired eyeballs.', 640, 374);
   ctx.restore();
 
+  drawWoodPlank(
+    ctx,
+    SETTINGS_DIM_RECT.x,
+    SETTINGS_DIM_RECT.y,
+    SETTINGS_DIM_RECT.width,
+    SETTINGS_DIM_RECT.height,
+    selected === 0,
+    false,
+  );
+  drawWoodPlank(
+    ctx,
+    SETTINGS_FULLSCREEN_RECT.x,
+    SETTINGS_FULLSCREEN_RECT.y,
+    SETTINGS_FULLSCREEN_RECT.width,
+    SETTINGS_FULLSCREEN_RECT.height,
+    selected === 1,
+    fullscreenDisabled,
+  );
   drawWoodPlank(
     ctx,
     SETTINGS_BACK_RECT.x,
     SETTINGS_BACK_RECT.y,
     SETTINGS_BACK_RECT.width,
     SETTINGS_BACK_RECT.height,
-    true,
+    selected === 2,
     false,
   );
+
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '900 24px "Trebuchet MS", "Segoe UI", sans-serif';
+  ctx.font = '900 20px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.fillStyle = '#fff5cf';
+  ctx.fillText(`DIM SCREEN: ${state.dimScreen ? 'ON' : 'OFF'}`, 640, SETTINGS_DIM_RECT.y + 26);
+  ctx.fillStyle = fullscreenDisabled ? '#d0c4a8' : '#fff5cf';
+  ctx.fillText(
+    fullscreenDisabled ? 'FULL SCREEN: UNAVAILABLE' : (state.fullscreen ? 'EXIT FULL SCREEN' : 'FULL SCREEN'),
+    640,
+    SETTINGS_FULLSCREEN_RECT.y + 26,
+  );
+  ctx.fillStyle = '#fff5cf';
+  ctx.font = '900 22px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.fillText('BACK', 640, SETTINGS_BACK_RECT.y + 28);
-  ctx.font = '800 12px "Trebuchet MS", "Segoe UI", sans-serif';
+  ctx.font = '800 11px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.fillStyle = '#eff8dc';
-  ctx.fillText('ENTER / ESC / CLICK', 640, 636);
+  ctx.fillText('↑ ↓ / W S · ENTER · ESC · CLICK', 640, 598);
   ctx.restore();
 }
 
@@ -240,8 +275,25 @@ export function moveMainMenuSelection(currentIndex: number, direction: -1 | 1): 
   return currentIndex;
 }
 
+export function moveSettingsSelection(currentIndex: number, direction: -1 | 1, fullscreenAvailable = true): number {
+  let index = Math.max(0, Math.min(SETTINGS_ITEM_IDS.length - 1, currentIndex));
+  for (let attempt = 0; attempt < SETTINGS_ITEM_IDS.length; attempt += 1) {
+    index = (index + direction + SETTINGS_ITEM_IDS.length) % SETTINGS_ITEM_IDS.length;
+    if (fullscreenAvailable || SETTINGS_ITEM_IDS[index] !== 'fullscreen') return index;
+  }
+  return currentIndex;
+}
+
 export function mainMenuHitTest(x: number, y: number): number | null {
   const index = MAIN_MENU_RECTS.findIndex((bounds) => (
+    x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height
+  ));
+  return index < 0 ? null : index;
+}
+
+export function settingsHitTest(x: number, y: number): number | null {
+  const rects = [SETTINGS_DIM_RECT, SETTINGS_FULLSCREEN_RECT, SETTINGS_BACK_RECT] as const;
+  const index = rects.findIndex((bounds) => (
     x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height
   ));
   return index < 0 ? null : index;
@@ -265,6 +317,6 @@ export function drawMainMenuScreen(
   drawFrontDoorBackdropPolish(ctx, elapsedMs, 'menu');
   drawLogo(ctx);
   drawMenuBackdropPolish(ctx, elapsedMs);
-  if (state.screen === 'settings') drawSettings(ctx);
+  if (state.screen === 'settings') drawSettings(ctx, state);
   else drawMenu(ctx, state);
 }
