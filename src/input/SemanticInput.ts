@@ -17,6 +17,8 @@ const KEY_CODES: Readonly<Record<KeyboardControl, number>> = {
   KeyA: Phaser.Input.Keyboard.KeyCodes.A,
   KeyS: Phaser.Input.Keyboard.KeyCodes.S,
   KeyD: Phaser.Input.Keyboard.KeyCodes.D,
+  ShiftLeft: Phaser.Input.Keyboard.KeyCodes.SHIFT,
+  ShiftRight: Phaser.Input.Keyboard.KeyCodes.SHIFT,
   KeyE: Phaser.Input.Keyboard.KeyCodes.E,
   KeyB: Phaser.Input.Keyboard.KeyCodes.B,
   Enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
