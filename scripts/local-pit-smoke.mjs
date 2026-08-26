@@ -89,6 +89,10 @@ try {
     return evaluate(`globalThis.__SPLICEPIT_LOCAL_PIT__ ? ({ ...globalThis.__SPLICEPIT_LOCAL_PIT__ }) : null`);
   }
 
+  async function glitchState() {
+    return evaluate(`globalThis.__SPLICEPIT_PIT_ENTRY_GLITCH__ ? ({ ...globalThis.__SPLICEPIT_PIT_ENTRY_GLITCH__ }) : null`);
+  }
+
   async function yardState() {
     return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
@@ -99,9 +103,11 @@ try {
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1&pitTest=1` });
 
   await waitFor(async () => (await yardState())?.ready === true, 20000);
+  await waitFor(async () => (await glitchState())?.ready === true, 20000);
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
   await waitFor(async () => (await yardState())?.ready === true, 20000);
+  await waitFor(async () => (await glitchState())?.ready === true, 20000);
   await cdp('Page.bringToFront');
 
   await key('Enter', 'Enter', 13);
@@ -114,10 +120,39 @@ try {
     throw new Error(`Local Pit did not initialise at the authored exterior arrival: ${JSON.stringify(initial)}`);
   }
 
+  const glitch = await waitFor(async () => {
+    const current = await glitchState();
+    return current?.glitching && current.glitchCount >= 1 ? current : null;
+  }, 2000, 25);
+  if (!['rupture', 'wrong-layer', 'recovery'].includes(glitch.phase)) {
+    throw new Error(`Local Pit entry glitch did not expose a corrupted phase: ${JSON.stringify(glitch)}`);
+  }
+
+  const glitchCanvasContract = await evaluate(`(() => {
+    const canvas = document.querySelector('#local-pit-entry-glitch');
+    if (!canvas) return null;
+    const style = getComputedStyle(canvas);
+    return {
+      width: canvas.width,
+      height: canvas.height,
+      ariaHidden: canvas.getAttribute('aria-hidden'),
+      zIndex: Number(style.zIndex),
+    };
+  })()`);
+  if (!glitchCanvasContract || glitchCanvasContract.width !== 1280 || glitchCanvasContract.height !== 720 || glitchCanvasContract.ariaHidden !== 'false' || glitchCanvasContract.zIndex < 30) {
+    throw new Error(`Local Pit entry glitch overlay contract failed: ${JSON.stringify(glitchCanvasContract)}`);
+  }
+
+  const recoveredGlitch = await waitFor(async () => {
+    const current = await glitchState();
+    return current && !current.glitching && current.phase === 'idle' && current.glitchCount >= 1 ? current : null;
+  }, 2500, 40);
+
   const canvasContract = await evaluate(`(() => {
     const pit = document.querySelector('#local-pit-stage');
     const yard = document.querySelector('#visual-reset-stage');
-    if (!pit || !yard) return null;
+    const glitch = document.querySelector('#local-pit-entry-glitch');
+    if (!pit || !yard || !glitch) return null;
     const style = getComputedStyle(pit);
     return {
       pitWidth: pit.width,
@@ -125,11 +160,12 @@ try {
       yardWidth: yard.width,
       yardHeight: yard.height,
       ariaHidden: pit.getAttribute('aria-hidden'),
+      glitchHidden: glitch.getAttribute('aria-hidden'),
       zIndex: Number(style.zIndex),
     };
   })()`);
-  if (!canvasContract || canvasContract.pitWidth !== 1280 || canvasContract.pitHeight !== 720 || canvasContract.yardWidth !== 1280 || canvasContract.yardHeight !== 720 || canvasContract.ariaHidden !== 'false' || canvasContract.zIndex < 20) {
-    throw new Error(`Local Pit overlay contract failed: ${JSON.stringify(canvasContract)}`);
+  if (!canvasContract || canvasContract.pitWidth !== 1280 || canvasContract.pitHeight !== 720 || canvasContract.yardWidth !== 1280 || canvasContract.yardHeight !== 720 || canvasContract.ariaHidden !== 'false' || canvasContract.glitchHidden !== 'true' || canvasContract.zIndex < 20) {
+    throw new Error(`Local Pit overlay contract failed after glitch recovery: ${JSON.stringify(canvasContract)}`);
   }
 
   const visualStats = await evaluate(`(() => {
@@ -142,6 +178,7 @@ try {
     let warm = 0;
     let red = 0;
     let dark = 0;
+    let grime = 0;
     for (let y = 0; y < canvas.height; y += 8) {
       for (let x = 0; x < canvas.width; x += 8) {
         const i = (y * canvas.width + x) * 4;
@@ -153,12 +190,13 @@ try {
         if (r > 140 && g > 95 && b < 155) warm += 1;
         if (r > 120 && r > g + 15 && r > b + 10) red += 1;
         if (r < 105 && g < 115 && b < 110) dark += 1;
+        if (r >= 60 && r <= 115 && g >= 55 && g <= 105 && b >= 45 && b <= 90 && Math.abs(r - g) < 32) grime += 1;
       }
     }
-    return { uniqueColours: colours.size, green, warm, red, dark };
+    return { uniqueColours: colours.size, green, warm, red, dark, grime };
   })()`);
-  if (!visualStats || visualStats.uniqueColours < 24 || visualStats.green < 35 || visualStats.warm < 80 || visualStats.red < 20 || visualStats.dark < 60) {
-    throw new Error(`Local Pit visual density contract failed: ${JSON.stringify(visualStats)}`);
+  if (!visualStats || visualStats.uniqueColours < 28 || visualStats.green < 35 || visualStats.warm < 80 || visualStats.red < 20 || visualStats.dark < 80 || visualStats.grime < 20) {
+    throw new Error(`Local Pit grimy happy-layer visual contract failed: ${JSON.stringify(visualStats)}`);
   }
 
   await key('b', 'KeyB', 66);
@@ -194,7 +232,7 @@ try {
     throw new Error(`Local Pit exit did not hand control back to the Yard: ${JSON.stringify({ exited, yard })}`);
   }
 
-  console.log(`WP0.6F Local Pit smoke passed: ${JSON.stringify({ visualStats, reception, exitPosition })}`);
+  console.log(`WP0.6F1 Local Pit grime/glitch smoke passed: ${JSON.stringify({ visualStats, glitch, recoveredGlitch, reception, exitPosition })}`);
   ws.close();
   cleanup();
 } catch (error) {
