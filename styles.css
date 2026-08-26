@@ -199,6 +199,153 @@ body {
   font-size: 15px;
 }
 
+.mobile-gameplay-hud {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  pointer-events: none;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.mobile-gameplay-hud.is-active {
+  display: block;
+}
+
+.mobile-hud-card {
+  position: absolute;
+  box-sizing: border-box;
+  display: none;
+  border: 2px solid rgba(49, 93, 84, 0.95);
+  border-radius: 12px;
+  background: rgba(249, 235, 185, 0.96);
+  color: #26382f;
+  box-shadow: 0 3px 0 rgba(22, 34, 28, 0.34), inset 0 0 0 2px rgba(255, 244, 202, 0.62);
+  padding: 9px 12px 10px 14px;
+  overflow: hidden;
+}
+
+.mobile-hud-card.is-visible {
+  display: block;
+}
+
+.mobile-hud-kicker {
+  color: #315d54;
+  font-size: 10px;
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.mobile-hud-title {
+  margin-top: 2px;
+  color: #5b3027;
+  font-size: 16px;
+  line-height: 1.08;
+  font-weight: 900;
+}
+
+.mobile-hud-body {
+  margin-top: 4px;
+  color: #3f443d;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+.mobile-objective-card {
+  top: calc(10px + env(safe-area-inset-top));
+  left: calc(10px + env(safe-area-inset-left));
+  width: min(360px, calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+}
+
+.mobile-tutorial-card {
+  left: calc(10px + env(safe-area-inset-left));
+  right: calc(10px + env(safe-area-inset-right));
+  bottom: calc(178px + env(safe-area-inset-bottom));
+  max-width: 460px;
+  border-color: rgba(124, 75, 83, 0.92);
+}
+
+.mobile-tutorial-card.is-completing {
+  transform: translateY(1px);
+}
+
+.mobile-hud-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.mobile-hud-hint {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: #d8d0aa;
+  color: #2b443d;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  padding: 0 7px;
+}
+
+html.display-dimmed::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: rgba(13, 20, 18, 0.20);
+}
+
+@media (orientation: landscape) and (pointer: coarse) {
+  .mobile-objective-card {
+    top: calc(8px + env(safe-area-inset-top));
+    left: calc(8px + env(safe-area-inset-left));
+    width: min(320px, 34vw);
+    padding: 7px 10px 8px 12px;
+  }
+
+  .mobile-objective-card .mobile-hud-body {
+    display: none;
+  }
+
+  .mobile-tutorial-card {
+    top: calc(8px + env(safe-area-inset-top));
+    bottom: auto;
+    left: max(350px, 36vw);
+    right: calc(150px + env(safe-area-inset-right));
+    max-width: none;
+    padding: 7px 10px 8px 12px;
+  }
+
+  .mobile-hud-title {
+    font-size: 14px;
+  }
+
+  .mobile-hud-body {
+    font-size: 11px;
+  }
+
+  .mobile-hud-hints {
+    margin-top: 5px;
+  }
+}
+
+@media (max-width: 760px) and (orientation: landscape) and (pointer: coarse) {
+  .mobile-objective-card {
+    width: 250px;
+  }
+
+  .mobile-tutorial-card {
+    left: 270px;
+    right: calc(120px + env(safe-area-inset-right));
+  }
+}
+
 @media (max-width: 460px) {
   .mobile-dpad {
     left: calc(8px + env(safe-area-inset-left));
@@ -240,5 +387,14 @@ body {
   .mobile-action-button {
     min-width: 82px;
     min-height: 82px;
+  }
+
+  .mobile-objective-card {
+    width: calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  }
+
+  .mobile-tutorial-card {
+    bottom: calc(174px + env(safe-area-inset-bottom));
+    max-width: none;
   }
 }
