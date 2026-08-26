@@ -96,11 +96,17 @@ function buildControls(): HTMLElement {
   const dpad = document.createElement('div');
   dpad.className = 'mobile-dpad';
   dpad.setAttribute('aria-label', 'Movement controls');
+  const runButton = controlButton('run', 'RUN', 'mobile-run-button', 'Hold to run');
+  runButton.style.gridColumn = '3';
+  runButton.style.gridRow = '3';
+  runButton.style.fontSize = '12px';
+  runButton.style.borderRadius = '50%';
   dpad.append(
     controlButton('move-up', '↑', 'mobile-dpad-up', 'Move up'),
     controlButton('move-left', '←', 'mobile-dpad-left', 'Move left'),
     controlButton('move-right', '→', 'mobile-dpad-right', 'Move right'),
     controlButton('move-down', '↓', 'mobile-dpad-down', 'Move down'),
+    runButton,
   );
 
   const actions = document.createElement('div');
