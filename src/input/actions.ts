@@ -3,6 +3,7 @@ export const ACTIONS = {
   MOVE_DOWN: 'MOVE_DOWN',
   MOVE_LEFT: 'MOVE_LEFT',
   MOVE_RIGHT: 'MOVE_RIGHT',
+  RUN: 'RUN',
   INTERACT: 'INTERACT',
   CONFIRM: 'CONFIRM',
   CANCEL: 'CANCEL',
@@ -34,6 +35,8 @@ export type KeyboardControl =
   | 'KeyA'
   | 'KeyS'
   | 'KeyD'
+  | 'ShiftLeft'
+  | 'ShiftRight'
   | 'KeyE'
   | 'KeyB'
   | 'Enter'
@@ -50,6 +53,7 @@ export type TouchControl =
   | 'move-down'
   | 'move-left'
   | 'move-right'
+  | 'run'
   | 'action'
   | 'back'
   | 'menu'
@@ -75,6 +79,7 @@ export const DEFAULT_BINDINGS: SemanticBindingProfile = {
     MOVE_DOWN: ['ArrowDown', 'KeyS'],
     MOVE_LEFT: ['ArrowLeft', 'KeyA'],
     MOVE_RIGHT: ['ArrowRight', 'KeyD'],
+    RUN: ['ShiftLeft', 'ShiftRight'],
     INTERACT: ['KeyE', 'Space'],
     CONFIRM: ['Enter', 'Space'],
     CANCEL: ['Escape'],
@@ -93,6 +98,7 @@ export const DEFAULT_BINDINGS: SemanticBindingProfile = {
     MOVE_DOWN: ['move-down'],
     MOVE_LEFT: ['move-left'],
     MOVE_RIGHT: ['move-right'],
+    RUN: ['run'],
     INTERACT: ['action'],
     CONFIRM: ['action'],
     CANCEL: ['back'],
@@ -116,6 +122,8 @@ const CONTROL_LABELS: Readonly<Record<KeyboardControl, string>> = {
   KeyA: 'A',
   KeyS: 'S',
   KeyD: 'D',
+  ShiftLeft: 'SHIFT',
+  ShiftRight: 'SHIFT',
   KeyE: 'E',
   KeyB: 'B',
   Enter: 'ENTER',
@@ -133,6 +141,7 @@ const TOUCH_CONTROL_LABELS: Readonly<Record<TouchControl, string>> = {
   'move-down': '↓',
   'move-left': '←',
   'move-right': '→',
+  run: 'RUN',
   action: 'ACTION',
   back: 'BACK',
   menu: 'MENU',
@@ -144,7 +153,8 @@ const TOUCH_CONTROL_LABELS: Readonly<Record<TouchControl, string>> = {
 };
 
 export function keyboardHint(action: SemanticAction, profile: SemanticBindingProfile = DEFAULT_BINDINGS): string {
-  return profile.keyboard[action].map((control) => CONTROL_LABELS[control]).join('/');
+  const labels = profile.keyboard[action].map((control) => CONTROL_LABELS[control]);
+  return [...new Set(labels)].join('/');
 }
 
 export function touchHint(action: SemanticAction, profile: SemanticBindingProfile = DEFAULT_BINDINGS): string {
