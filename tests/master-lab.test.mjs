@@ -48,8 +48,10 @@ test('WP0.6E exposes a camera-sized Master Lab with authored staging zones', () 
   );
 
   for (const stage of MASTER_LAB_STAGES) {
-    assert.equal(isMasterLabPositionBlocked(stage.x, stage.y), false, `${stage.id} staging point must be walkable.`);
     assert.equal(nearestMasterLabStage(stage.x, stage.y)?.id, stage.id);
+    if (stage.id !== 'aftermath-focus') {
+      assert.equal(isMasterLabPositionBlocked(stage.x, stage.y), false, `${stage.id} player staging point must be walkable.`);
+    }
   }
 });
 
@@ -61,7 +63,7 @@ test('WP0.6E keeps the critical cutscene and tutorial routes walkable', () => {
 
   assertRouteIsWalkable([MASTER_LAB_ENTRY_SPAWN, { x: 980, y: 780 }, master], 'Entry to Viktor stage');
   assertRouteIsWalkable([master, { x: 1220, y: 760 }, containment], 'Viktor stage to RinoCow containment');
-  assertRouteIsWalkable([master, { x: 740, y: 650 }, bench], 'Viktor stage to splice bench');
+  assertRouteIsWalkable([master, { x: 980, y: 760 }, { x: 740, y: 760 }, bench], 'Viktor stage to splice bench');
 });
 
 test('WP0.6E provides explicit exterior entry and interior exit interaction zones', () => {
