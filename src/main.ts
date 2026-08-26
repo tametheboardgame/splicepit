@@ -62,6 +62,7 @@ const LOWER_BODY_Y = 64;
 const LOWER_BODY_OVERLAP = 2;
 const HALF_WIDTH = FRAME_WIDTH / 2;
 const PLAYER_SPEED = 180;
+const RUN_SPEED_MULTIPLIER = 1.8;
 const CAMERA_RESPONSE = 8;
 
 const FRAME_BASE64: Record<ProtagonistId, Record<YardFacing, string>> = {
@@ -464,7 +465,8 @@ function updateYard(now: number): void {
     if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) player.facing = dx < 0 ? 'left' : 'right';
     else if (dy !== 0) player.facing = dy < 0 ? 'up' : 'down';
 
-    const distance = PLAYER_SPEED * dt;
+    const speedMultiplier = worldInput.isDown(ACTIONS.RUN) ? RUN_SPEED_MULTIPLIER : 1;
+    const distance = PLAYER_SPEED * speedMultiplier * dt;
     const nextX = player.x + dx * distance;
     if (!isYardPositionBlocked(nextX, player.y)) player.x = nextX;
     else {
