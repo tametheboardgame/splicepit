@@ -22,10 +22,10 @@ export const MASTER_LAB_EXTERIOR_ENTRY_ZONE: MasterLabRect = { x: 2446, y: 522, 
 
 export const MASTER_LAB_STAGES: readonly MasterLabStage[] = [
   { id: 'entry', label: 'Lab Entrance', x: MASTER_LAB_ENTRY_SPAWN.x, y: MASTER_LAB_ENTRY_SPAWN.y, radius: 110 },
-  { id: 'master-stage', label: "Viktor's Demonstration Floor", x: 990, y: 650, radius: 180 },
-  { id: 'rinocow-containment', label: 'RinoCow Containment', x: 1500, y: 470, radius: 190 },
-  { id: 'splice-bench', label: 'Primary Splice Bench', x: 450, y: 520, radius: 170 },
-  { id: 'aftermath-focus', label: 'Disaster Focus', x: 1220, y: 600, radius: 210 },
+  { id: 'master-stage', label: "Viktor's Demonstration Floor", x: 980, y: 620, radius: 170 },
+  { id: 'rinocow-containment', label: 'RinoCow Containment', x: 1500, y: 760, radius: 170 },
+  { id: 'splice-bench', label: 'Primary Splice Bench', x: 650, y: 600, radius: 160 },
+  { id: 'aftermath-focus', label: 'Disaster Focus', x: 1160, y: 620, radius: 190 },
 ] as const;
 
 const FLOOR: MasterLabRect = { x: 82, y: 78, width: 1796, height: 1036 };
@@ -63,7 +63,7 @@ const P = {
   bone: '#ddcfaa',
   blood: '#7f3438',
   bloodBright: '#a34543',
-};
+} as const;
 
 function rect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, colour: string): void {
   ctx.fillStyle = colour;
@@ -117,83 +117,110 @@ function drawOverheadPipes(ctx: CanvasRenderingContext2D, now: number): void {
     rect(ctx, x, 146, 10, 34, P.steelDark);
     rect(ctx, x + 3, 148, 4, 30, P.steelLight);
   }
-  const pulse = Math.floor(now / 380) % 4;
+  const pulse = Math.floor(now / 380) % 5;
   for (let index = 0; index < 5; index += 1) {
     rect(ctx, 874 + index * 42, 146, 22, 18, index === pulse ? P.yellow : P.tealDark);
   }
 }
 
+function drawWallDetails(ctx: CanvasRenderingContext2D, now: number): void {
+  outlineRect(ctx, { x: 760, y: 96, width: 440, height: 74 }, P.wood, P.woodDark, 4);
+  label(ctx, "DR VIKTOR SPLICENSTEIN'S MASTER LAB", 980, 133, P.cream, 15);
+
+  for (const x of [160, 430, 1460, 1730]) {
+    outlineRect(ctx, { x, y: 102, width: 126, height: 62 }, P.glass, P.tealDark, 3);
+    rect(ctx, x + 8, 110, 110, 46, P.glassLight);
+    rect(ctx, x + 60, 108, 4, 50, P.tealDark);
+  }
+
+  outlineRect(ctx, { x: 104, y: 202, width: 114, height: 64 }, P.tealDark, P.wallDark, 3);
+  label(ctx, 'BIOHAZARD', 161, 225, P.cream, 10);
+  label(ctx, 'LEVEL: MOSTLY', 161, 245, '#d7c87f', 9);
+
+  outlineRect(ctx, { x: 1736, y: 202, width: 114, height: 64 }, P.redDark, P.wallDark, 3);
+  label(ctx, 'DON’T OPEN', 1793, 225, '#f2d3c2', 10);
+  label(ctx, 'THE RED ONE', 1793, 245, '#f2d3c2', 9);
+
+  if (Math.floor(now / 800) % 2 === 0) {
+    rect(ctx, 110, 276, 12, 12, P.yellow);
+    rect(ctx, 1832, 276, 12, 12, P.yellow);
+  }
+}
+
 function drawSpliceBench(ctx: CanvasRenderingContext2D, now: number, state: MasterLabState): void {
-  const x = 260;
-  const y = 330;
-  rect(ctx, x - 42, y - 72, 410, 410, '#b9b68e');
-  outlineRect(ctx, { x: x - 24, y: y - 50, width: 374, height: 366 }, '#c7c49b', P.steelDark, 5);
-  rect(ctx, x - 6, y - 26, 338, 22, P.tealDark);
-  label(ctx, 'PRIMARY SPLICE BAY', x + 162, y - 15, P.cream, 12);
+  const x = 236;
+  const y = 310;
+  rect(ctx, x - 38, y - 54, 448, 400, '#b9b68e');
+  outlineRect(ctx, { x: x - 20, y: y - 36, width: 412, height: 364 }, '#c7c49b', P.steelDark, 5);
+  rect(ctx, x, y - 14, 372, 22, P.tealDark);
+  label(ctx, 'PRIMARY SPLICE BAY', x + 186, y - 3, P.cream, 12);
 
-  outlineRect(ctx, { x: x + 16, y: y + 58, width: 244, height: 108 }, P.steel, P.steelDark, 5);
-  rect(ctx, x + 28, y + 70, 220, 76, P.steelLight);
-  rect(ctx, x + 42, y + 88, 192, 30, '#d6d2aa');
-  rect(ctx, x + 60, y + 126, 158, 10, P.steelDark);
-  for (const lx of [52, 96, 140, 184, 228]) rect(ctx, x + lx, y + 78, 10, 8, lx === 140 && Math.floor(now / 520) % 2 === 0 ? P.yellow : P.tealDark);
+  outlineRect(ctx, { x: x + 34, y: y + 104, width: 300, height: 108 }, P.steel, P.steelDark, 5);
+  rect(ctx, x + 46, y + 116, 276, 76, P.steelLight);
+  rect(ctx, x + 62, y + 132, 244, 32, '#d6d2aa');
+  rect(ctx, x + 84, y + 174, 200, 9, P.steelDark);
+  for (const lx of [72, 118, 164, 210, 256, 296]) {
+    rect(ctx, x + lx, y + 122, 10, 7, lx === 164 && Math.floor(now / 520) % 2 === 0 ? P.yellow : P.tealDark);
+  }
 
-  outlineRect(ctx, { x: x + 274, y: y + 18, width: 58, height: 176 }, P.glass, P.tealDark, 4);
-  rect(ctx, x + 284, y + 30, 38, 150, P.fluid);
-  const bubble = Math.floor(now / 180) % 94;
-  for (const [bx, base] of [[292, 164], [310, 142], [302, 118]] as const) {
-    const by = y + 42 + ((base - bubble + 94) % 94);
+  outlineRect(ctx, { x: x + 320, y: y + 28, width: 54, height: 174 }, P.glass, P.tealDark, 4);
+  rect(ctx, x + 330, y + 40, 34, 148, P.fluid);
+  const bubble = Math.floor(now / 180) % 100;
+  for (const [bx, base] of [[337, 160], [350, 132], [342, 100]] as const) {
+    const by = y + 54 + ((base - bubble + 100) % 100);
     rect(ctx, x + bx - x, by, 5, 5, P.glassLight);
   }
 
-  outlineRect(ctx, { x: x + 18, y: y + 198, width: 118, height: 88 }, P.wood, P.woodDark, 4);
-  rect(ctx, x + 28, y + 208, 98, 18, P.woodLight);
-  for (const sx of [38, 66, 94]) {
-    outlineRect(ctx, { x: x + sx, y: y + 236, width: 18, height: 34 }, P.glass, P.tealDark, 2);
-    rect(ctx, x + sx + 4, y + 250, 10, 16, sx === 66 ? P.pink : P.slime);
+  outlineRect(ctx, { x: x + 26, y: y + 236, width: 128, height: 70 }, P.wood, P.woodDark, 4);
+  rect(ctx, x + 36, y + 246, 108, 16, P.woodLight);
+  for (const sx of [48, 80, 112]) {
+    outlineRect(ctx, { x: x + sx, y: y + 270, width: 18, height: 28 }, P.glass, P.tealDark, 2);
+    rect(ctx, x + sx + 4, y + 282, 10, 12, sx === 80 ? P.pink : P.slime);
   }
-  rect(ctx, x + 154, y + 216, 144, 14, P.woodDark);
-  rect(ctx, x + 164, y + 202, 124, 18, P.woodLight);
-  rect(ctx, x + 170, y + 230, 10, 52, P.woodDark);
-  rect(ctx, x + 278, y + 230, 10, 52, P.woodDark);
-  rect(ctx, x + 190, y + 180, 62, 20, P.bone);
-  rect(ctx, x + 204, y + 166, 34, 16, P.bone);
-  rect(ctx, x + 218, y + 172, 8, 6, P.pink);
+
+  rect(ctx, x + 190, y + 248, 140, 12, P.woodDark);
+  rect(ctx, x + 202, y + 234, 116, 16, P.woodLight);
+  rect(ctx, x + 208, y + 260, 9, 42, P.woodDark);
+  rect(ctx, x + 306, y + 260, 9, 42, P.woodDark);
+  rect(ctx, x + 226, y + 212, 58, 20, P.bone);
+  rect(ctx, x + 240, y + 198, 32, 16, P.bone);
+  rect(ctx, x + 254, y + 204, 8, 6, P.pink);
 
   if (state === 'aftermath') {
-    rect(ctx, x + 52, y + 110, 142, 8, P.bloodDark);
-    rect(ctx, x + 82, y + 118, 76, 6, P.bloodBright);
-    rect(ctx, x + 298, y + 82, 18, 62, P.steelDark);
-    rect(ctx, x + 302, y + 86, 9, 52, P.void);
+    rect(ctx, x + 86, y + 152, 126, 8, P.bloodDark);
+    rect(ctx, x + 132, y + 162, 74, 6, P.bloodBright);
+    rect(ctx, x + 340, y + 76, 12, 76, P.void);
   }
 }
 
 function drawViktorStage(ctx: CanvasRenderingContext2D, now: number, state: MasterLabState): void {
-  const x = 780;
-  const y = 444;
-  rect(ctx, x, y, 430, 322, P.tileDark);
-  rect(ctx, x + 14, y + 14, 402, 294, '#d8d5ac');
-  for (let gx = x + 30; gx < x + 400; gx += 46) rect(ctx, gx, y + 24, 2, 272, '#b1ae88');
-  for (let gy = y + 38; gy < y + 292; gy += 46) rect(ctx, x + 24, gy, 378, 2, '#b1ae88');
-  outlineRect(ctx, { x: x + 118, y: y + 36, width: 194, height: 62 }, P.wood, P.woodDark, 4);
-  label(ctx, state === 'pre-disaster' ? 'DEMONSTRATION FLOOR' : 'INCIDENT AREA', x + 215, y + 67, state === 'pre-disaster' ? P.cream : '#f0c2b4', 12);
-  for (const sx of [46, 362]) {
-    rect(ctx, x + sx, y + 114, 20, 128, P.steelDark);
-    rect(ctx, x + sx + 5, y + 118, 10, 120, P.steelLight);
-    rect(ctx, x + sx - 12, y + 100, 44, 18, P.tealDark);
-    if (Math.floor(now / 700) % 2 === 0) rect(ctx, x + sx + 2, y + 104, 16, 8, P.yellow);
+  const x = 768;
+  const y = 428;
+  rect(ctx, x, y, 436, 332, P.tileDark);
+  rect(ctx, x + 14, y + 14, 408, 304, '#d8d5ac');
+  for (let gx = x + 30; gx < x + 410; gx += 46) rect(ctx, gx, y + 24, 2, 280, '#b1ae88');
+  for (let gy = y + 38; gy < y + 306; gy += 46) rect(ctx, x + 24, gy, 384, 2, '#b1ae88');
+
+  outlineRect(ctx, { x: x + 114, y: y + 30, width: 208, height: 54 }, P.wood, P.woodDark, 4);
+  label(ctx, state === 'pre-disaster' ? 'DEMONSTRATION FLOOR' : 'INCIDENT AREA', x + 218, y + 57, state === 'pre-disaster' ? P.cream : '#f0c2b4', 12);
+
+  for (const sx of [54, 362]) {
+    rect(ctx, x + sx, y + 112, 20, 126, P.steelDark);
+    rect(ctx, x + sx + 5, y + 116, 10, 118, P.steelLight);
+    rect(ctx, x + sx - 12, y + 98, 44, 18, P.tealDark);
+    if (Math.floor(now / 700) % 2 === 0) rect(ctx, x + sx + 2, y + 102, 16, 8, P.yellow);
   }
-  outlineRect(ctx, { x: x + 132, y: y + 218, width: 166, height: 56 }, P.steel, P.steelDark, 4);
-  rect(ctx, x + 148, y + 232, 134, 10, P.tealLight);
-  for (const px of [166, 204, 242, 270]) rect(ctx, x + px, y + 248, 10, 10, px === 204 ? P.red : P.tealDark);
+
+  outlineRect(ctx, { x: x + 40, y: y + 254, width: 142, height: 54 }, P.steel, P.steelDark, 4);
+  rect(ctx, x + 52, y + 266, 118, 12, '#d0cda3');
+  for (const px of [64, 94, 124, 154]) rect(ctx, x + px, y + 286, 10, 9, px === 124 ? P.red : P.tealDark);
 
   if (state === 'aftermath') {
-    rect(ctx, x + 184, y + 124, 92, 20, P.bloodDark);
-    rect(ctx, x + 154, y + 142, 154, 16, P.bloodBright);
-    rect(ctx, x + 128, y + 156, 194, 12, P.bloodDark);
-    rect(ctx, x + 288, y + 168, 46, 8, P.bloodBright);
-    rect(ctx, x + 318, y + 176, 26, 8, P.bloodDark);
-    rect(ctx, x + 50, y + 214, 16, 56, P.steelDark);
-    rect(ctx, x + 54, y + 216, 8, 50, P.void);
+    rect(ctx, x + 182, y + 126, 94, 20, P.bloodDark);
+    rect(ctx, x + 152, y + 146, 156, 15, P.bloodBright);
+    rect(ctx, x + 128, y + 161, 194, 11, P.bloodDark);
+    rect(ctx, x + 292, y + 176, 48, 8, P.bloodBright);
+    rect(ctx, x + 58, y + 212, 14, 54, P.void);
   }
 }
 
@@ -214,107 +241,92 @@ function drawRinoCowSilhouette(ctx: CanvasRenderingContext2D, x: number, y: numb
 }
 
 function drawRinoCowContainment(ctx: CanvasRenderingContext2D, now: number, state: MasterLabState): void {
-  const x = 1284;
-  const y = 274;
-  rect(ctx, x - 52, y - 70, 552, 510, '#9e9b79');
-  outlineRect(ctx, { x: x - 34, y: y - 52, width: 516, height: 474 }, '#bdbb91', P.steelDark, 6);
-  outlineRect(ctx, { x: x + 34, y: y + 38, width: 378, height: 280 }, P.glass, P.tealDark, 6);
-  rect(ctx, x + 48, y + 52, 350, 252, '#9ec7ac');
-  for (let gx = x + 66; gx < x + 396; gx += 44) rect(ctx, gx, y + 52, 3, 252, P.tealDark);
-  rect(ctx, x + 48, y + 264, 350, 40, state === 'pre-disaster' ? P.fluidDark : '#687c6a');
-  drawRinoCowSilhouette(ctx, x + 120, y + 104, state, now);
+  const x = 1288;
+  const y = 264;
+  rect(ctx, x - 44, y - 60, 530, 500, '#9e9b79');
+  outlineRect(ctx, { x: x - 28, y: y - 44, width: 498, height: 468 }, '#bdbb91', P.steelDark, 6);
+  outlineRect(ctx, { x: x + 36, y: y + 42, width: 370, height: 280 }, P.glass, P.tealDark, 6);
+  rect(ctx, x + 50, y + 56, 342, 252, '#9ec7ac');
+  for (let gx = x + 66; gx < x + 390; gx += 44) rect(ctx, gx, y + 56, 3, 252, P.tealDark);
+  rect(ctx, x + 50, y + 268, 342, 40, state === 'pre-disaster' ? P.fluidDark : '#687c6a');
+  drawRinoCowSilhouette(ctx, x + 118, y + 108, state, now);
 
-  rect(ctx, x + 12, y - 24, 422, 42, P.tealDark);
-  label(ctx, 'RINOCOW // CONTAINMENT 03', x + 222, y - 3, P.cream, 12);
-  for (const [lx, colour] of [[60, P.tealLight], [96, P.yellow], [350, P.red]] as const) {
-    rect(ctx, x + lx, y + 334, 24, 16, P.steelDark);
-    rect(ctx, x + lx + 6, y + 338, 12, 8, colour);
-  }
-  outlineRect(ctx, { x: x + 142, y: y + 328, width: 150, height: 68 }, P.steel, P.steelDark, 4);
-  rect(ctx, x + 154, y + 340, 126, 18, '#d0cda3');
-  for (const bx of [168, 202, 236, 264]) rect(ctx, x + bx, y + 370, 12, 10, bx === 236 && Math.floor(now / 420) % 2 === 0 ? P.red : P.tealDark);
+  rect(ctx, x + 10, y - 22, 420, 42, P.tealDark);
+  label(ctx, 'RINOCOW // CONTAINMENT 03', x + 220, y - 1, P.cream, 12);
+
+  outlineRect(ctx, { x: x + 134, y: y + 346, width: 174, height: 70 }, P.steel, P.steelDark, 4);
+  rect(ctx, x + 148, y + 360, 146, 16, '#d0cda3');
+  for (const bx of [162, 198, 234, 270]) rect(ctx, x + bx, y + 390, 12, 10, bx === 234 && Math.floor(now / 420) % 2 === 0 ? P.red : P.tealDark);
 
   if (state === 'aftermath') {
-    rect(ctx, x + 178, y + 38, 12, 280, P.void);
-    rect(ctx, x + 182, y + 74, 34, 18, '#64756d');
-    rect(ctx, x + 70, y + 288, 204, 10, P.bloodDark);
-    rect(ctx, x + 118, y + 298, 132, 8, P.bloodBright);
+    rect(ctx, x + 178, y + 42, 12, 280, P.void);
+    rect(ctx, x + 182, y + 80, 34, 18, '#64756d');
+    rect(ctx, x + 74, y + 292, 202, 10, P.bloodDark);
+    rect(ctx, x + 120, y + 302, 132, 8, P.bloodBright);
   }
 }
 
 function drawSpecimenPrep(ctx: CanvasRenderingContext2D, now: number): void {
-  const x = 230;
-  const y = 790;
-  outlineRect(ctx, { x, y, width: 520, height: 220 }, '#c3c096', P.wallDark, 5);
-  rect(ctx, x + 20, y + 22, 480, 20, P.tealDark);
-  label(ctx, 'SPECIMEN PREP // IF IT TWITCHES, LABEL IT', x + 260, y + 32, P.cream, 11);
-  for (const cx of [270, 390, 510, 630]) {
-    outlineRect(ctx, { x: cx, y: y + 72, width: 72, height: 92 }, P.glass, P.tealDark, 3);
-    rect(ctx, cx + 8, y + 82, 56, 72, '#9bc59e');
-    const fill = cx === 390 ? P.pink : cx === 510 ? P.purple : P.slime;
-    rect(ctx, cx + 20, y + 120, 32, 26, fill);
-    if ((Math.floor(now / 640) + cx) % 3 === 0) rect(ctx, cx + 30, y + 104, 8, 8, P.glassLight);
+  const x = 220;
+  const y = 820;
+  outlineRect(ctx, { x, y, width: 500, height: 180 }, '#c3c096', P.wallDark, 5);
+  rect(ctx, x + 20, y + 18, 460, 20, P.tealDark);
+  label(ctx, 'SPECIMEN PREP // IF IT TWITCHES, LABEL IT', x + 250, y + 28, P.cream, 11);
+
+  for (const cx of [256, 368, 480, 592]) {
+    outlineRect(ctx, { x: cx, y: y + 58, width: 66, height: 78 }, P.glass, P.tealDark, 3);
+    rect(ctx, cx + 8, y + 68, 50, 58, '#9bc59e');
+    const fill = cx === 368 ? P.pink : cx === 480 ? P.purple : P.slime;
+    rect(ctx, cx + 18, y + 100, 30, 20, fill);
+    if ((Math.floor(now / 640) + cx) % 3 === 0) rect(ctx, cx + 28, y + 84, 7, 7, P.glassLight);
   }
-  rect(ctx, x + 54, y + 176, 412, 10, P.woodDark);
-  rect(ctx, x + 66, y + 166, 388, 12, P.woodLight);
+  rect(ctx, x + 58, y + 146, 384, 9, P.woodDark);
+  rect(ctx, x + 70, y + 137, 360, 11, P.woodLight);
 }
 
 function drawColdStorage(ctx: CanvasRenderingContext2D): void {
-  const x = 1250;
-  const y = 804;
-  outlineRect(ctx, { x, y, width: 480, height: 202 }, '#c7c6a0', P.steelDark, 5);
-  rect(ctx, x + 18, y + 18, 444, 28, P.steelDark);
-  label(ctx, 'SOURCE LIBRARY // COLD STORAGE', x + 240, y + 32, P.cream, 11);
+  const x = 1260;
+  const y = 830;
+  outlineRect(ctx, { x, y, width: 470, height: 170 }, '#c7c6a0', P.steelDark, 5);
+  rect(ctx, x + 18, y + 18, 434, 26, P.steelDark);
+  label(ctx, 'SOURCE LIBRARY // COLD STORAGE', x + 235, y + 31, P.cream, 11);
   for (let row = 0; row < 2; row += 1) {
     for (let column = 0; column < 6; column += 1) {
-      const bx = x + 24 + column * 72;
-      const by = y + 66 + row * 56;
-      outlineRect(ctx, { x: bx, y: by, width: 58, height: 42 }, P.tealDark, P.steelDark, 2);
-      rect(ctx, bx + 8, by + 8, 42, 26, column % 3 === 0 ? P.purple : column % 3 === 1 ? P.pink : P.slime);
+      const bx = x + 22 + column * 70;
+      const by = y + 58 + row * 48;
+      outlineRect(ctx, { x: bx, y: by, width: 56, height: 36 }, P.tealDark, P.steelDark, 2);
+      rect(ctx, bx + 8, by + 8, 40, 20, column % 3 === 0 ? P.purple : column % 3 === 1 ? P.pink : P.slime);
     }
   }
 }
 
-function drawWallDetails(ctx: CanvasRenderingContext2D, now: number): void {
-  outlineRect(ctx, { x: 760, y: 100, width: 440, height: 78 }, P.wood, P.woodDark, 4);
-  label(ctx, "DR VIKTOR SPLICENSTEIN'S MASTER LAB", 980, 139, P.cream, 15);
-  for (const x of [160, 430, 1460, 1730]) {
-    outlineRect(ctx, { x, y: 106, width: 126, height: 62 }, P.glass, P.tealDark, 3);
-    rect(ctx, x + 8, 114, 110, 46, P.glassLight);
-    rect(ctx, x + 60, 112, 4, 50, P.tealDark);
-  }
-  for (const x of [735, 1210]) {
-    outlineRect(ctx, { x, y: 862, width: 92, height: 120 }, P.tealDark, P.steelDark, 4);
-    rect(ctx, x + 12, y: 0, width: 0, height: 0, colour: P.tealDark);
-    rect(ctx, x + 12, 874, 68, 94, '#95c395');
-    rect(ctx, x + 26, 918, 40, 34, x === 735 ? P.pink : P.slime);
-  }
-  if (Math.floor(now / 800) % 2 === 0) {
-    rect(ctx, 104, 228, 12, 12, P.yellow);
-    rect(ctx, 1844, 228, 12, 12, P.yellow);
+function drawFloorTanks(ctx: CanvasRenderingContext2D, now: number): void {
+  for (const [x, fill] of [[760, P.pink], [1120, P.slime]] as const) {
+    outlineRect(ctx, { x, y: 870, width: 80, height: 112 }, P.tealDark, P.steelDark, 4);
+    rect(ctx, x + 10, 882, 60, 84, '#95c395');
+    rect(ctx, x + 22, 922, 36, 30, fill);
+    if ((Math.floor(now / 520) + x) % 2 === 0) rect(ctx, x + 34, 900, 7, 7, P.glassLight);
   }
 }
 
 function drawAftermath(ctx: CanvasRenderingContext2D): void {
-  rect(ctx, 1070, 704, 112, 12, P.bloodDark);
-  rect(ctx, 1138, 716, 84, 10, P.bloodBright);
-  rect(ctx, 1200, 726, 62, 8, P.bloodDark);
-  rect(ctx, 1260, 736, 28, 8, P.bloodBright);
-  rect(ctx, 1330, 684, 74, 8, P.bloodDark);
-  rect(ctx, 1392, 676, 34, 8, P.bloodBright);
-  rect(ctx, 1114, 650, 18, 12, P.bone);
-  rect(ctx, 1128, 646, 12, 8, P.bone);
-  rect(ctx, 1058, 566, 8, 42, P.steelDark);
-  rect(ctx, 1062, 570, 4, 32, P.void);
+  rect(ctx, 1060, 694, 116, 12, P.bloodDark);
+  rect(ctx, 1132, 706, 86, 10, P.bloodBright);
+  rect(ctx, 1198, 716, 64, 8, P.bloodDark);
+  rect(ctx, 1256, 726, 30, 8, P.bloodBright);
+  rect(ctx, 1328, 684, 76, 8, P.bloodDark);
+  rect(ctx, 1390, 676, 36, 8, P.bloodBright);
+  rect(ctx, 1112, 650, 18, 12, P.bone);
+  rect(ctx, 1126, 646, 12, 8, P.bone);
+  rect(ctx, 1048, 566, 8, 42, P.steelDark);
+  rect(ctx, 1052, 570, 4, 32, P.void);
 }
 
 function drawForeground(ctx: CanvasRenderingContext2D, playerFeetY: number): void {
-  if (playerFeetY < 280) {
-    rect(ctx, 82, 78, 1796, 76, 'rgba(42,55,48,0.18)');
-  }
-  if (playerFeetY < 810) {
-    rect(ctx, 1284, 734, 448, 12, P.steelDark);
-    for (const x of [1304, 1440, 1576, 1712]) rect(ctx, x, 738, 9, 68, P.steelDark);
+  if (playerFeetY < 280) rect(ctx, 82, 78, 1796, 76, 'rgba(42,55,48,0.18)');
+  if (playerFeetY < 820) {
+    rect(ctx, 1244, 792, 486, 10, P.steelDark);
+    for (const x of [1270, 1408, 1546, 1684]) rect(ctx, x, 794, 8, 34, P.steelDark);
   }
 }
 
@@ -324,14 +336,17 @@ export const MASTER_LAB_COLLIDERS: readonly MasterLabRect[] = [
   { x: 1844, y: 78, width: 34, height: 1036 },
   { x: 82, y: 1082, width: 818, height: 32 },
   { x: 1060, y: 1082, width: 818, height: 32 },
-  { x: 218, y: 258, width: 410, height: 410 },
-  { x: 780, y: 444, width: 430, height: 112 },
-  { x: 780, y: 696, width: 430, height: 70 },
-  { x: 1232, y: 204, width: 552, height: 510 },
-  { x: 230, y: 790, width: 520, height: 220 },
-  { x: 1250, y: 804, width: 480, height: 202 },
-  { x: 735, y: 862, width: 92, height: 120 },
-  { x: 1210, y: 862, width: 92, height: 120 },
+  { x: 270, y: 414, width: 300, height: 108 },
+  { x: 556, y: 338, width: 54, height: 174 },
+  { x: 822, y: 540, width: 20, height: 126 },
+  { x: 1130, y: 540, width: 20, height: 126 },
+  { x: 808, y: 682, width: 142, height: 54 },
+  { x: 1296, y: 306, width: 370, height: 280 },
+  { x: 1422, y: 610, width: 174, height: 70 },
+  { x: 220, y: 820, width: 500, height: 180 },
+  { x: 1260, y: 830, width: 470, height: 170 },
+  { x: 760, y: 870, width: 80, height: 112 },
+  { x: 1120, y: 870, width: 80, height: 112 },
 ];
 
 function overlaps(a: MasterLabRect, b: MasterLabRect): boolean {
@@ -340,7 +355,12 @@ function overlaps(a: MasterLabRect, b: MasterLabRect): boolean {
 
 export function isMasterLabPositionBlocked(feetX: number, feetY: number): boolean {
   const hitbox: MasterLabRect = { x: feetX - 11, y: feetY - 13, width: 22, height: 15 };
-  if (hitbox.x < FLOOR.x + 8 || hitbox.y < FLOOR.y + 8 || hitbox.x + hitbox.width > FLOOR.x + FLOOR.width - 8 || hitbox.y + hitbox.height > FLOOR.y + FLOOR.height - 8) return true;
+  if (
+    hitbox.x < FLOOR.x + 8
+    || hitbox.y < FLOOR.y + 8
+    || hitbox.x + hitbox.width > FLOOR.x + FLOOR.width - 8
+    || hitbox.y + hitbox.height > FLOOR.y + FLOOR.height - 8
+  ) return true;
   return MASTER_LAB_COLLIDERS.some((collider) => overlaps(hitbox, collider));
 }
 
@@ -372,6 +392,7 @@ export function drawMasterLabBase(ctx: CanvasRenderingContext2D, now: number, st
   drawRinoCowContainment(ctx, now, state);
   drawSpecimenPrep(ctx, now);
   drawColdStorage(ctx);
+  drawFloorTanks(ctx, now);
   if (state === 'aftermath') drawAftermath(ctx);
   ctx.restore();
 }
