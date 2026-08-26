@@ -175,10 +175,10 @@ try {
   await key('Enter', 'Enter', 13);
   const settings = await waitFor(async () => {
     const current = await menuState();
-    return current?.screen === 'settings' && current?.selectedId === 'back' ? current : null;
+    return current?.screen === 'settings' && current?.selectedId === 'dim-screen' ? current : null;
   });
-  if (!settings.settingsOpened || settings.newGameStarted) {
-    throw new Error(`Settings shell did not open cleanly: ${JSON.stringify(settings)}`);
+  if (!settings.settingsOpened || settings.newGameStarted || typeof settings.dimScreen !== 'boolean' || typeof settings.fullscreenSupported !== 'boolean') {
+    throw new Error(`Settings controls did not open cleanly: ${JSON.stringify(settings)}`);
   }
 
   await key('Escape', 'Escape', 27);
@@ -243,7 +243,7 @@ try {
     throw new Error(`Selected New Game identity did not become current state: ${JSON.stringify(newIdentity)}`);
   }
 
-  console.log('WP0.5D menu, narration, fresh character selection, identity commit and Yard handoff smoke passed.');
+  console.log('WP0.5D menu, display settings, narration, fresh character selection, identity commit and Yard handoff smoke passed.');
   ws.close();
   cleanup();
 } catch (error) {

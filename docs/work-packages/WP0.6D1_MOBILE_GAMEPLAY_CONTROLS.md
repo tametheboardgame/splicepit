@@ -4,6 +4,8 @@ Status: **IMPLEMENTED**
 
 Authoritative insertion: `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-26_MOBILE_CONTROL_INSERT.md`
 
+Sequencing addendum: `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-26_MOBILE_LAYOUT_INSERT.md`
+
 ## Goal
 
 Remove the mobile playtest blocker between character selection and WP0.6E by giving touch devices a real gameplay control surface that feeds the existing semantic input contract.
@@ -67,4 +69,4 @@ The complete repository gate passed on PR #46:
 
 ## Next package
 
-After merge: `WP0.6E — Master Lab Interior`.
+`WP0.6D2 — Mobile Text Layout & Display Comfort` was inserted after real-device testing exposed portrait/landscape text-layout issues. WP0.6E follows WP0.6D2.

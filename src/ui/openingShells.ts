@@ -1,3 +1,4 @@
+import { touchInputAvailable } from '../input/actions.js';
 import type {
   OpeningInventoryEntry,
   OpeningObjectiveDefinition,
@@ -88,6 +89,8 @@ export function drawOpeningObjectiveTracker(
   objectiveStep: number,
   objectiveCount: number,
 ): void {
+  if (touchInputAvailable()) return;
+
   context.save();
   fillPanel(context, 22, 20, 410, 88, 'rgba(249, 235, 185, 0.95)', '#3c6b61', 3);
   context.fillStyle = '#284f47';

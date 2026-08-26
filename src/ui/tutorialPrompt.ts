@@ -1,3 +1,4 @@
+import { touchInputAvailable } from '../input/actions.js';
 import type { TutorialPromptView } from '../tutorial/tutorialFramework.js';
 
 const PROMPT_MARGIN = 24;
@@ -10,6 +11,8 @@ export function drawTutorialPrompt(
   viewportWidth: number,
   viewportHeight: number,
 ): void {
+  if (touchInputAvailable()) return;
+
   const width = Math.min(PROMPT_WIDTH, Math.max(320, viewportWidth - PROMPT_MARGIN * 2));
   const x = PROMPT_MARGIN;
   const y = Math.max(PROMPT_MARGIN, viewportHeight - PROMPT_HEIGHT - PROMPT_MARGIN);
