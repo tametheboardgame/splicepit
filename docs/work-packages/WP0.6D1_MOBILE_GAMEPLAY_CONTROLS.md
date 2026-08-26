@@ -1,6 +1,6 @@
 # WP0.6D1 — Mobile Gameplay Controls
 
-Status: **IMPLEMENTED — VALIDATION PENDING**
+Status: **IMPLEMENTED**
 
 Authoritative insertion: `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-26_MOBILE_CONTROL_INSERT.md`
 
@@ -54,6 +54,17 @@ The player-facing mobile smoke uses a `412 × 915` emulated touch viewport and v
 - the authored Yard → Master Lab route can be traversed using only the touch D-pad;
 - the mobile UI introduces no horizontal page overflow.
 
+## Validation
+
+The complete repository gate passed on PR #46:
+
+- TypeScript typecheck;
+- content validation;
+- RNG boundary validation;
+- unit/domain/save tests;
+- production build;
+- full player-facing browser smoke suite, including the new touch-only mobile gameplay regression.
+
 ## Next package
 
-After green validation and merge: `WP0.6E — Master Lab Interior`.
+After merge: `WP0.6E — Master Lab Interior`.
