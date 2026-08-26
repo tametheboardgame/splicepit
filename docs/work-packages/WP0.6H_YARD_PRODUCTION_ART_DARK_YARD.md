@@ -62,22 +62,24 @@ Dark storytelling includes:
 
 The result is deliberately the same place with a much worse history visible through it, not a second map.
 
-## Runtime integration
+## Runtime integration and depth
 
-`src/environment/yardProductionArtRuntime.ts` mounts a transparent production-art canvas over the existing opening canvas while the player is physically in the logical `yard` region.
+WP0.6H is rendered synchronously inside the existing opening-world frame in `src/main.ts`. There is no independent Yard canvas and no second animation loop.
 
-The runtime:
+The render order is deliberately depth-aware:
 
-- follows the existing Yard camera exactly;
-- draws bright production details every Yard frame;
-- samples the shared `EnvironmentVisualController`;
-- crossfades the authored dark detail set using the controller's `darkMix` value;
-- preserves the desktop objective/tutorial UI by copying those already-rendered canvas regions above the environment layer;
-- automatically hides while Bag/Map is open or while Master Lab/Local Pit overlays are active;
-- automatically disables on the opening route, leaving WP0.6I ownership intact;
-- exposes `globalThis.__SPLICEPIT_YARD_ART__` for deterministic browser regression inspection.
+1. accepted Yard base/world pass;
+2. WP0.6H bright production ground/base detail plus the current dark counterpart mix;
+3. protagonist;
+4. WP0.6H foreground containment/equipment edges whose `sortY` is still in front of the protagonist;
+5. accepted Yard foreground/tree-canopy pass;
+6. objective, tutorial and shell UI.
 
-The Yard capability is now marked `darkArtStatus: authored`; route, Master Lab and Local Pit remain `pending` for WP0.6I–K.
+This means traffic wear, drainage and other ground details remain under the protagonist, while authored front rails and containment edges can still occlude the protagonist when their feet are physically behind those objects. Camera position and art use the same render tick, so the production art cannot lag the world by a frame.
+
+`src/environment/yardProductionArtRuntime.ts` is now only a synchronous debug-state helper imported by the opening-world renderer. It exposes `globalThis.__SPLICEPIT_YARD_ART__`, including `renderIntegration: opening-world-render-loop` and `depthModel: base-before-player-foreground-after-player`, for deterministic regression inspection.
+
+The shared `EnvironmentVisualController` continues to select bright/dark state. The Yard art only renders while the player is in the logical Yard region, so the opening route remains WP0.6I ownership. The Yard capability is marked `darkArtStatus: authored`; route, Master Lab and Local Pit remain `pending` for WP0.6I–K.
 
 ## Validation
 
@@ -87,11 +89,12 @@ Automated coverage now verifies:
 - the roadmap's bright production-detail groups are represented;
 - the roadmap's dark environmental-storytelling groups are represented;
 - accepted Yard traversal topology remains unchanged;
-- browser rendering mounts and paints the production-art layer;
-- force-dark reaches a materially distinct dark render with substantial changed, dark and biological pixels;
+- the production art uses the opening-world render loop and the locked base/player/foreground depth model;
+- no independent Yard overlay canvas exists;
+- force-dark reaches a materially distinct dark render on the real `#visual-reset-stage` canvas with substantial changed, dark and biological pixels;
 - force-bright restores the normal Yard deterministically.
 
-Existing Yard movement/collision smoke remains authoritative for traversal behaviour, while the new `yard-production-art-smoke.mjs` covers the actual rendered bright/dark contract.
+Existing Yard movement/collision smoke remains authoritative for traversal behaviour, while `yard-production-art-smoke.mjs` covers the actual integrated bright/dark rendering contract.
 
 ## Explicitly deferred
 
