@@ -62,6 +62,8 @@ Inside the lab:
 - `splice-bench`;
 - `aftermath-focus`.
 
+The first four are player-facing staging positions. `aftermath-focus` is an addressable story/camera focus inside the equipment field rather than a required player standing position.
+
 These are deliberately separated from story scripting so R0.7 can target stable positions without coupling cutscene logic to raw art coordinates.
 
 ## Post-death visual preparation
@@ -95,7 +97,7 @@ Those remain assigned to later roadmap packages.
 Automated coverage verifies:
 
 - the lab exceeds the gameplay viewport and preserves the locked 1280×720 view;
-- all five authored staging points exist and are walkable;
+- all five authored staging points exist, with player-facing staging points walkable and the aftermath camera focus addressable;
 - entrance → Viktor, Viktor → RinoCow and Viktor → splice-bench paths remain traversable;
 - the exterior entrance and interior exit interaction zones remain explicit;
 - walls and the RinoCow tank remain physically solid;
