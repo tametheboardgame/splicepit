@@ -4,6 +4,8 @@ Status: **IMPLEMENTED**
 
 Authoritative parent: `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-25.md`
 
+Sequencing addendum: `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-26_MOBILE_CONTROL_INSERT.md`
+
 ## Goal
 
 Turn the WP0.6C `find-master` hand-off into a real connected opening world: the player can leave the Apprentice Splicer Yard, follow a readable route to the Master's lab, pass a deliberately reserved future creditor-encounter location, and continue towards the local Pit.
@@ -67,4 +69,6 @@ Automated route coverage verifies:
 
 ## Next package
 
-`WP0.6E — Master Lab Interior`
+`WP0.6D1 — Mobile Gameplay Controls`
+
+This package was inserted after human mobile testing established that the authored route could not be tested beyond character selection without a keyboard. WP0.6E now follows WP0.6D1.
