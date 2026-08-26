@@ -18,7 +18,6 @@ import {
   ACTIONS,
   DEFAULT_BINDINGS,
   SEMANTIC_INPUT_EVENT,
-  type KeyboardControl,
   type SemanticAction,
   type SemanticInputEventDetail,
 } from './input/actions.js';
@@ -36,7 +35,6 @@ import {
   MASTER_LAB_ENTRY_SPAWN,
   MASTER_LAB_EXIT_ZONE,
   MASTER_LAB_EXTERIOR_ENTRY_ZONE,
-  MASTER_LAB_STAGES,
   MASTER_LAB_VIEW_HEIGHT,
   MASTER_LAB_VIEW_WIDTH,
   MASTER_LAB_WORLD_HEIGHT,
@@ -59,6 +57,7 @@ const CAMERA_RESPONSE = 8;
 const LAB_CANVAS_ID = 'master-lab-stage';
 
 type Facing = 'down' | 'left' | 'right' | 'up';
+type LabPlayer = { x: number; y: number; facing: Facing; moving: boolean };
 
 type YardDebug = {
   ready?: boolean;
@@ -66,6 +65,7 @@ type YardDebug = {
   selectedAvatarId?: ProtagonistId;
   playerX?: number;
   playerY?: number;
+  activeOpeningShell?: OpeningShellId | null;
 };
 
 type MasterLabDebug = {
@@ -102,10 +102,10 @@ const FRAME_BASE64: Record<ProtagonistId, Record<Facing, string>> = {
 
 const frames = {} as Record<ProtagonistId, Record<Facing, HTMLImageElement>>;
 const pressed = new Set<SemanticAction>();
-const player = {
+const player: LabPlayer = {
   x: MASTER_LAB_ENTRY_SPAWN.x,
   y: MASTER_LAB_ENTRY_SPAWN.y,
-  facing: 'up' as Facing,
+  facing: 'up',
   moving: false,
 };
 const camera = { x: 0, y: 0 };
@@ -116,7 +116,6 @@ let framesReady = false;
 let lastNow = performance.now();
 let collisionCount = 0;
 let lastCollision = false;
-let activeShell: OpeningShellId | null = null;
 let suppressSemanticUntil = 0;
 
 const objective = OPENING_OBJECTIVES.find((entry) => entry.id === 'find-master') ?? OPENING_OBJECTIVES[OPENING_OBJECTIVES.length - 1];
@@ -151,6 +150,10 @@ function yardDebug(): YardDebug | undefined {
   return (globalThis as DebugGlobal).__SPLICEPIT_VISUAL_RESET__;
 }
 
+function currentShell(): OpeningShellId | null {
+  return yardDebug()?.activeOpeningShell ?? null;
+}
+
 function gameplayReady(): boolean {
   const yard = yardDebug();
   return Boolean(yard?.ready && yard.phase === 'confirmed');
@@ -175,9 +178,13 @@ function ensureCanvas(): HTMLCanvasElement | null {
   canvas.setAttribute('aria-label', "Dr Viktor Splicenstein's Master Lab");
   canvas.setAttribute('aria-hidden', 'true');
   canvas.style.position = 'absolute';
-  canvas.style.inset = '0';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
+  canvas.style.left = '50%';
+  canvas.style.top = '50%';
+  canvas.style.transform = 'translate(-50%, -50%)';
+  canvas.style.width = 'min(100vw, calc(100vh * 16 / 9))';
+  canvas.style.height = 'auto';
+  canvas.style.maxHeight = '100vh';
+  canvas.style.aspectRatio = '16 / 9';
   canvas.style.zIndex = '20';
   canvas.style.pointerEvents = 'none';
   canvas.style.imageRendering = 'pixelated';
@@ -216,7 +223,6 @@ function resetLabRuntime(): void {
   camera.y = clamp(player.y - MASTER_LAB_VIEW_HEIGHT / 2, 0, MASTER_LAB_WORLD_HEIGHT - MASTER_LAB_VIEW_HEIGHT);
   collisionCount = 0;
   lastCollision = false;
-  activeShell = null;
   pressed.clear();
   lastNow = performance.now();
 }
@@ -231,13 +237,11 @@ function enterLab(): void {
   debug.rendered = false;
   suppressSemanticUntil = performance.now() + 80;
   void ensureFrames();
-  const canvas = ensureCanvas();
-  canvas?.setAttribute('aria-hidden', 'false');
+  ensureCanvas()?.setAttribute('aria-hidden', 'false');
 }
 
 function exitLab(): void {
   active = false;
-  activeShell = null;
   pressed.clear();
   debug.active = false;
   debug.rendered = false;
@@ -246,12 +250,11 @@ function exitLab(): void {
   const canvas = document.getElementById(LAB_CANVAS_ID) as HTMLCanvasElement | null;
   if (canvas) {
     canvas.setAttribute('aria-hidden', 'true');
-    const context = canvas.getContext('2d');
-    context?.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
   }
 }
 
-function actionForKeyboard(code: string): SemanticAction[] {
+function actionsForKeyboard(code: string): SemanticAction[] {
   const matches: SemanticAction[] = [];
   for (const action of Object.values(ACTIONS) as SemanticAction[]) {
     if ((DEFAULT_BINDINGS.keyboard[action] as readonly string[]).includes(code)) matches.push(action);
@@ -259,34 +262,23 @@ function actionForKeyboard(code: string): SemanticAction[] {
   return matches;
 }
 
-function handlePressedAction(action: SemanticAction): void {
-  if (action === ACTIONS.BAG) {
-    activeShell = activeShell === 'bag' ? null : 'bag';
-    debug.activeShell = activeShell;
-    return;
-  }
-  if (action === ACTIONS.MAP) {
-    activeShell = activeShell === 'map' ? null : 'map';
-    debug.activeShell = activeShell;
-    return;
-  }
+function handleLabAction(action: SemanticAction): void {
   if (action === ACTIONS.CANCEL || action === ACTIONS.LAB_CANCEL) {
-    if (activeShell) {
-      activeShell = null;
-      debug.activeShell = null;
-      return;
-    }
     if (pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE)) exitLab();
     return;
   }
   if (action === ACTIONS.INTERACT || action === ACTIONS.LAB_INTERACT || action === ACTIONS.CONFIRM) {
-    if (activeShell) return;
     if (pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE)) exitLab();
   }
 }
 
+function shouldPassToYard(actions: readonly SemanticAction[]): boolean {
+  if (actions.includes(ACTIONS.BAG) || actions.includes(ACTIONS.MAP)) return true;
+  return currentShell() !== null && (actions.includes(ACTIONS.CANCEL) || actions.includes(ACTIONS.LAB_CANCEL));
+}
+
 function onKeyDown(event: KeyboardEvent): void {
-  const actions = actionForKeyboard(event.code);
+  const actions = actionsForKeyboard(event.code);
   if (!active) {
     if (gameplayReady() && nearExteriorDoor() && (actions.includes(ACTIONS.INTERACT) || actions.includes(ACTIONS.LAB_INTERACT))) {
       event.preventDefault();
@@ -296,20 +288,20 @@ function onKeyDown(event: KeyboardEvent): void {
     return;
   }
 
-  if (actions.length === 0) return;
+  if (actions.length === 0 || shouldPassToYard(actions)) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   for (const action of actions) {
     const wasPressed = pressed.has(action);
     pressed.add(action);
-    if (!wasPressed) handlePressedAction(action);
+    if (!wasPressed) handleLabAction(action);
   }
 }
 
 function onKeyUp(event: KeyboardEvent): void {
   if (!active) return;
-  const actions = actionForKeyboard(event.code);
-  if (actions.length === 0) return;
+  const actions = actionsForKeyboard(event.code);
+  if (actions.length === 0 || shouldPassToYard(actions)) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   for (const action of actions) pressed.delete(action);
@@ -334,12 +326,15 @@ function onSemanticInput(event: Event): void {
     return;
   }
 
+  if (detail.action === ACTIONS.BAG || detail.action === ACTIONS.MAP) return;
+  if (currentShell() !== null && (detail.action === ACTIONS.CANCEL || detail.action === ACTIONS.LAB_CANCEL)) return;
+
   event.preventDefault();
   event.stopImmediatePropagation();
   if (detail.pressed) {
     const wasPressed = pressed.has(detail.action);
     pressed.add(detail.action);
-    if (!wasPressed) handlePressedAction(detail.action);
+    if (!wasPressed) handleLabAction(detail.action);
   } else {
     pressed.delete(detail.action);
   }
@@ -348,7 +343,7 @@ function onSemanticInput(event: Event): void {
 function update(now: number): void {
   const dt = Math.min(0.032, Math.max(0, (now - lastNow) / 1000));
   lastNow = now;
-  if (!active || activeShell) {
+  if (!active || currentShell() !== null) {
     player.moving = false;
     lastCollision = false;
     return;
@@ -461,12 +456,12 @@ function drawInteractionPrompt(ctx: CanvasRenderingContext2D, text: string): voi
   ctx.fillText(text, MASTER_LAB_VIEW_WIDTH / 2, y + 24);
 }
 
-function renderInactiveDoorPrompt(ctx: CanvasRenderingContext2D): void {
+function renderInactiveDoorPrompt(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
   ctx.clearRect(0, 0, MASTER_LAB_VIEW_WIDTH, MASTER_LAB_VIEW_HEIGHT);
   const near = gameplayReady() && nearExteriorDoor();
   debug.nearExteriorDoor = near;
-  if (!near) return;
-  drawInteractionPrompt(ctx, 'ACTION  Enter Master Splicenstein’s Lab');
+  canvas.setAttribute('aria-hidden', near ? 'false' : 'true');
+  if (near) drawInteractionPrompt(ctx, 'ACTION  Enter Master Splicenstein’s Lab');
 }
 
 function renderLab(ctx: CanvasRenderingContext2D, now: number): void {
@@ -483,12 +478,12 @@ function renderLab(ctx: CanvasRenderingContext2D, now: number): void {
   ctx.restore();
 
   drawOpeningObjectiveTracker(ctx, objective, 2, 2);
-  if (pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE) && !activeShell) {
+  const shell = currentShell();
+  if (pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE) && shell === null) {
     drawInteractionPrompt(ctx, 'ACTION / BACK  Return to the Yard');
   }
-
   drawOpeningShell(ctx, {
-    activeShell,
+    activeShell: shell,
     inventory: OPENING_INVENTORY,
     objective,
     objectiveStep: 2,
@@ -513,7 +508,7 @@ function renderLab(ctx: CanvasRenderingContext2D, now: number): void {
   debug.lastCollision = lastCollision;
   debug.nearExit = pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE);
   debug.stageId = stage?.id ?? null;
-  debug.activeShell = activeShell;
+  debug.activeShell = shell;
 }
 
 function render(now: number): void {
@@ -524,16 +519,14 @@ function render(now: number): void {
       canvas.setAttribute('aria-hidden', 'false');
       renderLab(ctx, now);
     } else {
-      canvas.setAttribute('aria-hidden', 'true');
-      renderInactiveDoorPrompt(ctx);
+      renderInactiveDoorPrompt(canvas, ctx);
     }
   }
   requestAnimationFrame(render);
 }
 
 function autoActivateTestMode(): void {
-  const query = new URLSearchParams(window.location.search);
-  if (query.get('labTest') !== '1') return;
+  if (new URLSearchParams(window.location.search).get('labTest') !== '1') return;
   const poll = (): void => {
     if (!active && gameplayReady()) {
       enterLab();
