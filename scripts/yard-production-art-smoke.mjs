@@ -104,11 +104,18 @@ try {
       art: { ...art },
       environment: { ...env.state },
       yard: { playerX: yard.playerX, playerY: yard.playerY, worldWidth: yard.worldWidth, worldHeight: yard.worldHeight },
+      overlayExists: Boolean(document.querySelector('#yard-production-art-stage')),
     };
   })()`), 20000);
 
   if (brightState.art.geometryId !== 'opening-world-v1' || brightState.art.collisionTopology !== 'unchanged') {
     throw new Error(`WP0.6H geometry contract failed: ${JSON.stringify(brightState)}`);
+  }
+  if (brightState.art.renderIntegration !== 'opening-world-render-loop' || brightState.art.depthModel !== 'base-before-player-foreground-after-player') {
+    throw new Error(`WP0.6H depth integration contract failed: ${JSON.stringify(brightState.art)}`);
+  }
+  if (brightState.overlayExists) {
+    throw new Error('WP0.6H must not use an independent Yard overlay canvas');
   }
   if (brightState.environment.visualState !== 'bright' || brightState.art.darkMix !== 0) {
     throw new Error(`WP0.6H did not begin in authored bright state: ${JSON.stringify(brightState)}`);
@@ -118,28 +125,25 @@ try {
   }
 
   const brightStats = await evaluate(`(() => {
-    const canvas = document.querySelector('#yard-production-art-stage');
+    const canvas = document.querySelector('#visual-reset-stage');
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return null;
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const colours = new Set();
-    let painted = 0;
     let warmWorkplace = 0;
-    for (let y = 0; y < canvas.height; y += 6) {
-      for (let x = 0; x < canvas.width; x += 6) {
+    for (let y = 120; y < 570; y += 4) {
+      for (let x = 80; x < 1120; x += 4) {
         const i = (y * canvas.width + x) * 4;
-        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
-        if (a < 20) continue;
-        painted += 1;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
         colours.add((r << 16) | (g << 8) | b);
         if (r > 120 && g > 80 && b < 115) warmWorkplace += 1;
       }
     }
     globalThis.__WP06H_BRIGHT_PIXELS__ = data.slice();
-    return { painted, uniqueColours: colours.size, warmWorkplace };
+    return { uniqueColours: colours.size, warmWorkplace };
   })()`);
 
-  if (!brightStats || brightStats.painted < 450 || brightStats.uniqueColours < 18 || brightStats.warmWorkplace < 35) {
+  if (!brightStats || brightStats.uniqueColours < 24 || brightStats.warmWorkplace < 60) {
     throw new Error(`WP0.6H bright Yard production detail is too sparse: ${JSON.stringify(brightStats)}`);
   }
 
@@ -156,7 +160,7 @@ try {
   }
 
   const darkStats = await evaluate(`(() => {
-    const canvas = document.querySelector('#yard-production-art-stage');
+    const canvas = document.querySelector('#visual-reset-stage');
     const ctx = canvas?.getContext('2d');
     const bright = globalThis.__WP06H_BRIGHT_PIXELS__;
     if (!canvas || !ctx || !bright) return null;
@@ -164,20 +168,20 @@ try {
     let changed = 0;
     let darkPaint = 0;
     let biological = 0;
-    for (let y = 0; y < canvas.height; y += 6) {
-      for (let x = 0; x < canvas.width; x += 6) {
+    for (let y = 120; y < 570; y += 4) {
+      for (let x = 80; x < 1120; x += 4) {
         const i = (y * canvas.width + x) * 4;
-        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
-        const br = bright[i], bg = bright[i + 1], bb = bright[i + 2], ba = bright[i + 3];
-        if (Math.abs(r - br) + Math.abs(g - bg) + Math.abs(b - bb) + Math.abs(a - ba) > 45) changed += 1;
-        if (a > 40 && r < 105 && g < 105 && b < 100) darkPaint += 1;
-        if (a > 40 && r > g + 14 && r > b + 3 && r > 80) biological += 1;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const br = bright[i], bg = bright[i + 1], bb = bright[i + 2];
+        if (Math.abs(r - br) + Math.abs(g - bg) + Math.abs(b - bb) > 45) changed += 1;
+        if (r < 105 && g < 105 && b < 100) darkPaint += 1;
+        if (r > g + 14 && r > b + 3 && r > 80) biological += 1;
       }
     }
     return { changed, darkPaint, biological };
   })()`);
 
-  if (!darkStats || darkStats.changed < 160 || darkStats.darkPaint < 120 || darkStats.biological < 20) {
+  if (!darkStats || darkStats.changed < 220 || darkStats.darkPaint < 300 || darkStats.biological < 25) {
     throw new Error(`WP0.6H dark Yard is not materially distinct enough: ${JSON.stringify(darkStats)}`);
   }
 
