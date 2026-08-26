@@ -60,7 +60,7 @@ function outlineRect(ctx: CanvasRenderingContext2D, box: LocalPitRect, fill: str
   rect(ctx, box.x + thickness, box.y + thickness, box.width - thickness * 2, box.height - thickness * 2, fill);
 }
 
-function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, colour = P.cream, size = 12): void {
+function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, colour: string = P.cream, size = 12): void {
   ctx.fillStyle = colour;
   ctx.font = `700 ${size}px "Trebuchet MS", "Segoe UI", sans-serif`;
   ctx.textAlign = 'center';
