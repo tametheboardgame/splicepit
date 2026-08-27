@@ -62,6 +62,8 @@ test('WP0.6I preserves the WP0.6D route topology and hand-off landmarks', () => 
     ],
   );
   assert.equal(isYardPositionBlocked(1840, 655), false);
+  assert.equal(isYardPositionBlocked(1930, 970), false, 'Old Toll inspection bay remains walkable');
+  assert.equal(isYardPositionBlocked(1970, 960), true, 'Old Toll booth remains solid');
   assert.equal(isYardPositionBlocked(2140, 994), false);
   assert.equal(isYardPositionBlocked(2590, 1432), false);
 });
