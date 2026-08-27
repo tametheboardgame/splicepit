@@ -39,6 +39,7 @@ const B = {
   cage: M.cage.bright,
   machinery: M.machinery.bright,
   residue: M['biological-residue'].bright,
+  cable: M.steel.bright,
 } as const;
 const D = {
   wood: M.wood.dark,
@@ -48,6 +49,7 @@ const D = {
   cage: M.cage.dark,
   machinery: M.machinery.dark,
   residue: M['biological-residue'].dark,
+  cable: M.steel.dark,
 } as const;
 
 const C = {
@@ -72,7 +74,6 @@ const C = {
   tissuePale: '#ad7580',
   blackTissue: '#392f34',
   badFluid: '#43554b',
-  mould: '#5c654c',
   bone: '#c9ba94',
 } as const;
 
@@ -136,18 +137,17 @@ function drawWallServicesBright(ctx: CanvasRenderingContext2D, now: number): voi
   line(ctx, 1238, 282, 1790, 282, C.cable, 5);
   line(ctx, 1238, 282, 1238, 236, C.cable, 5);
   line(ctx, 1562, 282, 1562, 320, C.cableLight, 3);
+
   for (const x of [242, 462, 1368, 1642]) {
     rect(ctx, x, 274, 34, 18, B.machinery.shadow);
     rect(ctx, x + 5, 278, 24, 9, B.machinery.base);
   }
 
-  for (const [x, y, textBars] of [
-    [238, 214, 3], [620, 214, 2], [1268, 214, 4], [1606, 214, 3],
-  ] as const) {
+  for (const [x, y, bars] of [[238, 214, 3], [620, 214, 2], [1268, 214, 4], [1606, 214, 3]] as const) {
     rect(ctx, x, y, 76, 46, B.wood.shadow);
     rect(ctx, x + 4, y + 4, 68, 38, C.paper);
     rect(ctx, x + 10, y + 10, 48, 4, C.warningDark);
-    for (let row = 0; row < textBars; row += 1) rect(ctx, x + 10, y + 20 + row * 6, 42 - row * 5, 2, C.ink);
+    for (let row = 0; row < bars; row += 1) rect(ctx, x + 10, y + 20 + row * 6, 42 - row * 5, 2, C.ink);
     rect(ctx, x + 61, y + 5, 5, 5, C.reagentPink);
   }
 }
@@ -228,10 +228,11 @@ function drawDemonstrationBright(ctx: CanvasRenderingContext2D, now: number): vo
   drawEnvironmentContactShadow(ctx, 986, 760, 192, 13);
   rect(ctx, 876, 404, 218, 18, B.wood.shadow);
   rect(ctx, 884, 396, 202, 10, B.wood.base);
-  for (const x of [900, 948, 996, 1044]) {
+
+  for (const [x, colour] of [[900, C.reagentGreen], [948, C.reagentPink], [996, C.reagentBlue], [1044, C.reagentGreen]] as const) {
     rect(ctx, x, 382, 24, 14, B.glass.shadow);
     rect(ctx, x + 4, 378, 16, 18, B.glass.base);
-    rect(ctx, x + 7, 386, 10, 8, x % 96 === 0 ? C.reagentPink : C.reagentGreen);
+    rect(ctx, x + 7, 386, 10, 8, colour);
   }
 
   rect(ctx, 978, 470, 22, 58, B.machinery.shadow);
@@ -436,6 +437,7 @@ function drawDarkWallAndServices(ctx: CanvasRenderingContext2D, now: number): vo
   }
   line(ctx, 150, 282, 610, 282, '#3a3437', 6);
   line(ctx, 1238, 282, 1790, 282, '#3a3437', 6);
+
   for (const [x, y] of [[242, 278], [462, 278], [1370, 278], [1644, 278]] as const) {
     rect(ctx, x, y, 30, 18, D.machinery.shadow);
     rect(ctx, x + 8, y + 5, 13, 6, C.oldBlood);
@@ -470,6 +472,7 @@ function drawCorruptedSpliceBay(ctx: CanvasRenderingContext2D, now: number): voi
   rect(ctx, 270, 410, 300, 112, D.steel.base);
   rect(ctx, 286, 432, 268, 60, '#5c5b4f');
   rect(ctx, 314, 448, 214, 24, '#574448');
+
   for (const [x, y, width] of [[312, 462, 74], [402, 470, 92], [476, 450, 54]] as const) {
     rect(ctx, x, y, width, 7, C.oldBlood);
     rect(ctx, x + 10, y + 6, Math.max(10, width - 22), 5, C.tissue);
@@ -535,6 +538,7 @@ function drawLeakageAndCleanup(ctx: CanvasRenderingContext2D): void {
     rect(ctx, x, y, width, 7, C.oldBlood);
     rect(ctx, x + 14, y + 6, Math.max(12, width - 32), 5, D.residue.base);
   }
+
   for (const [x, y] of [[870, 790], [1052, 826], [1236, 770], [1288, 1016]] as const) {
     rect(ctx, x, y, 24, 9, C.tissue);
     rect(ctx, x + 8, y - 7, 12, 11, C.tissuePale);
@@ -571,6 +575,7 @@ function drawDarkLighting(ctx: CanvasRenderingContext2D): void {
     ctx.fill();
   }
   ctx.restore();
+
   for (const x of [372, 908, 1436]) {
     rect(ctx, x, 188, 130, 14, D.steel.shadow);
     rect(ctx, x + 8, 191, 114, 7, x === 908 ? '#684047' : '#6d705c');
