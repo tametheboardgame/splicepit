@@ -19,6 +19,7 @@ import {
   openingWorldEnvironmentAt,
   type EnvironmentVisualSample,
 } from './environment/environmentVisualContract.js';
+import { syncRouteProductionArtDebug } from './environment/routeProductionArtRuntime.js';
 import { syncYardProductionArtDebug } from './environment/yardProductionArtRuntime.js';
 import { ACTIONS } from './input/actions.js';
 import { BrowserSemanticInput } from './input/BrowserSemanticInput.js';
@@ -48,6 +49,12 @@ import {
 } from './ui/apprenticeSelection.js';
 import { drawOpeningObjectiveTracker, drawOpeningShell } from './ui/openingShells.js';
 import { drawTutorialPrompt } from './ui/tutorialPrompt.js';
+import {
+  drawRouteBrightProductionArt,
+  drawRouteBrightProductionArtForeground,
+  drawRouteDarkProductionArt,
+  drawRouteDarkProductionArtForeground,
+} from './world/routeProductionArt.js';
 import {
   drawApprenticeSplicerYardBase,
   drawApprenticeSplicerYardForeground,
@@ -543,14 +550,35 @@ function drawYardProductionForeground(sample: EnvironmentVisualSample): void {
   context.restore();
 }
 
+function drawRouteProductionBase(now: number, sample: EnvironmentVisualSample): void {
+  drawRouteBrightProductionArt(context, now);
+  if (sample.darkMix <= 0) return;
+  context.save();
+  context.globalAlpha = sample.darkMix;
+  drawRouteDarkProductionArt(context, now);
+  context.restore();
+}
+
+function drawRouteProductionForeground(sample: EnvironmentVisualSample): void {
+  drawRouteBrightProductionArtForeground(context, player.y);
+  if (sample.darkMix <= 0) return;
+  context.save();
+  context.globalAlpha = sample.darkMix;
+  drawRouteDarkProductionArtForeground(context, player.y);
+  context.restore();
+}
+
 function renderYard(now: number): void {
   updateYard(now);
   if (phase !== 'confirmed') return;
 
   const renderCameraX = Math.round(camera.x);
   const renderCameraY = Math.round(camera.y);
-  const yardArtActive = openingWorldEnvironmentAt(player.x) === 'yard';
+  const openingLocation = openingWorldEnvironmentAt(player.x);
+  const yardArtActive = openingLocation === 'yard';
+  const routeArtActive = openingLocation === 'route';
   const yardArtSample = environmentVisualController.sample('yard', now);
+  const routeArtSample = environmentVisualController.sample('route', now);
 
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.imageSmoothingEnabled = false;
@@ -558,11 +586,14 @@ function renderYard(now: number): void {
   context.translate(-renderCameraX, -renderCameraY);
   drawApprenticeSplicerYardBase(context, now, player.y);
   if (yardArtActive) drawYardProductionBase(now, yardArtSample);
+  if (routeArtActive) drawRouteProductionBase(now, routeArtSample);
   drawYardPlayer(now);
   if (yardArtActive) drawYardProductionForeground(yardArtSample);
+  if (routeArtActive) drawRouteProductionForeground(routeArtSample);
   drawApprenticeSplicerYardForeground(context, player.y);
   context.restore();
   syncYardProductionArtDebug(yardArtSample, yardArtActive);
+  syncRouteProductionArtDebug(routeArtSample, routeArtActive);
 
   const tutorialPrompt = progressOpeningObjectiveSequence(now);
   const objective = openingShells.currentObjective();

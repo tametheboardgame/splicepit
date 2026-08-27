@@ -24,7 +24,8 @@ test('WP0.6G registers all four opening environments against stable render and g
     assert.deepEqual([...ENVIRONMENT_CAPABILITIES[id].authoredStates], ['bright', 'dark']);
   }
   assert.equal(ENVIRONMENT_CAPABILITIES.yard.darkArtStatus, 'authored');
-  for (const id of ['route', 'master-lab', 'local-pit']) {
+  assert.equal(ENVIRONMENT_CAPABILITIES.route.darkArtStatus, 'authored');
+  for (const id of ['master-lab', 'local-pit']) {
     assert.equal(ENVIRONMENT_CAPABILITIES[id].darkArtStatus, 'pending');
   }
 });
