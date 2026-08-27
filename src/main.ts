@@ -14,6 +14,12 @@ import pipDown from './assets/frames/pip-down.txt?raw';
 import pipLeft from './assets/frames/pip-left.txt?raw';
 import pipRight from './assets/frames/pip-right.txt?raw';
 import pipUp from './assets/frames/pip-up.txt?raw';
+import {
+  environmentVisualController,
+  openingWorldEnvironmentAt,
+  type EnvironmentVisualSample,
+} from './environment/environmentVisualContract.js';
+import { syncYardProductionArtDebug } from './environment/yardProductionArtRuntime.js';
 import { ACTIONS } from './input/actions.js';
 import { BrowserSemanticInput } from './input/BrowserSemanticInput.js';
 import { OpeningObjectiveSequenceController } from './onboarding/openingObjectiveSequence.js';
@@ -53,6 +59,14 @@ import {
   YARD_WORLD_WIDTH,
   type YardFacing,
 } from './world/yard.js';
+import {
+  drawYardBrightProductionArt,
+  drawYardDarkProductionArt,
+} from './world/yardProductionArt.js';
+import {
+  drawYardBrightProductionArtForeground,
+  drawYardDarkProductionArtForeground,
+} from './world/yardProductionArtDepth.js';
 
 const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
@@ -511,20 +525,44 @@ function drawYardPlayer(now: number): void {
   drawAnimatedCharacter(frames[selectedAvatarId][player.facing], topX, topY, frame);
 }
 
+function drawYardProductionBase(now: number, sample: EnvironmentVisualSample): void {
+  drawYardBrightProductionArt(context, now);
+  if (sample.darkMix <= 0) return;
+  context.save();
+  context.globalAlpha = sample.darkMix;
+  drawYardDarkProductionArt(context, now);
+  context.restore();
+}
+
+function drawYardProductionForeground(sample: EnvironmentVisualSample): void {
+  drawYardBrightProductionArtForeground(context, player.y);
+  if (sample.darkMix <= 0) return;
+  context.save();
+  context.globalAlpha = sample.darkMix;
+  drawYardDarkProductionArtForeground(context, player.y);
+  context.restore();
+}
+
 function renderYard(now: number): void {
   updateYard(now);
   if (phase !== 'confirmed') return;
 
   const renderCameraX = Math.round(camera.x);
   const renderCameraY = Math.round(camera.y);
+  const yardArtActive = openingWorldEnvironmentAt(player.x) === 'yard';
+  const yardArtSample = environmentVisualController.sample('yard', now);
+
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.imageSmoothingEnabled = false;
   context.save();
   context.translate(-renderCameraX, -renderCameraY);
   drawApprenticeSplicerYardBase(context, now, player.y);
+  if (yardArtActive) drawYardProductionBase(now, yardArtSample);
   drawYardPlayer(now);
+  if (yardArtActive) drawYardProductionForeground(yardArtSample);
   drawApprenticeSplicerYardForeground(context, player.y);
   context.restore();
+  syncYardProductionArtDebug(yardArtSample, yardArtActive);
 
   const tutorialPrompt = progressOpeningObjectiveSequence(now);
   const objective = openingShells.currentObjective();
