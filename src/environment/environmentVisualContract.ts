@@ -30,7 +30,7 @@ export const ENVIRONMENT_CAPABILITIES: Readonly<Record<EnvironmentLocationId, En
     renderSurfaceId: 'opening-world',
     geometryId: 'opening-world-v1',
     authoredStates: ['bright', 'dark'],
-    darkArtStatus: 'pending',
+    darkArtStatus: 'authored',
   },
   'master-lab': {
     id: 'master-lab',
