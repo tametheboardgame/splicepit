@@ -19,7 +19,7 @@ test('WP0.6J authors bright and dark Master Lab art against the locked Lab geome
   assert.deepEqual([...MASTER_LAB_PRODUCTION_ART_CONTRACT.authoredStates], ['bright', 'dark']);
   assert.equal(MASTER_LAB_PRODUCTION_ART_CONTRACT.collisionTopology, 'unchanged');
   assert.equal(ENVIRONMENT_CAPABILITIES['master-lab'].darkArtStatus, 'authored');
-  assert.equal(ENVIRONMENT_CAPABILITIES['local-pit'].darkArtStatus, 'pending');
+  assert.equal(ENVIRONMENT_CAPABILITIES['local-pit'].darkArtStatus, 'authored');
 });
 
 test('WP0.6J bright Lab covers the locked production-art detail groups', () => {

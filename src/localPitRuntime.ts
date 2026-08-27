@@ -15,6 +15,11 @@ import pipLeft from './assets/frames/pip-left.txt?raw';
 import pipRight from './assets/frames/pip-right.txt?raw';
 import pipUp from './assets/frames/pip-up.txt?raw';
 import {
+  environmentVisualController,
+  type EnvironmentVisualSample,
+} from './environment/environmentVisualContract.js';
+import { syncLocalPitProductionArtDebug } from './environment/localPitProductionArtRuntime.js';
+import {
   ACTIONS,
   DEFAULT_BINDINGS,
   SEMANTIC_INPUT_EVENT,
@@ -45,6 +50,12 @@ import {
   type LocalPitStageId,
   type LocalPitZone,
 } from './world/localPit.js';
+import {
+  drawLocalPitBrightProductionArt,
+  drawLocalPitBrightProductionArtForeground,
+  drawLocalPitDarkProductionArt,
+  drawLocalPitDarkProductionArtForeground,
+} from './world/localPitProductionArt.js';
 
 const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
@@ -246,6 +257,7 @@ function exitPit(): void {
   debug.rendered = false;
   debug.activeShell = null;
   suppressSemanticUntil = performance.now() + 100;
+  syncLocalPitProductionArtDebug(environmentVisualController.sample('local-pit'), false);
   const canvas = document.getElementById(PIT_CANVAS_ID) as HTMLCanvasElement | null;
   if (canvas) {
     canvas.setAttribute('aria-hidden', 'true');
@@ -440,6 +452,24 @@ function drawPlayer(ctx: CanvasRenderingContext2D, now: number): void {
   drawAnimatedCharacter(ctx, image, Math.round(player.x - FRAME_WIDTH / 2), Math.round(player.y - 88), frame);
 }
 
+function drawLocalPitProductionBase(ctx: CanvasRenderingContext2D, now: number, sample: EnvironmentVisualSample): void {
+  drawLocalPitBrightProductionArt(ctx, now);
+  if (sample.darkMix <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = sample.darkMix;
+  drawLocalPitDarkProductionArt(ctx, now);
+  ctx.restore();
+}
+
+function drawLocalPitProductionForeground(ctx: CanvasRenderingContext2D, now: number, sample: EnvironmentVisualSample): void {
+  drawLocalPitBrightProductionArtForeground(ctx, player.y);
+  if (sample.darkMix <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = sample.darkMix;
+  drawLocalPitDarkProductionArtForeground(ctx, player.y, now);
+  ctx.restore();
+}
+
 function drawInteractionPrompt(ctx: CanvasRenderingContext2D, text: string): void {
   const width = 460;
   const x = (LOCAL_PIT_VIEW_WIDTH - width) / 2;
@@ -460,6 +490,7 @@ function renderInactiveGatePrompt(canvas: HTMLCanvasElement, ctx: CanvasRenderin
   ctx.clearRect(0, 0, LOCAL_PIT_VIEW_WIDTH, LOCAL_PIT_VIEW_HEIGHT);
   const near = gameplayReady() && nearYardGate();
   debug.nearYardGate = near;
+  syncLocalPitProductionArtDebug(environmentVisualController.sample('local-pit'), false);
   canvas.setAttribute('aria-hidden', near ? 'false' : 'true');
   if (near) drawInteractionPrompt(ctx, 'ACTION  Travel to The Bramble Pit');
 }
@@ -468,14 +499,18 @@ function renderPit(ctx: CanvasRenderingContext2D, now: number): void {
   update(now);
   const renderCameraX = Math.round(camera.x);
   const renderCameraY = Math.round(camera.y);
+  const artSample = environmentVisualController.sample('local-pit', now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
   ctx.save();
   ctx.translate(-renderCameraX, -renderCameraY);
   drawLocalPitBase(ctx, now);
+  drawLocalPitProductionBase(ctx, now, artSample);
   drawPlayer(ctx, now);
+  drawLocalPitProductionForeground(ctx, now, artSample);
   drawLocalPitForeground(ctx, player.y);
   ctx.restore();
+  syncLocalPitProductionArtDebug(artSample, true);
 
   drawOpeningObjectiveTracker(ctx, objective, 2, 2);
   const shell = currentShell();
