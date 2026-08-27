@@ -15,6 +15,11 @@ import pipLeft from './assets/frames/pip-left.txt?raw';
 import pipRight from './assets/frames/pip-right.txt?raw';
 import pipUp from './assets/frames/pip-up.txt?raw';
 import {
+  environmentVisualController,
+  type EnvironmentVisualSample,
+} from './environment/environmentVisualContract.js';
+import { syncMasterLabProductionArtDebug } from './environment/masterLabProductionArtRuntime.js';
+import {
   ACTIONS,
   DEFAULT_BINDINGS,
   SEMANTIC_INPUT_EVENT,
@@ -44,6 +49,12 @@ import {
   type MasterLabStageId,
   type MasterLabState,
 } from './world/masterLab.js';
+import {
+  drawMasterLabBrightProductionArt,
+  drawMasterLabBrightProductionArtForeground,
+  drawMasterLabDarkProductionArt,
+  drawMasterLabDarkProductionArtForeground,
+} from './world/masterLabProductionArt.js';
 
 const FRAME_WIDTH = 64;
 const FRAME_HEIGHT = 96;
@@ -248,6 +259,7 @@ function exitLab(): void {
   debug.rendered = false;
   debug.activeShell = null;
   suppressSemanticUntil = performance.now() + 100;
+  syncMasterLabProductionArtDebug(environmentVisualController.sample('master-lab'), false);
   const canvas = document.getElementById(LAB_CANVAS_ID) as HTMLCanvasElement | null;
   if (canvas) {
     canvas.setAttribute('aria-hidden', 'true');
@@ -442,6 +454,24 @@ function drawPlayer(ctx: CanvasRenderingContext2D, now: number): void {
   drawAnimatedCharacter(ctx, image, Math.round(player.x - FRAME_WIDTH / 2), Math.round(player.y - 88), frame);
 }
 
+function drawMasterLabProductionBase(ctx: CanvasRenderingContext2D, now: number, sample: EnvironmentVisualSample): void {
+  drawMasterLabBrightProductionArt(ctx, now, state);
+  if (sample.darkMix <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = sample.darkMix;
+  drawMasterLabDarkProductionArt(ctx, now, state);
+  ctx.restore();
+}
+
+function drawMasterLabProductionForeground(ctx: CanvasRenderingContext2D, now: number, sample: EnvironmentVisualSample): void {
+  drawMasterLabBrightProductionArtForeground(ctx, player.y);
+  if (sample.darkMix <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = sample.darkMix;
+  drawMasterLabDarkProductionArtForeground(ctx, player.y, now);
+  ctx.restore();
+}
+
 function drawInteractionPrompt(ctx: CanvasRenderingContext2D, text: string): void {
   const width = 430;
   const x = (MASTER_LAB_VIEW_WIDTH - width) / 2;
@@ -462,6 +492,7 @@ function renderInactiveDoorPrompt(canvas: HTMLCanvasElement, ctx: CanvasRenderin
   ctx.clearRect(0, 0, MASTER_LAB_VIEW_WIDTH, MASTER_LAB_VIEW_HEIGHT);
   const near = gameplayReady() && nearExteriorDoor();
   debug.nearExteriorDoor = near;
+  syncMasterLabProductionArtDebug(environmentVisualController.sample('master-lab'), false);
   canvas.setAttribute('aria-hidden', near ? 'false' : 'true');
   if (near) drawInteractionPrompt(ctx, 'ACTION  Enter Master Splicenstein’s Lab');
 }
@@ -470,14 +501,18 @@ function renderLab(ctx: CanvasRenderingContext2D, now: number): void {
   update(now);
   const renderCameraX = Math.round(camera.x);
   const renderCameraY = Math.round(camera.y);
+  const artSample = environmentVisualController.sample('master-lab', now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
   ctx.save();
   ctx.translate(-renderCameraX, -renderCameraY);
   drawMasterLabBase(ctx, now, state);
+  drawMasterLabProductionBase(ctx, now, artSample);
   drawPlayer(ctx, now);
+  drawMasterLabProductionForeground(ctx, now, artSample);
   drawMasterLabForeground(ctx, player.y);
   ctx.restore();
+  syncMasterLabProductionArtDebug(artSample, true);
 
   drawOpeningObjectiveTracker(ctx, objective, 2, 2);
   const shell = currentShell();

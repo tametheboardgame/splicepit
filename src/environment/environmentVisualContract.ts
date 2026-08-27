@@ -38,7 +38,7 @@ export const ENVIRONMENT_CAPABILITIES: Readonly<Record<EnvironmentLocationId, En
     renderSurfaceId: 'master-lab',
     geometryId: 'master-lab-v1',
     authoredStates: ['bright', 'dark'],
-    darkArtStatus: 'pending',
+    darkArtStatus: 'authored',
   },
   'local-pit': {
     id: 'local-pit',
