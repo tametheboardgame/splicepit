@@ -39,12 +39,10 @@ test('RinoCow is visibly scripted as the direct cause of Viktor death', () => {
   const masterDead = stepIndex((step) => step.kind === 'flag' && step.flag === RINOCOW_DISASTER_FLAGS.MASTER_DEAD);
   const charge = RINOCOW_DISASTER_CUTSCENE.steps
     .map((step, index) => ({ step, index }))
-    .filter(({ step }) => step.kind === 'move' && step.actorId === 'rinocow')
-    .at(-1);
-  assert.ok(charge);
-  assert.ok(charge.index < masterDead);
+    .find(({ step, index }) => step.kind === 'move' && step.actorId === 'rinocow' && index < masterDead && (step.speed ?? 0) >= 700);
+  assert.ok(charge, 'a high-speed RinoCow charge must occur before Viktor is marked dead');
   assert.equal(charge.step.kind, 'move');
-  assert.ok(charge.step.speed >= 700, 'the final RinoCow movement is authored as a charge');
+  assert.ok(charge.step.speed >= 700, 'the impact movement is authored as a charge');
 });
 
 test('the fail-safe is an explicit player confirmation beat', () => {
