@@ -123,7 +123,7 @@ try {
   if (!initial.overlayVisible) throw new Error(`WP0.7B presentation overlay did not attach to Master Lab: ${JSON.stringify(initial)}`);
 
   const authoredBefore = initial.corruption.authoredEventCount;
-  await evaluate(`globalThis.__SPLICEPIT_RINOCOW_DISASTER__.start()`);
+  await evaluate(`void globalThis.__SPLICEPIT_RINOCOW_DISASTER__.start(); true`);
 
   const running = await waitFor(async () => {
     const value = await state();
