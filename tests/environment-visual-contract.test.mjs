@@ -25,9 +25,8 @@ test('WP0.6G registers all four opening environments against stable render and g
   }
   assert.equal(ENVIRONMENT_CAPABILITIES.yard.darkArtStatus, 'authored');
   assert.equal(ENVIRONMENT_CAPABILITIES.route.darkArtStatus, 'authored');
-  for (const id of ['master-lab', 'local-pit']) {
-    assert.equal(ENVIRONMENT_CAPABILITIES[id].darkArtStatus, 'pending');
-  }
+  assert.equal(ENVIRONMENT_CAPABILITIES['master-lab'].darkArtStatus, 'authored');
+  assert.equal(ENVIRONMENT_CAPABILITIES['local-pit'].darkArtStatus, 'pending');
 });
 
 test('WP0.6G keeps the opening world topology separate from logical Yard/route visual capability selection', () => {
