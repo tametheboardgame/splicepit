@@ -120,7 +120,7 @@ function label(
   text: string,
   x: number,
   y: number,
-  colour = C.cream,
+  colour: string = C.cream,
   size = 9,
 ): void {
   ctx.save();
@@ -146,7 +146,6 @@ function drawPaperStack(ctx: CanvasRenderingContext2D, x: number, y: number, wid
 }
 
 function drawBrightExterior(ctx: CanvasRenderingContext2D, now: number): void {
-  // Facade repair history, cheap lights and local-league identity.
   for (const [x, y, w] of [[196, 902, 174], [438, 902, 128], [1740, 902, 152], [1960, 902, 168]] as const) {
     rect(ctx, x, y, w, 12, B.brick.shadow);
     rect(ctx, x + 12, y + 3, w - 24, 5, B.brick.highlight);
@@ -163,7 +162,6 @@ function drawBrightExterior(ctx: CanvasRenderingContext2D, now: number): void {
     rect(ctx, x, 74, 8, 8, colour);
   }
 
-  // Queue lane, repaired fencing and muddy local-sponsor boards.
   for (const x of [160, 344, 528, 1660, 1844, 2028, 2212]) {
     rect(ctx, x, 1058, 8, 222, B.wood.shadow);
     rect(ctx, x + 3, 1062, 4, 214, B.wood.highlight);
@@ -184,7 +182,6 @@ function drawBrightExterior(ctx: CanvasRenderingContext2D, now: number): void {
   label(ctx, 'MUM’S GENE TONIC', 1554, 1201, C.cream, 10);
   label(ctx, 'OFFICIAL-ish SPONSOR', 1554, 1218, C.ink, 8);
 
-  // Litter and patched approach surface.
   for (const [x, y, colour] of [
     [920, 1316, C.paper], [990, 1268, C.red], [1376, 1304, C.yellow], [1460, 1262, C.paper],
     [654, 1360, C.blue], [1746, 1370, C.paper],
@@ -201,7 +198,6 @@ function drawBrightExterior(ctx: CanvasRenderingContext2D, now: number): void {
 
 function drawBrightReceptionAndPayout(ctx: CanvasRenderingContext2D, now: number): void {
   drawEnvironmentContactShadow(ctx, 768, 810, 250, 12);
-  // Registration clutter: waiver piles, rubber stamps, specimen jars and a failing till.
   drawPaperStack(ctx, 566, 704, 72, 5);
   drawPaperStack(ctx, 646, 708, 54, 4);
   rect(ctx, 710, 696, 28, 20, B.machinery.shadow);
@@ -215,7 +211,6 @@ function drawBrightReceptionAndPayout(ctx: CanvasRenderingContext2D, now: number
     rect(ctx, x + 5, 703, 12, 10, fluid);
   }
 
-  // Payout desk business clutter and receipts.
   drawEnvironmentContactShadow(ctx, 1164, 390, 174, 11);
   for (const x of [1018, 1066, 1114]) {
     drawPaperStack(ctx, x, 286, 40, 3);
@@ -229,7 +224,6 @@ function drawBrightReceptionAndPayout(ctx: CanvasRenderingContext2D, now: number
   for (let x = 1024; x < 1300; x += 38) rect(ctx, x, 364, 22, 3, x % 76 ? C.paper : C.paperShade);
   label(ctx, 'CASH · VOUCHERS · “EXPOSURE”', 1164, 376, C.cream, 8);
 
-  // Scuffed noticeboard full of local event nonsense.
   rect(ctx, 1080, 622, 274, 82, B.wood.shadow);
   rect(ctx, 1086, 628, 262, 70, '#b9ad79');
   for (const [x, y, w, colour] of [
@@ -243,7 +237,6 @@ function drawBrightReceptionAndPayout(ctx: CanvasRenderingContext2D, now: number
 }
 
 function drawBrightPrep(ctx: CanvasRenderingContext2D, now: number): void {
-  // Weigh bed controls and calibration hardware.
   rect(ctx, 326, 356, 548, 16, B.steel.shadow);
   for (let x = 344; x < 858; x += 46) {
     rect(ctx, x, 360, 28, 8, B.steel.base);
@@ -255,7 +248,6 @@ function drawBrightPrep(ctx: CanvasRenderingContext2D, now: number): void {
   line(ctx, 852, 412, 860, 404, C.redDark, 2);
   label(ctx, 'KG-ish', 852, 438, C.cream, 7);
 
-  // Realistic cage bracing, bodged latch and owner tags.
   for (const x of [314, 350, 386, 422, 458, 494]) rect(ctx, x, 580, 4, 112, B.cage.shadow);
   line(ctx, 312, 592, 510, 676, B.cage.highlight, 3);
   line(ctx, 510, 592, 312, 676, B.cage.base, 3);
@@ -264,7 +256,6 @@ function drawBrightPrep(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, 334, 598, 76, 26, C.paperShade);
   label(ctx, 'BITEY / 14', 372, 611, C.ink, 7);
 
-  // Decon that looks like a converted farm shower.
   rect(ctx, 724, 552, 202, 12, B.steel.shadow);
   line(ctx, 762, 556, 762, 638, C.grease, 5);
   line(ctx, 762, 560, 840, 560, C.grease, 5);
@@ -279,7 +270,6 @@ function drawBrightPrep(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, 884, 590, 20, 12, C.yellow);
   label(ctx, 'SOAP?', 894, 596, C.ink, 6);
 
-  // Medical/maintenance trolley beside prep bay.
   rect(ctx, 228, 522, 94, 72, B.steel.shadow);
   rect(ctx, 234, 528, 82, 54, B.steel.base);
   for (const [x, colour] of [[244, C.pink], [264, C.blue], [284, C.green]] as const) {
@@ -296,7 +286,6 @@ function drawBrightFloorAndMaintenance(ctx: CanvasRenderingContext2D): void {
   drawDrain(ctx, 1580, 620, 220);
   drawDrain(ctx, 1860, 620, 184);
 
-  // Patched floor plates, tape lines, old repair arrows and deliberately localised grime.
   for (const [x, y, w, h] of [
     [244, 820, 116, 54], [440, 842, 142, 44], [1180, 768, 94, 54], [1370, 804, 120, 52],
     [920, 526, 132, 44], [1166, 418, 124, 42],
@@ -315,7 +304,6 @@ function drawBrightFloorAndMaintenance(ctx: CanvasRenderingContext2D): void {
 }
 
 function drawBrightArena(ctx: CanvasRenderingContext2D, now: number): void {
-  // Structural braces make the arena look improvised but genuinely load-bearing.
   for (const x of [1496, 1586, 1680, 1774, 1868, 1962, 2056]) {
     rect(ctx, x, 224, 8, 418, B.steel.shadow);
     rect(ctx, x + 3, 228, 3, 410, B.steel.highlight);
@@ -327,7 +315,6 @@ function drawBrightArena(ctx: CanvasRenderingContext2D, now: number): void {
   line(ctx, 1508, 238, 2080, 628, B.cage.base, 3);
   line(ctx, 2080, 238, 1508, 628, B.cage.base, 3);
 
-  // Gate winch and patched rail hardware.
   rect(ctx, 1452, 474, 64, 118, B.machinery.shadow);
   rect(ctx, 1460, 486, 48, 82, B.machinery.base);
   rect(ctx, 1470, 500, 28, 28, B.steel.shadow);
@@ -335,7 +322,6 @@ function drawBrightArena(ctx: CanvasRenderingContext2D, now: number): void {
   line(ctx, 1498, 548, 1516, 580, C.grease, 5);
   for (const y of [490, 520, 550]) rect(ctx, 1458, y, 8, 18, C.rust);
 
-  // Sponsor boards and cheap arena business clutter.
   for (const [x, text, colour] of [
     [1548, 'BRAMBLE FEEDS', C.orange], [1718, 'GENE TONIC', C.teal], [1888, 'PATCH & PRAY VETS', C.red],
   ] as const) {
@@ -344,7 +330,6 @@ function drawBrightArena(ctx: CanvasRenderingContext2D, now: number): void {
     label(ctx, text, x + 77, 258, C.cream, 8);
   }
 
-  // Arena floor scuffs, chalk marks and old-but-cleaned stains.
   for (const [x, y, w] of [[1582, 330, 86], [1742, 294, 116], [1924, 404, 104], [1662, 510, 130], [1846, 548, 122]] as const) {
     rect(ctx, x, y, w, 5, B.dirt.shadow);
     rect(ctx, x + 14, y + 6, Math.max(18, w - 34), 3, '#8f7654');
@@ -356,7 +341,6 @@ function drawBrightArena(ctx: CanvasRenderingContext2D, now: number): void {
     rect(ctx, x + 5, y + 4, 14, 8, Math.floor(now / 500 + x) % 2 ? C.yellow : C.teal);
   }
 
-  // Spectator benches and bright-layer crowd dots remain colourful but scruffy.
   for (const [bx, by] of [[1538, 680], [1758, 680], [1978, 680]] as const) {
     rect(ctx, bx, by - 14, 174, 10, B.wood.shadow);
     for (let row = 0; row < 3; row += 1) {
@@ -421,7 +405,6 @@ export function drawLocalPitBrightProductionArt(ctx: CanvasRenderingContext2D, n
 }
 
 function drawDarkFacadeAndCrowd(ctx: CanvasRenderingContext2D, now: number): void {
-  // The same venue, but the cheerful branding has rotted into something predatory.
   rect(ctx, 850, 98, 660, 82, D.wood.shadow);
   rect(ctx, 860, 108, 640, 60, '#54373a');
   rect(ctx, 910, 122, 540, 10, C.oldBlood);
@@ -431,14 +414,12 @@ function drawDarkFacadeAndCrowd(ctx: CanvasRenderingContext2D, now: number): voi
     rect(ctx, x + 18, y + 7, w - 36, 7, C.oldBlood);
   }
 
-  // Exterior fence implications: hair, tags, tissue and badly repaired bars.
   for (const [x, y] of [[352, 1112], [530, 1170], [1848, 1142], [2032, 1210]] as const) {
     line(ctx, x, y, x + 32, y + 56, D.cage.shadow, 6);
     rect(ctx, x + 10, y + 18, 18, 10, C.tissue);
     rect(ctx, x + 18, y + 12, 6, 8, C.tissuePale);
   }
 
-  // Crowd silhouettes behind the arena, subtly shifting but never becoming actors.
   const twitch = Math.floor(now / 260) % 2 ? 2 : 0;
   for (const [bx, by] of [[1538, 680], [1758, 680], [1978, 680]] as const) {
     rect(ctx, bx - 2, by - 18, 178, 76, '#313036');
@@ -455,7 +436,6 @@ function drawDarkFacadeAndCrowd(ctx: CanvasRenderingContext2D, now: number): voi
 }
 
 function drawDarkPrepWrongness(ctx: CanvasRenderingContext2D, now: number): void {
-  // Weigh bed has become a restraint table with old cleanup marks.
   rect(ctx, 336, 374, 516, 106, D.steel.base);
   rect(ctx, 352, 390, 484, 70, '#5f5a4c');
   for (const [x, y, w] of [[376, 410, 126], [520, 438, 164], [690, 404, 96]] as const) {
@@ -469,7 +449,6 @@ function drawDarkPrepWrongness(ctx: CanvasRenderingContext2D, now: number): void
   line(ctx, 414, 400, 608, 454, C.blackTissue, 5);
   line(ctx, 782, 402, 666, 452, C.blackTissue, 5);
 
-  // Holding cage is visibly warped and contains discarded biological evidence.
   rect(ctx, 300, 566, 230, 136, D.cage.shadow);
   rect(ctx, 310, 576, 210, 116, '#353735');
   for (let x = 318; x < 516; x += 30) {
@@ -482,7 +461,6 @@ function drawDarkPrepWrongness(ctx: CanvasRenderingContext2D, now: number): void
   rect(ctx, 414, 633, 5, 5, '#9c4147');
   rect(ctx, 438, 660, 42, 8, C.bone);
 
-  // Decon runoff has developed biological growth around the drain and shower heads.
   drawDrain(ctx, 756, 674, 126, true);
   for (const [x, y, w] of [[738, 662, 78], [802, 668, 102], [824, 650, 54]] as const) {
     rect(ctx, x, y, w, 7, D.residue.shadow);
@@ -496,7 +474,6 @@ function drawDarkPrepWrongness(ctx: CanvasRenderingContext2D, now: number): void
 }
 
 function drawDarkReceptionAndCleanup(ctx: CanvasRenderingContext2D): void {
-  // The front desk hides evidence under forms and wipe-down rags.
   rect(ctx, 530, 690, 482, 78, D.wood.base);
   rect(ctx, 548, 710, 448, 44, '#6a5a45');
   for (const [x, y, w] of [[570, 738, 96], [690, 724, 128], [832, 742, 118]] as const) {
@@ -507,7 +484,6 @@ function drawDarkReceptionAndCleanup(ctx: CanvasRenderingContext2D): void {
   rect(ctx, 914, 706, 38, 18, C.tissue);
   rect(ctx, 936, 700, 12, 9, C.tissuePale);
 
-  // Payout desk drawer is a crude medical discard point in the wrong layer.
   rect(ctx, 982, 276, 366, 106, D.wood.shadow);
   rect(ctx, 996, 292, 338, 66, '#61523f');
   rect(ctx, 1020, 332, 286, 12, C.oldBlood);
@@ -524,7 +500,6 @@ function drawDarkDrainsAndFloor(ctx: CanvasRenderingContext2D): void {
     rect(ctx, x + 30, y - 15, Math.max(14, w - 74), 7, D.residue.base);
   }
 
-  // Failed mopping leaves smear direction, footprints and chunks rather than a scene-wide tint.
   for (const [x, y, w] of [
     [884, 796, 138], [1036, 814, 112], [1250, 710, 126], [1458, 662, 92],
     [1166, 400, 130], [926, 502, 118],
@@ -544,7 +519,6 @@ function drawDarkDrainsAndFloor(ctx: CanvasRenderingContext2D): void {
 }
 
 function drawDarkArena(ctx: CanvasRenderingContext2D, now: number): void {
-  // Rail hardware is bent, patched and stained, but remains purely visual on the same geometry.
   for (const x of [1496, 1586, 1680, 1774, 1868, 1962, 2056]) {
     rect(ctx, x, 224, 10, 418, D.steel.shadow);
     rect(ctx, x + 4, 250, 5, 314, C.rustDark);
@@ -555,7 +529,6 @@ function drawDarkArena(ctx: CanvasRenderingContext2D, now: number): void {
     for (let x = 1518; x < 2088; x += 72) rect(ctx, x, y + 3, 34, 4, x % 144 ? C.rustDark : D.cage.highlight);
   }
 
-  // Fight floor tells the actual brutality story.
   for (const [x, y, w, h] of [
     [1640, 326, 150, 18], [1770, 384, 184, 24], [1876, 446, 142, 16], [1608, 520, 120, 15],
   ] as const) {
@@ -572,7 +545,6 @@ function drawDarkArena(ctx: CanvasRenderingContext2D, now: number): void {
     rect(ctx, x + 12, y - 6, Math.max(12, w - 26), 11, C.badFluid);
   }
 
-  // Gate winch is damaged and seems to have grown into its cables.
   rect(ctx, 1450, 472, 70, 124, D.machinery.shadow);
   rect(ctx, 1460, 486, 50, 88, D.machinery.base);
   line(ctx, 1472, 516, 1518, 570, C.blackTissue, 6);
@@ -584,7 +556,6 @@ function drawDarkArena(ctx: CanvasRenderingContext2D, now: number): void {
 }
 
 function drawDarkBiologicalIntrusion(ctx: CanvasRenderingContext2D, now: number): void {
-  // Growth stays connected to drains, cages and fight-floor residue.
   for (const [x, y, dx, dy] of [
     [748, 682, -72, 62], [884, 680, 54, 78], [1600, 620, -46, 74], [1974, 620, 62, 60],
     [1322, 748, -78, 54],
