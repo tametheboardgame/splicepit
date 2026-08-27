@@ -46,7 +46,7 @@ export const ENVIRONMENT_CAPABILITIES: Readonly<Record<EnvironmentLocationId, En
     renderSurfaceId: 'local-pit',
     geometryId: 'local-pit-v1',
     authoredStates: ['bright', 'dark'],
-    darkArtStatus: 'pending',
+    darkArtStatus: 'authored',
   },
 } as const;
 
