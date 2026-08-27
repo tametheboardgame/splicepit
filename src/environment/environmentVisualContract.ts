@@ -66,13 +66,19 @@ export interface EnvironmentVisualSnapshot extends EnvironmentVisualSample {
   readonly forcedState: EnvironmentVisualState | null;
   readonly suppressionReasons: readonly string[];
   readonly transitionLocation: EnvironmentLocationId | null;
+  readonly transitionIgnoresSuppression: boolean;
   readonly transitionCount: number;
+}
+
+export interface EnvironmentTransitionOptions {
+  readonly ignoreSuppression?: boolean;
 }
 
 type ActiveTransition = {
   readonly locationId: EnvironmentLocationId;
   readonly startedAt: number;
   readonly durationMs: number;
+  readonly ignoreSuppression: boolean;
 };
 
 function runtimeNow(): number {
@@ -118,9 +124,15 @@ export class EnvironmentVisualController {
     locationId: EnvironmentLocationId = this.activeLocation,
     now: number = runtimeNow(),
     durationMs: number = DEFAULT_ENVIRONMENT_TRANSITION_MS,
+    options: EnvironmentTransitionOptions = {},
   ): void {
     const safeDuration = Number.isFinite(durationMs) ? Math.max(1, durationMs) : DEFAULT_ENVIRONMENT_TRANSITION_MS;
-    this.transition = { locationId, startedAt: now, durationMs: safeDuration };
+    this.transition = {
+      locationId,
+      startedAt: now,
+      durationMs: safeDuration,
+      ignoreSuppression: options.ignoreSuppression === true,
+    };
     this.transitionCount += 1;
   }
 
@@ -140,8 +152,11 @@ export class EnvironmentVisualController {
 
   sample(locationId: EnvironmentLocationId = this.activeLocation, now: number = runtimeNow()): EnvironmentVisualSample {
     this.pruneTransition(now);
+    const transition = this.transition;
+    const transitionForLocation = transition?.locationId === locationId ? transition : null;
+    const suppressionBlocked = this.isSuppressed() && !transitionForLocation?.ignoreSuppression;
 
-    if (this.isSuppressed()) {
+    if (suppressionBlocked) {
       return {
         locationId,
         visualState: 'bright',
@@ -163,8 +178,7 @@ export class EnvironmentVisualController {
       };
     }
 
-    const transition = this.transition;
-    if (!transition || transition.locationId !== locationId) {
+    if (!transitionForLocation) {
       return {
         locationId,
         visualState: 'bright',
@@ -175,7 +189,7 @@ export class EnvironmentVisualController {
       };
     }
 
-    const progress = clamp01((now - transition.startedAt) / transition.durationMs);
+    const progress = clamp01((now - transitionForLocation.startedAt) / transitionForLocation.durationMs);
     let phase: EnvironmentTransitionPhase;
     let darkMix: number;
     if (progress < 0.18) {
@@ -206,6 +220,7 @@ export class EnvironmentVisualController {
       forcedState: this.forcedState,
       suppressionReasons: [...this.suppressions].sort(),
       transitionLocation: this.transition?.locationId ?? null,
+      transitionIgnoresSuppression: this.transition?.ignoreSuppression ?? false,
       transitionCount: this.transitionCount,
     };
   }
