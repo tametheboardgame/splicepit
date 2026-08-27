@@ -162,20 +162,17 @@ function drawRoadWearBright(ctx: CanvasRenderingContext2D): void {
 }
 
 function drawDrainageBright(ctx: CanvasRenderingContext2D, now: number): void {
-  // Yard-side road ditch and stone-edged culvert.
   rect(ctx, 1584, 730, 474, 11, B.dirt.shadow);
   rect(ctx, 1592, 733, 458, 5, C.water);
   for (let x = 1610; x < 2030; x += 56) rect(ctx, x, 732, 24, 2, C.waterLight);
   rect(ctx, 2018, 724, 40, 22, B.steel.shadow);
   for (let x = 2023; x < 2054; x += 8) rect(ctx, x, 727, 4, 16, B.steel.highlight);
 
-  // South-road open drain with intermittent flow.
   rect(ctx, 2214, 724, 12, 590, B.dirt.shadow);
   rect(ctx, 2217, 732, 6, 574, C.water);
   const shift = Math.floor(now / 480) % 2 ? 3 : 0;
   for (let y = 758; y < 1290; y += 72) rect(ctx, 2218, y + shift, 4, 22, C.waterLight);
 
-  // Pit-road gutter and grated crossing.
   rect(ctx, 2190, 1510, 610, 10, B.dirt.shadow);
   rect(ctx, 2200, 1512, 592, 4, C.water);
   rect(ctx, 2460, 1490, 82, 22, B.steel.shadow);
@@ -183,7 +180,6 @@ function drawDrainageBright(ctx: CanvasRenderingContext2D, now: number): void {
 }
 
 function drawInfrastructureBright(ctx: CanvasRenderingContext2D, now: number): void {
-  // Utility poles and a low service cable linking local sites.
   for (const [x, y] of [[1750, 560], [1960, 560], [2280, 452], [2290, 1230], [2710, 1320]] as const) {
     drawEnvironmentContactShadow(ctx, x + 4, y + 76, 12, 4);
     rect(ctx, x, y, 8, 80, B.wood.shadow);
@@ -194,7 +190,6 @@ function drawInfrastructureBright(ctx: CanvasRenderingContext2D, now: number): v
     rect(ctx, x + 11, y + 8, 5, 6, C.cream);
   }
 
-  // Small roadside sample pump, visible but outside the path lane.
   drawEnvironmentContactShadow(ctx, 1988, 784, 34, 7);
   rect(ctx, 1968, 742, 48, 40, B.machinery.shadow);
   rect(ctx, 1973, 738, 38, 40, B.machinery.base);
@@ -203,7 +198,6 @@ function drawInfrastructureBright(ctx: CanvasRenderingContext2D, now: number): v
   rect(ctx, 1982, 778, 5, 24, C.copper);
   rect(ctx, 1982, 798, 25, 5, C.copper);
 
-  // Lab spur service markers.
   for (const x of [2228, 2318, 2408]) {
     rect(ctx, x, 616, 7, 34, B.steel.shadow);
     rect(ctx, x + 2, 616, 4, 30, B.steel.base);
@@ -216,24 +210,25 @@ function drawLandmarksBright(ctx: CanvasRenderingContext2D, now: number): void {
   routeSign(ctx, 1810, 566, 112, "MASTER'S LAB →");
   routeSign(ctx, 2290, 1322, 104, 'LOCAL PIT →');
 
-  // Old Toll lay-by, a patched inspection shelter that can later host the debt encounter.
-  drawEnvironmentContactShadow(ctx, 1950, 1024, 92, 10);
-  rect(ctx, 1888, 920, 132, 100, B.wood.shadow);
-  rect(ctx, 1895, 928, 118, 84, '#c6ad76');
-  rect(ctx, 1880, 910, 148, 22, B.steel.shadow);
-  rect(ctx, 1888, 904, 132, 18, '#668079');
-  rect(ctx, 1906, 950, 42, 54, B.wood.shadow);
-  rect(ctx, 1958, 948, 38, 28, '#88afa7');
-  rect(ctx, 1962, 952, 30, 20, '#bfd4bc');
-  rect(ctx, 1898, 934, 104, 9, C.cream);
+  // Old Toll shelter follows the accepted west-post and booth colliders, leaving the existing walk-through inspection bay open.
+  drawEnvironmentContactShadow(ctx, 1956, 995, 76, 8);
+  rect(ctx, 1880, 910, 156, 22, B.steel.shadow);
+  rect(ctx, 1888, 904, 140, 18, '#668079');
+  rect(ctx, 1888, 920, 18, 98, B.wood.shadow);
+  rect(ctx, 1892, 926, 10, 86, '#c6ad76');
+  rect(ctx, 1952, 934, 84, 58, B.wood.shadow);
+  rect(ctx, 1958, 940, 72, 46, '#c6ad76');
+  rect(ctx, 1962, 948, 38, 28, '#88afa7');
+  rect(ctx, 1966, 952, 30, 20, '#bfd4bc');
+  rect(ctx, 1888, 934, 18, 9, C.cream);
+  rect(ctx, 1952, 934, 84, 9, C.cream);
   ctx.fillStyle = C.ink;
   ctx.font = '700 10px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('OLD TOLL • INSPECTION', 1950, 941);
-  rect(ctx, 2014, 988, 24, 14, B.machinery.shadow);
-  rect(ctx, 2018, 990, 16, 10, Math.floor(now / 600) % 2 === 0 ? C.warning : '#8aae68');
+  ctx.fillText('OLD TOLL', 1994, 939);
+  rect(ctx, 2008, 970, 24, 18, B.machinery.shadow);
+  rect(ctx, 2012, 974, 16, 10, Math.floor(now / 600) % 2 === 0 ? C.warning : '#8aae68');
 
-  // Pit approach marker posts and cheap fight-night advertising board.
   for (const x of [2410, 2580, 2750]) {
     rect(ctx, x, 1332, 8, 46, B.wood.shadow);
     rect(ctx, x + 3, 1334, 4, 40, B.wood.base);
@@ -258,7 +253,6 @@ function drawVegetationBright(ctx: CanvasRenderingContext2D, now: number): void 
   flowerCluster(ctx, 2260, 1128);
   flowerCluster(ctx, 2590, 1350);
 
-  // Deliberate shrub clusters rather than repeated filler.
   for (const [x, y, scale] of [[1820, 760, 1], [2280, 784, 1.2], [2290, 1180, 1], [2820, 1500, 1.1]] as const) {
     const s = scale;
     rect(ctx, x, y + 12 * s, 46 * s, 18 * s, B.grass.shadow);
@@ -296,6 +290,24 @@ function drawDeadVegetation(ctx: CanvasRenderingContext2D): void {
   }
 }
 
+function drawDarkVegetationReplacement(ctx: CanvasRenderingContext2D): void {
+  // Explicitly replace every bright-only flower/shrub cluster so full-dark never retains living bright vegetation.
+  for (const [x, y] of [[1680, 746], [2260, 1128], [2590, 1350]] as const) {
+    rect(ctx, x - 2, y - 1, 40, 22, D.grass.shadow);
+    rect(ctx, x + 3, y + 6, 28, 12, D.grass.base);
+    rect(ctx, x + 8, y + 2, 7, 9, C.fungus);
+    rect(ctx, x + 22, y + 8, 9, 7, C.deadLeaf);
+  }
+
+  for (const [x, y, scale] of [[1820, 760, 1], [2280, 784, 1.2], [2290, 1180, 1], [2820, 1500, 1.1]] as const) {
+    const s = scale;
+    rect(ctx, x - 2 * s, y, 50 * s, 32 * s, D.grass.shadow);
+    rect(ctx, x + 5 * s, y + 8 * s, 37 * s, 20 * s, D.grass.base);
+    rect(ctx, x + 10 * s, y + 4 * s, 12 * s, 12 * s, C.fungus);
+    rect(ctx, x + 27 * s, y + 11 * s, 11 * s, 9 * s, C.deadLeaf);
+  }
+}
+
 function drawContaminatedDrainage(ctx: CanvasRenderingContext2D, now: number): void {
   rect(ctx, 1586, 729, 472, 14, D.dirt.shadow);
   rect(ctx, 1594, 733, 456, 7, '#4f5144');
@@ -324,7 +336,6 @@ function drawContaminatedDrainage(ctx: CanvasRenderingContext2D, now: number): v
 }
 
 function drawBiologicalIntrusion(ctx: CanvasRenderingContext2D, now: number): void {
-  // Growth following fence joins and utility hardware, not free-floating decoration.
   for (const [x, y] of [[1660, 584], [1762, 584], [2248, 742], [2248, 1060], [2340, 1288], [2450, 1288]] as const) {
     rect(ctx, x, y - 9, 24, 8, D.residue.shadow);
     rect(ctx, x + 5, y - 14, 9, 15, D.residue.base);
@@ -332,14 +343,12 @@ function drawBiologicalIntrusion(ctx: CanvasRenderingContext2D, now: number): vo
     rect(ctx, x + 18, y - 6, 10, 5, C.tissue);
   }
 
-  // One roadside cable has become a vascular-looking conduit.
   rect(ctx, 1968, 740, 48, 42, D.machinery.shadow);
   rect(ctx, 1974, 744, 36, 32, D.machinery.base);
   rect(ctx, 1982, 776, 7, 28, C.tissue);
   rect(ctx, 1987, 798, 24, 7, C.tissuePale);
   rect(ctx, 2004, 750, 6, 10, Math.floor(now / 260) % 2 === 0 ? '#a34e5a' : D.machinery.accent ?? C.oldBlood);
 
-  // Something has grown up through the cheap Pit advertising board.
   rect(ctx, 2634, 1306, 116, 43, D.wood.shadow);
   rect(ctx, 2640, 1312, 104, 30, '#5b4344');
   rect(ctx, 2660, 1300, 10, 46, D.residue.base);
@@ -357,7 +366,6 @@ function drawWrongShadows(ctx: CanvasRenderingContext2D, now: number): void {
   ctx.fill();
   ctx.restore();
 
-  // Silhouette glimpses sit off the traversable road and twitch by a pixel or two.
   const twitch = Math.floor(now / 240) % 2;
   rect(ctx, 1818 + twitch, 770, 18, 40, '#30262d');
   rect(ctx, 1810 + twitch, 782, 34, 12, '#30262d');
@@ -374,24 +382,25 @@ function drawDamagedLandmarks(ctx: CanvasRenderingContext2D, now: number): void 
   rect(ctx, 2302, 1331, 58, 5, C.oldBlood);
   rect(ctx, 2350, 1316, 30, 8, D.residue.shadow);
 
-  // Old Toll is the same shelter, but its inspection purpose has become much less reassuring.
-  rect(ctx, 1888, 920, 132, 100, D.wood.shadow);
-  rect(ctx, 1895, 928, 118, 84, '#675d50');
-  rect(ctx, 1880, 910, 148, 22, D.steel.shadow);
-  rect(ctx, 1888, 904, 132, 18, '#46534e');
-  rect(ctx, 1906, 950, 42, 54, '#423338');
-  rect(ctx, 1958, 948, 38, 28, '#3b5653');
-  rect(ctx, 1964, 954, 26, 17, '#5f454d');
-  rect(ctx, 1898, 934, 104, 9, '#7e6f5b');
+  // Dark Old Toll keeps the same collider-aligned west support and booth, with the inspection bay still physically open.
+  rect(ctx, 1880, 910, 156, 22, D.steel.shadow);
+  rect(ctx, 1888, 904, 140, 18, '#46534e');
+  rect(ctx, 1888, 920, 18, 98, D.wood.shadow);
+  rect(ctx, 1892, 926, 10, 86, '#675d50');
+  rect(ctx, 1952, 934, 84, 58, D.wood.shadow);
+  rect(ctx, 1958, 940, 72, 46, '#675d50');
+  rect(ctx, 1962, 948, 38, 28, '#3b5653');
+  rect(ctx, 1968, 954, 26, 17, '#5f454d');
+  rect(ctx, 1888, 934, 18, 9, '#7e6f5b');
+  rect(ctx, 1952, 934, 84, 9, '#7e6f5b');
   ctx.fillStyle = '#c0a48d';
   ctx.font = '700 10px "Trebuchet MS", "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('OLD TOLL • HOLD', 1950, 941);
-  rect(ctx, 1968, 992, 34, 8, C.oldBlood);
-  rect(ctx, 1996, 978, 14, 22, D.residue.base);
-  rect(ctx, 2018, 990, 16, 10, Math.floor(now / 210) % 3 === 0 ? '#9b4550' : '#3b3434');
+  ctx.fillText('OLD TOLL • HOLD', 1994, 939);
+  rect(ctx, 1968, 978, 34, 10, C.oldBlood);
+  rect(ctx, 1996, 970, 14, 18, D.residue.base);
+  rect(ctx, 2012, 974, 16, 10, Math.floor(now / 210) % 3 === 0 ? '#9b4550' : '#3b3434');
 
-  // Discarded evidence, outside the roadway but visible from it.
   rect(ctx, 2310, 1188, 72, 24, '#38323a');
   rect(ctx, 2318, 1184, 54, 23, '#5b4b52');
   rect(ctx, 2327, 1187, 9, 8, C.tissuePale);
@@ -405,6 +414,7 @@ export function drawRouteDarkProductionArt(ctx: CanvasRenderingContext2D, now: n
   ctx.imageSmoothingEnabled = false;
   drawContaminatedDrainage(ctx, now);
   drawDeadVegetation(ctx);
+  drawDarkVegetationReplacement(ctx);
   fenceRun(ctx, 1608, 584, 210, false, true);
   fenceRun(ctx, 2250, 662, 168, true, true);
   fenceRun(ctx, 2246, 1288, 250, false, true);
@@ -428,9 +438,13 @@ export function drawRouteBrightProductionArtForeground(
     rect(ctx, 1810, 597, 112, 5, B.wood.shadow);
     rect(ctx, 1818, 598, 96, 2, B.wood.highlight);
   });
-  ifBehind(playerFeetY, 1020, () => {
-    rect(ctx, 1888, 1012, 132, 8, B.wood.shadow);
-    rect(ctx, 1898, 1012, 112, 3, B.wood.highlight);
+  ifBehind(playerFeetY, 1018, () => {
+    rect(ctx, 1888, 1012, 18, 6, B.wood.shadow);
+    rect(ctx, 1892, 1012, 10, 3, B.wood.highlight);
+  });
+  ifBehind(playerFeetY, 992, () => {
+    rect(ctx, 1952, 988, 84, 4, B.wood.shadow);
+    rect(ctx, 1958, 988, 72, 2, B.wood.highlight);
   });
   ifBehind(playerFeetY, 1378, () => {
     rect(ctx, 2290, 1353, 104, 6, B.wood.shadow);
@@ -449,9 +463,13 @@ export function drawRouteDarkProductionArtForeground(
     rect(ctx, 1810, 596, 112, 7, D.wood.shadow);
     rect(ctx, 1844, 592, 42, 10, D.residue.base);
   });
-  ifBehind(playerFeetY, 1020, () => {
-    rect(ctx, 1888, 1010, 132, 10, D.wood.shadow);
-    rect(ctx, 1930, 1006, 54, 12, C.oldBlood);
+  ifBehind(playerFeetY, 1018, () => {
+    rect(ctx, 1888, 1010, 18, 8, D.wood.shadow);
+    rect(ctx, 1892, 1008, 10, 8, C.oldBlood);
+  });
+  ifBehind(playerFeetY, 992, () => {
+    rect(ctx, 1952, 986, 84, 6, D.wood.shadow);
+    rect(ctx, 1970, 984, 44, 6, C.oldBlood);
   });
   ifBehind(playerFeetY, 1378, () => {
     rect(ctx, 2290, 1351, 104, 9, D.wood.shadow);
