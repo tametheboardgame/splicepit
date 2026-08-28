@@ -123,7 +123,7 @@ try {
   });
   if (!armed.debt.representativeVisible) throw new Error(`WP0.7E representative did not appear when armed: ${JSON.stringify(armed.debt)}`);
 
-  await evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start()`);
+  await evaluate(`(() => { void globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start(); return true; })()`);
   const running = await waitFor(async () => {
     const value = await state();
     return value?.debt?.running && value.cutscene.controlLocked && value.bodyClass.includes('wp07e-debt-encounter-active') ? value : null;
