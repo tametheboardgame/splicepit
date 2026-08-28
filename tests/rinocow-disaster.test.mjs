@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  resolveDarkLayerStoryCue,
+  validateDarkLayerStorySequence,
+} from '../src/environment/darkLayerStoryLanguage.js';
+import {
   RINOCOW_DISASTER_CUTSCENE,
+  RINOCOW_DISASTER_DARK_LAYER_CUES,
   RINOCOW_DISASTER_DIALOGUE,
   RINOCOW_DISASTER_FLAGS,
   RINOCOW_DISASTER_TRANSITIONS,
@@ -65,11 +70,29 @@ test('all authored dialogue cues exist and aftermath clearly leaves the player a
   assert.match(RINOCOW_DISASTER_DIALOGUE['viktor-biometric-alert'].text, /NO LONGER A STAFFING CONCERN/i);
 });
 
-test('disaster uses the authored corruption language without replacing the shared runtime', () => {
-  const corruption = RINOCOW_DISASTER_CUTSCENE.steps
-    .filter((step) => step.kind === 'corruption')
-    .map((step) => step.intensity);
-  assert.ok(corruption.includes('blink'));
-  assert.ok(corruption.includes('rupture'));
-  assert.ok(corruption.includes('linger'));
+test('RinoCow uses the three semantic dark-layer roles without visual spam', () => {
+  const corruption = RINOCOW_DISASTER_CUTSCENE.steps.filter((step) => step.kind === 'corruption');
+  assert.equal(corruption.length, 3);
+  assert.deepEqual(corruption.map((step) => step.role), ['omen', 'rupture', 'consequence']);
+  assert.deepEqual(corruption.map((step) => step.cueId), [
+    RINOCOW_DISASTER_DARK_LAYER_CUES.OMEN,
+    RINOCOW_DISASTER_DARK_LAYER_CUES.RUPTURE,
+    RINOCOW_DISASTER_DARK_LAYER_CUES.CONSEQUENCE,
+  ]);
+  assert.deepEqual(corruption.map((step) => resolveDarkLayerStoryCue(step).intensity), ['blink', 'rupture', 'linger']);
+  assert.deepEqual(validateDarkLayerStorySequence(RINOCOW_DISASTER_CUTSCENE.steps), []);
+});
+
+test('dark-layer cues are attached to meaning rather than stacked onto existing effects', () => {
+  const omen = stepIndex((step) => step.kind === 'corruption' && step.cueId === RINOCOW_DISASTER_DARK_LAYER_CUES.OMEN);
+  const death = stepIndex((step) => step.kind === 'corruption' && step.cueId === RINOCOW_DISASTER_DARK_LAYER_CUES.RUPTURE);
+  const consequence = stepIndex((step) => step.kind === 'corruption' && step.cueId === RINOCOW_DISASTER_DARK_LAYER_CUES.CONSEQUENCE);
+  const masterDead = stepIndex((step) => step.kind === 'flag' && step.flag === RINOCOW_DISASTER_FLAGS.MASTER_DEAD);
+  const gasConfirm = stepIndex((step) => step.kind === 'dialogue' && step.cueId === 'gas-confirm');
+  const gasReleased = stepIndex((step) => step.kind === 'flag' && step.flag === RINOCOW_DISASTER_FLAGS.GAS_RELEASED);
+
+  assert.ok(omen > 0);
+  assert.equal(death, masterDead + 1, 'the rupture belongs to the moment Viktor is confirmed dead');
+  assert.equal(consequence, gasConfirm + 1, 'the linger belongs to accepting the fail-safe consequence');
+  assert.ok(gasReleased > consequence, 'the consequence glimpse completes before the gas effect starts');
 });

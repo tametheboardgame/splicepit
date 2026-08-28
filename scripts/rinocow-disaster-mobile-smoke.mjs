@@ -235,8 +235,12 @@ try {
     const value = await snapshot();
     if (!value) return null;
     if (value.cutscene.dialogueCueId) await evaluate(`globalThis.__SPLICEPIT_CUTSCENE__.advanceDialogue()`);
-    return value.disaster.completed && value.cutscene.status === 'completed' ? value : null;
-  }, 35000, 80);
+    return value.disaster.completed
+      && value.cutscene.status === 'completed'
+      && !value.classes.includes('wp07b-cutscene-active')
+      ? value
+      : null;
+  }, 35000, 40);
 
   if (completed.classes.includes('wp07b-cutscene-active')) {
     throw new Error(`WP0.7B did not restore normal controls after completion: ${JSON.stringify(completed)}`);

@@ -1,3 +1,4 @@
+import { drawDarkLayerFlickerOverlay } from '../render/darkLayerFlicker.js';
 import { drawCorruptionPolish } from './frontDoorArt.js';
 
 export const TITLE_VIEW_WIDTH = 1280;
@@ -219,21 +220,14 @@ export function drawCorruptionOverlay(ctx: CanvasRenderingContext2D, options: Co
   const width = options.width ?? TITLE_VIEW_WIDTH;
   const height = options.height ?? TITLE_VIEW_HEIGHT;
   const seed = options.seed ?? 4919;
-  const frame = Math.floor(options.elapsedMs / 22);
 
-  ctx.save();
-  ctx.globalAlpha = amount * 0.3;
-  rect(ctx, 0, 0, width, height, '#07100b');
-  for (let i = 0; i < 14; i += 1) {
-    const h = 3 + Math.floor(hash(seed + frame * 17 + i * 73) * 20);
-    const y = Math.floor(hash(seed + frame * 31 + i * 97) * height);
-    const x = Math.floor((hash(seed + frame * 43 + i * 131) - 0.5) * 130 * amount);
-    ctx.globalAlpha = amount * (0.18 + hash(seed + i * 211) * 0.44);
-    rect(ctx, x, y, width, h, i % 3 === 0 ? '#b8333f' : '#07100b');
-  }
-  ctx.globalAlpha = amount * 0.5;
-  for (let y = 0; y < height; y += 8) rect(ctx, 0, y, width, 1, '#020503');
-  ctx.restore();
+  drawDarkLayerFlickerOverlay(ctx, {
+    amount,
+    elapsedMs: options.elapsedMs,
+    width,
+    height,
+    seed,
+  });
   drawCorruptionPolish(ctx, amount, options.elapsedMs, width, height, seed);
 }
 

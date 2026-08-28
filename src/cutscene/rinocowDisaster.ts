@@ -79,6 +79,12 @@ export const RINOCOW_DISASTER_TRANSITIONS = {
   BLACKOUT_RELEASE: 'rinocow-blackout-release',
 } as const;
 
+export const RINOCOW_DISASTER_DARK_LAYER_CUES = {
+  OMEN: 'rinocow-horn-omen',
+  RUPTURE: 'rinocow-master-death',
+  CONSEQUENCE: 'rinocow-gas-choice',
+} as const;
+
 export const RINOCOW_DISASTER_CUTSCENE: CutsceneDefinition = {
   id: 'wp0.7b-rinocow-disaster',
   steps: [
@@ -87,11 +93,10 @@ export const RINOCOW_DISASTER_CUTSCENE: CutsceneDefinition = {
     { kind: 'dialogue', cueId: 'viktor-introduces-rinocow' },
     { kind: 'camera-focus', target: { x: 1500, y: 700 }, durationMs: 420 },
     { kind: 'dialogue', cueId: 'viktor-horn-warning' },
-    { kind: 'corruption', intensity: 'blink' },
+    { kind: 'corruption', cueId: RINOCOW_DISASTER_DARK_LAYER_CUES.OMEN, role: 'omen' },
     { kind: 'dialogue', cueId: 'containment-load', durationMs: 1050 },
     { kind: 'dialogue', cueId: 'viktor-new-number' },
     { kind: 'flag', flag: RINOCOW_DISASTER_FLAGS.BREACH_STARTED, value: true },
-    { kind: 'corruption', intensity: 'rupture' },
     { kind: 'transition', transitionId: RINOCOW_DISASTER_TRANSITIONS.BREACH, durationMs: 320 },
     { kind: 'move', actorId: 'rinocow', target: { x: 1240, y: 660 }, speed: 520, facing: 'left' },
     { kind: 'camera-focus', target: { x: 1100, y: 630 }, durationMs: 260 },
@@ -101,14 +106,14 @@ export const RINOCOW_DISASTER_CUTSCENE: CutsceneDefinition = {
     { kind: 'move', actorId: 'rinocow', target: { x: 1008, y: 632 }, speed: 760, facing: 'left' },
     { kind: 'transition', transitionId: RINOCOW_DISASTER_TRANSITIONS.IMPACT, durationMs: 240 },
     { kind: 'flag', flag: RINOCOW_DISASTER_FLAGS.MASTER_DEAD, value: true },
-    { kind: 'corruption', intensity: 'rupture' },
+    { kind: 'corruption', cueId: RINOCOW_DISASTER_DARK_LAYER_CUES.RUPTURE, role: 'rupture' },
     { kind: 'dialogue', cueId: 'viktor-biometric-alert', durationMs: 1450 },
     { kind: 'move', actorId: 'rinocow', target: { x: 1120, y: 758 }, speed: 210, facing: 'down' },
     { kind: 'dialogue', cueId: 'gas-available', durationMs: 1200 },
     { kind: 'dialogue', cueId: 'gas-confirm' },
+    { kind: 'corruption', cueId: RINOCOW_DISASTER_DARK_LAYER_CUES.CONSEQUENCE, role: 'consequence' },
     { kind: 'flag', flag: RINOCOW_DISASTER_FLAGS.GAS_RELEASED, value: true },
     { kind: 'transition', transitionId: RINOCOW_DISASTER_TRANSITIONS.GAS, durationMs: 720 },
-    { kind: 'corruption', intensity: 'linger' },
     { kind: 'wait', durationMs: 900 },
     { kind: 'flag', flag: RINOCOW_DISASTER_FLAGS.RINOCOW_DEAD, value: true },
     { kind: 'flag', flag: RINOCOW_DISASTER_FLAGS.OTHER_APPRENTICES_DEAD, value: true },

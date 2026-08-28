@@ -21,7 +21,7 @@ function adapterLog() {
     showDialogue: async (cueId, durationMs) => calls.push(['dialogue', cueId, durationMs]),
     setEventFlag: async (flag, value) => calls.push(['flag', flag, value]),
     transition: async (transitionId, durationMs) => calls.push(['transition', transitionId, durationMs]),
-    triggerCorruption: async (intensity) => calls.push(['corruption', intensity]),
+    triggerCorruption: async (cue) => calls.push(['corruption', cue]),
     setAmbientCorruptionSuppressed: async (suppressed) => calls.push(['ambient', suppressed]),
   };
   return { adapter, calls };
@@ -38,7 +38,8 @@ test('cutscene runtime sequences every WP0.7A primitive and restores control', a
       { kind: 'face', actorId: 'rinocow', facing: 'right' },
       { kind: 'dialogue', cueId: 'master-warning', durationMs: 80 },
       { kind: 'flag', flag: 'warning-seen', value: true },
-      { kind: 'corruption', intensity: 'rupture' },
+      { kind: 'corruption', cueId: 'runtime-warning', role: 'rupture' },
+      { kind: 'wait', durationMs: 5 },
       { kind: 'transition', transitionId: 'lab-impact', durationMs: 120 },
       { kind: 'wait', durationMs: 40 },
       { kind: 'camera-release', durationMs: 25 },
@@ -53,7 +54,8 @@ test('cutscene runtime sequences every WP0.7A primitive and restores control', a
     ['face', 'rinocow', 'right'],
     ['dialogue', 'master-warning', 80],
     ['flag', 'warning-seen', true],
-    ['corruption', 'rupture'],
+    ['corruption', { cueId: 'runtime-warning', role: 'rupture' }],
+    ['wait', 5],
     ['transition', 'lab-impact', 120],
     ['wait', 40],
     ['camera-release', 25],
@@ -62,6 +64,21 @@ test('cutscene runtime sequences every WP0.7A primitive and restores control', a
   ]);
   assert.equal(runtime.snapshot().status, 'completed');
   assert.equal(runtime.snapshot().completedSceneId, 'runtime-contract');
+});
+
+test('cutscene runtime rejects dark-layer cues that violate the shared anti-noise contract', async () => {
+  const { adapter } = adapterLog();
+  const runtime = new CutsceneRuntime(adapter);
+  await assert.rejects(
+    runtime.play({
+      id: 'noisy-scene',
+      steps: [
+        { kind: 'transition', transitionId: 'flash', durationMs: 10 },
+        { kind: 'corruption', cueId: 'stacked', role: 'rupture' },
+      ],
+    }),
+    /violates dark-layer story language/i,
+  );
 });
 
 test('cutscene runtime honours explicit control release and skips default wrappers when requested', async () => {
