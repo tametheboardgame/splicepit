@@ -92,6 +92,7 @@ try {
         return { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width, height: box.height, display: style.display, visibility: style.visibility };
       };
       return {
+        ready: yard.ready,
         phase: yard.phase,
         debt: { ...debt.state },
         cutscene: { ...cutscene.state },
@@ -112,12 +113,15 @@ try {
   await cdp('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true, screenWidth: 390, screenHeight: 844 });
   await cdp('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1&debtTest=1` });
-  await waitFor(async () => (await snapshot())?.debt?.ready === true, 20000);
+  await waitFor(async () => {
+    const value = await snapshot();
+    return value?.debt?.ready === true && value.ready === true && value.phase === 'select' ? value : null;
+  }, 20000);
   await key('Enter', 'Enter', 13);
   await waitFor(async () => (await snapshot())?.phase === 'confirmed');
 
   await evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.armForPitRoute()`);
-  await evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start()`);
+  await evaluate(`(() => { void globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start(); return true; })()`);
   const running = await waitFor(async () => {
     const value = await snapshot();
     return value?.debt?.running && value.cutscene.controlLocked && rendered(value.dialogue) ? value : null;
