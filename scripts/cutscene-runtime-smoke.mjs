@@ -120,7 +120,8 @@ try {
       steps: [
         { kind: 'flag', flag: 'wp0.7a-browser-probe', value: true },
         { kind: 'dialogue', cueId: 'runtime-probe', durationMs: 120 },
-        { kind: 'corruption', intensity: 'blink' },
+        { kind: 'corruption', cueId: 'runtime-probe-omen', role: 'omen' },
+        { kind: 'wait', durationMs: 120 },
         { kind: 'transition', transitionId: 'runtime-probe-transition', durationMs: 80 },
         { kind: 'wait', durationMs: 520 }
       ]
