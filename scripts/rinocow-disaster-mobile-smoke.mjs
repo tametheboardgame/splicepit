@@ -70,10 +70,34 @@ try {
     return result.result?.value;
   }
 
-  async function key(keyName, code, vk) {
-    await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await sleep(90);
+  async function tapPoint(x, y, id = 1) {
+    await cdp('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x, y, radiusX: 5, radiusY: 5, force: 1, id }],
+    });
+    await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await sleep(100);
+  }
+
+  async function tapSelectionCanvasAt(sourceX, sourceY) {
+    const point = await evaluate(`(() => {
+      const canvas = document.querySelector('#visual-reset-stage');
+      const rect = canvas?.getBoundingClientRect();
+      if (!rect) return null;
+      return {
+        x: rect.left + (${sourceX} / 1280) * rect.width,
+        y: rect.top + (${sourceY} / 720) * rect.height,
+      };
+    })()`);
+    if (!point) throw new Error('WP0.7B mobile smoke could not find the character-selection canvas.');
+    await tapPoint(point.x, point.y);
+  }
+
+  async function waitForSelection() {
+    return waitFor(async () => evaluate(`(() => {
+      const state = globalThis.__SPLICEPIT_VISUAL_RESET__;
+      return Boolean(state?.ready && state?.phase === 'select' && state?.selectionRendered);
+    })()`), 20000);
   }
 
   async function snapshot() {
@@ -129,12 +153,15 @@ try {
   await cdp('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1&labTest=1&rinocowTest=1` });
 
-  await waitFor(async () => (await snapshot())?.disaster?.status === 'idle', 20000);
+  await waitForSelection();
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => (await snapshot())?.disaster?.status === 'idle', 20000);
+  await waitForSelection();
   await cdp('Page.bringToFront');
-  await key('Enter', 'Enter', 13);
+
+  // Enter normal gameplay through the same touch-only Milo USE target used by
+  // the existing WP0.6D1 mobile smoke. labTest then auto-enters the Master Lab.
+  await tapSelectionCanvasAt(514, 683);
 
   const initial = await waitFor(async () => {
     const value = await snapshot();
