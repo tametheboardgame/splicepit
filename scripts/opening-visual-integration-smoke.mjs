@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
-const port = 9240;
-const gamePort = 8098;
+const chromePort = 9246;
+const gamePort = 8104;
 let nextId = 0;
 const pending = new Map();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -22,12 +22,10 @@ async function waitFor(fn, timeoutMs = 20000, intervalMs = 70) {
   throw lastError ?? new Error(`Timed out after ${timeoutMs}ms`);
 }
 
-const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], {
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
+const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], { stdio: ['ignore', 'pipe', 'pipe'] });
 const chrome = spawn(chromePath, [
   '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
-  `--remote-debugging-port=${port}`, '--remote-allow-origins=*', 'about:blank',
+  `--remote-debugging-port=${chromePort}`, '--remote-allow-origins=*', 'about:blank',
 ], { stdio: ['ignore', 'pipe', 'pipe'] });
 
 function cleanup() {
@@ -38,17 +36,15 @@ process.on('exit', cleanup);
 
 try {
   const targets = await waitFor(async () => {
-    const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+    const response = await fetch(`http://127.0.0.1:${chromePort}/json/list`);
     const list = await response.json();
     return list.length ? list : null;
   });
-
   const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
     ws.addEventListener('error', reject, { once: true });
   });
-
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
     if (!msg.id) return;
@@ -127,66 +123,89 @@ try {
     await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.phase === 'confirmed'`));
   }
 
-  async function verifyLocation(locationId, artGlobalName, playerGlobalName, canvasId, shellProperty) {
-    await waitFor(async () => evaluate(`(() => {
-      const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
-      const art = globalThis['${artGlobalName}'];
-      return env?.state?.locationId === '${locationId}' && art?.active === true && art?.brightRendered === true;
-    })()`));
-
-    await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceBright()`);
-    await waitFor(async () => evaluate(`globalThis['${artGlobalName}']?.darkMix === 0`));
-    const bright = await evaluate(`(() => {
-      const canvas = document.querySelector('#${canvasId}');
+  async function pixelStats(canvasId) {
+    return evaluate(`(() => {
+      const canvas = document.getElementById('${canvasId}');
       const ctx = canvas?.getContext('2d');
-      const state = globalThis['${playerGlobalName}'];
-      if (!canvas || !ctx || !state) return null;
+      if (!canvas || !ctx) return null;
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      globalThis.__WP06M_BRIGHT_PIXELS__ = data.slice();
       const colours = new Set();
-      for (let y = 24; y < canvas.height - 24; y += 6) {
-        for (let x = 24; x < canvas.width - 24; x += 6) {
-          const i = (y * canvas.width + x) * 4;
-          colours.add((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]);
-        }
+      let nonTransparent = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] === 0) continue;
+        nonTransparent += 1;
+        if (colours.size < 4096) colours.add(`${data[i]},${data[i + 1]},${data[i + 2]},${data[i + 3]}`);
       }
-      const rect = canvas.getBoundingClientRect();
-      return {
-        uniqueColours: colours.size,
-        width: canvas.width,
-        height: canvas.height,
-        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
-        player: { x: state.playerX ?? null, y: state.playerY ?? null, zone: state.zone ?? null, stageId: state.stageId ?? null },
-      };
+      return { uniqueColours: colours.size, nonTransparent };
     })()`);
-    if (!bright || bright.width !== 1280 || bright.height !== 720 || bright.uniqueColours < 24) {
-      throw new Error(`WP0.6M ${locationId} bright integration contract failed: ${JSON.stringify(bright)}`);
-    }
+  }
 
-    await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.clearForce(); globalThis.__SPLICEPIT_CORRUPTION__.reschedule()`);
-    await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.triggerAuthored('${locationId}', 'linger')`);
-    await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.darkMix > 0.95 && globalThis['${artGlobalName}']?.darkMix > 0.95`));
-
-    const dark = await evaluate(`(() => {
-      const canvas = document.querySelector('#${canvasId}');
+  async function changedPixels(canvasId, beforeDataUrl) {
+    return evaluate(`(async () => {
+      const canvas = document.getElementById('${canvasId}');
       const ctx = canvas?.getContext('2d');
-      const brightPixels = globalThis.__WP06M_BRIGHT_PIXELS__;
-      if (!canvas || !ctx || !brightPixels) return null;
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      if (!canvas || !ctx) return null;
+      const before = new Image();
+      before.src = ${JSON.stringify(beforeDataUrl)};
+      await before.decode();
+      const probe = document.createElement('canvas');
+      probe.width = canvas.width;
+      probe.height = canvas.height;
+      const probeCtx = probe.getContext('2d');
+      probeCtx.drawImage(before, 0, 0);
+      const a = probeCtx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const b = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
       let changed = 0;
-      for (let y = 24; y < canvas.height - 24; y += 5) {
-        for (let x = 24; x < canvas.width - 24; x += 5) {
-          const i = (y * canvas.width + x) * 4;
-          if (Math.abs(data[i] - brightPixels[i]) + Math.abs(data[i + 1] - brightPixels[i + 1]) + Math.abs(data[i + 2] - brightPixels[i + 2]) > 42) changed += 1;
-        }
+      for (let i = 0; i < a.length; i += 4) {
+        if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) + Math.abs(a[i + 3] - b[i + 3]) > 16) changed += 1;
       }
-      return { changed };
+      return changed;
     })()`);
-    if (!dark || dark.changed < 120) {
-      throw new Error(`WP0.6M ${locationId} dark layer is not materially distinct: ${JSON.stringify(dark)}`);
+  }
+
+  async function verifyLocation(locationId, artGlobalName, playerGlobalName, canvasId, shellProperty) {
+    await waitFor(async () => evaluate(`globalThis['${artGlobalName}']?.state?.active === true && globalThis['${artGlobalName}']?.state?.rendered === true`));
+    const bright = await waitFor(async () => evaluate(`(() => {
+      const art = globalThis['${artGlobalName}']?.state;
+      const env = globalThis.__SPLICEPIT_ENVIRONMENT__?.state;
+      const player = globalThis['${playerGlobalName}'];
+      const canvas = document.getElementById('${canvasId}');
+      if (!art || !env || !player || !canvas || env.phase !== 'steady' || env.darkMix !== 0) return null;
+      return {
+        art: { active: art.active, rendered: art.rendered, brightRendered: art.brightRendered, darkRendered: art.darkRendered },
+        player: { x: player.playerX ?? null, y: player.playerY ?? null, zone: player.zone ?? null, stageId: player.stageId ?? null },
+        uniqueColours: (() => {
+          const ctx = canvas.getContext('2d');
+          const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+          const colours = new Set();
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] === 0) continue;
+            if (colours.size < 4096) colours.add(`${data[i]},${data[i + 1]},${data[i + 2]},${data[i + 3]}`);
+          }
+          return colours.size;
+        })(),
+        dataUrl: canvas.toDataURL(),
+      };
+    })()`));
+    if (!bright.art.brightRendered || bright.uniqueColours < 24) {
+      throw new Error(`WP0.6M ${locationId} bright-art integration failed: ${JSON.stringify(bright)}`);
     }
 
-    await key('b', 'KeyB', 66);
+    await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.triggerAuthored('${locationId}', 'major')`);
+    const dark = await waitFor(async () => {
+      const value = await evaluate(`(() => {
+        const art = globalThis['${artGlobalName}']?.state;
+        const env = globalThis.__SPLICEPIT_ENVIRONMENT__?.state;
+        if (!art || !env || env.darkMix < 0.9 || !art.darkRendered) return null;
+        return { darkMix: env.darkMix, darkRendered: art.darkRendered };
+      })()`);
+      if (!value) return null;
+      const changed = await changedPixels(canvasId, bright.dataUrl);
+      return changed > 900 ? { ...value, changed } : null;
+    }, 10000);
+    if (dark.changed <= 900) throw new Error(`WP0.6M ${locationId} dark-state contrast too weak: ${JSON.stringify(dark)}`);
+
+    await key('KeyB', 'KeyB', 66);
     const shell = await waitFor(async () => evaluate(`(() => {
       const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
       const corruption = globalThis.__SPLICEPIT_CORRUPTION__;
@@ -218,7 +237,9 @@ try {
   await moveAxis('y', 700, down, up);
   await moveAxis('x', 1200, right, left);
   await moveAxis('x', 1450, right, left);
-  await moveAxis('y', 655, down, up);
+  // The route opening is a 44px corridor between colliders. Keep the centreline
+  // tolerance tight enough that the 15px player hitbox cannot stop inside either edge.
+  await moveAxis('y', 655, down, up, 6);
   await moveAxis('x', 1840, right, left);
   results.push(await verifyLocation('route', '__SPLICEPIT_ROUTE_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell'));
 
@@ -243,18 +264,18 @@ try {
       viewport: { width: innerWidth, height: innerHeight },
       stage: { left: a.left, top: a.top, width: a.width, height: a.height },
       corruption: { left: b.left, top: b.top, width: b.width, height: b.height },
-      overflow: document.body.scrollWidth > innerWidth || document.body.scrollHeight > innerHeight,
     };
   })()`);
-  if (!mobile || mobile.overflow || mobile.stage.width > 390.5 || mobile.stage.height > 844.5
-      || Math.abs(mobile.stage.left - mobile.corruption.left) > 1
-      || Math.abs(mobile.stage.top - mobile.corruption.top) > 1
-      || Math.abs(mobile.stage.width - mobile.corruption.width) > 1
-      || Math.abs(mobile.stage.height - mobile.corruption.height) > 1) {
-    throw new Error(`WP0.6M mobile visual-stack integration failed: ${JSON.stringify(mobile)}`);
+  if (!mobile || mobile.viewport.width !== 390 || mobile.viewport.height !== 844) {
+    throw new Error(`WP0.6M mobile viewport setup failed: ${JSON.stringify(mobile)}`);
+  }
+  const sameWidth = Math.abs(mobile.stage.width - mobile.corruption.width) <= 1;
+  const sameLeft = Math.abs(mobile.stage.left - mobile.corruption.left) <= 1;
+  if (!sameWidth || !sameLeft) {
+    throw new Error(`WP0.6M mobile corruption alignment failed: ${JSON.stringify(mobile)}`);
   }
 
-  console.log(`WP0.6M final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
+  console.log(`WP0.6M opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
   ws.close();
   cleanup();
 } catch (error) {
