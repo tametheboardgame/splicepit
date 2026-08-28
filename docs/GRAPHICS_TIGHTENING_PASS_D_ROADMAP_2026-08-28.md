@@ -17,7 +17,7 @@ From this point forward:
 
 This renumbering changes visual-pass labels only. R0.8, R0.9 and R0.10 gameplay sequencing does not move.
 
-**Status: IN PROGRESS — GTD-0 complete; GTD-1 through GTD-4 implemented; GTD-5 cleanup in progress; GTD-6 exact-tree/browser sign-off pending.**
+**Status: IMPLEMENTATION COMPLETE / AUTOMATED SIGN-OFF GREEN — human visual review remains the final art-direction gate.**
 
 ---
 
@@ -80,11 +80,11 @@ Gate result:
 
 - each problem environment now has one explicit Pass D active art path rather than a new overlay on top of the previous generation.
 
-## GTD-1 — Apprentice Splicer Yard Full Redraw — IMPLEMENTED / VALIDATING
+## GTD-1 — Apprentice Splicer Yard Full Redraw — COMPLETE
 
 Purpose: rebuild the first normal gameplay area to the Lab benchmark.
 
-Implemented:
+Completed:
 
 - replaced the active layered Yard renderer with an opaque authored core redraw;
 - rebuilt the arrival/work path with irregular ground transitions and clear desire lines;
@@ -94,22 +94,19 @@ Implemented:
 - added directional lighting, contact shadows and controlled foreground service-rail depth;
 - authored physically different dark-state specimens, pipe intrusions, runoff and tissue;
 - preserved world dimensions, colliders, spawn, tutorial and objective topology;
-- removed superseded Yard production-art and foreground legacy files from the branch.
+- removed superseded Yard production-art and foreground legacy files.
 
-Validation already passed before later branch advances:
+Exact-tree browser evidence:
 
-- strict TypeScript;
-- content/RNG validation;
-- all unit/domain/save tests;
-- production build.
+- Yard movement smoke passed;
+- Yard production-art smoke passed with 528 sampled bright colours and 24,793 materially changed dark-state sample pixels;
+- tutorial/objective and mobile gameplay/layout smokes remained green.
 
-Full browser validation is being repeated on the combined final redraw tree.
-
-## GTD-2 — Opening Route Full Redraw — IMPLEMENTED / VALIDATING
+## GTD-2 — Opening Route Full Redraw — COMPLETE
 
 Purpose: make the route feel like an authored place rather than connective terrain.
 
-Implemented:
+Completed:
 
 - replaced the active legacy + Pass C route stack with one Pass D route renderer;
 - rebuilt the Yard/Lab road with irregular shoulders, hand-patched road wear and authored drainage;
@@ -119,13 +116,19 @@ Implemented:
 - rebuilt the lower Pit road around haulage remnants, drainage and a stronger Local Pit approach billboard;
 - authored location-specific dark road intrusions, contaminated drainage, wrong toll shadows and Pit-bound residue;
 - preserved every existing route landmark, corridor and collider contract;
-- removed the superseded route production-art legacy file from the branch.
+- removed the superseded route production-art legacy file.
 
-## GTD-3 — Local Pit Exterior / Arrival Redraw — IMPLEMENTED / VALIDATING
+Exact-tree browser evidence:
+
+- route traversal reached the accepted staging position with no collision regression;
+- route production-art smoke passed with 604 sampled bright colours and 14,173 materially changed dark-state sample pixels;
+- debt encounter, corruption and final opening-integration smokes remained green.
+
+## GTD-3 — Local Pit Exterior / Arrival Redraw — COMPLETE
 
 Purpose: make arriving at the Local Pit feel like reaching a real underground animal-fighting operation.
 
-Implemented:
+Completed:
 
 - replaced generic exterior frontage with an authored arrival apron and a single strong venue silhouette;
 - built a large Bramble Pit frontage/sign as the architectural focal point;
@@ -135,11 +138,17 @@ Implemented:
 - authored exterior dark-state tissue intrusion, mutated holding silhouettes, blood/runoff and corrupted entrance supports;
 - kept the arrival-to-interior route visually clear.
 
-## GTD-4 — Local Pit Interior / Arena Redraw — IMPLEMENTED / VALIDATING
+Exact-tree browser evidence:
+
+- Local Pit entry/exterior/interior traversal smoke passed;
+- entrance glitch recovered correctly;
+- accepted exit, stage and collision semantics were unchanged.
+
+## GTD-4 — Local Pit Interior / Arena Redraw — COMPLETE
 
 Purpose: bring the Pit interior up to the same authored standard as the Lab.
 
-Implemented:
+Completed:
 
 - replaced the repeated tiled-floor look with large authored floor/material zones and clear traffic flow;
 - rebuilt reception/registration as a functioning intake business with forms, specimen jars, terminal and queue board;
@@ -150,11 +159,17 @@ Implemented:
 - authored physical dark-state arena rail/floor intrusion, warped holding equipment and biological contamination;
 - preserved all R0.9 battle-floor staging and Local Pit collision topology.
 
-## GTD-5 — Cross-Location Consistency / Legacy Removal — IN PROGRESS
+Exact-tree browser evidence:
+
+- Local Pit production-art smoke passed with 626 sampled bright colours;
+- 46,860 sampled pixels changed materially in the dark state;
+- arena/interior movement and final opening-integration smokes remained green.
+
+## GTD-5 — Cross-Location Consistency / Legacy Removal — COMPLETE
 
 Purpose: make the opening world read as one art-directed game.
 
-Completed so far:
+Completed:
 
 - normalised Pass D contracts around the Master Lab/protagonist quality reference;
 - moved Yard, route and Local Pit to replacement-mode render paths;
@@ -163,43 +178,62 @@ Completed so far:
 - removed superseded `routeProductionArtLegacy.ts`;
 - removed superseded `localPitProductionArtLegacy.ts`;
 - deliberately retained Master Lab Pass C production art because it is the accepted benchmark;
-- preserved player scale, camera scale and gameplay geometry.
+- preserved player scale, camera scale and gameplay geometry;
+- verified foreground/mobile integration through the exact-tree browser suite;
+- verified no deleted generation is required by the production build.
 
-Remaining before GTD-5 completion:
+Gate result:
 
-- exact-tree browser review of foreground occlusion and mobile framing;
-- confirm no remaining active imports rely on deleted generations;
-- address any visual/runtime regression found by the combined smoke suite.
+- the cleaned exact tree builds and runs without the superseded Yard/route/Pit production-art generations.
 
-## GTD-6 — Pass D Integration / Sign-off — PENDING EXACT-TREE BROWSER GATE
+## GTD-6 — Pass D Integration / Automated Sign-off — COMPLETE
 
-Required validation:
+Exact validation tree:
 
-- typecheck;
+- branch: `agent/graphics-tightening-pass-d-environment-redraw`;
+- validated SHA before this documentation-only closeout commit: `743bb75409292d87ca37f0bc36a79818a9884662`;
+- workflow run: `33202095902`.
+
+Passed:
+
+- strict TypeScript;
 - content validation;
 - RNG boundary validation;
-- unit/domain/save tests;
+- all unit/domain/save tests;
 - production build;
 - Yard movement/tutorial/objective smokes;
-- route movement/collision/corruption smokes;
-- Master Lab regression smokes;
-- Local Pit exterior/interior smokes;
-- RinoCow/post-death/creditor regression smokes;
-- mobile gameplay/layout smokes;
-- final opening visual integration smoke.
+- Yard production-art smoke;
+- route movement/collision/production-art smoke;
+- Master Lab and Master Lab production-art regression smokes;
+- Local Pit traversal/glitch and production-art smokes;
+- ambient world corruption across Yard, route, Master Lab and Local Pit;
+- cutscene runtime;
+- authored RinoCow disaster and portrait-mobile presentation;
+- persistent post-death Lab state;
+- authored creditor encounter and portrait-mobile presentation;
+- mobile gameplay/layout;
+- final opening visual integration.
 
-Human visual gate:
+Final integration sample results:
 
-- Yard, route and Local Pit must be judged against the **current Master Lab**, not against their pre-Pass-D versions.
+- Yard: 465 sampled colours, 19,028 changed corruption pixels;
+- route: 403 sampled colours, 10,839 changed corruption pixels;
+- Master Lab: 290 sampled colours, 9,690 changed corruption pixels;
+- Local Pit: 326 sampled colours, 31,430 changed corruption pixels;
+- portrait mobile viewport completed without overflow.
 
-Pass D is not complete if automated tests are green but the environments still look visually messy or prototype-grade.
+### Remaining human visual gate
+
+Automated validation proves integration, traversal, bright/dark differentiation, mobile framing and regression safety. It does **not** replace the subjective visual review that initiated Pass D.
+
+After merge/deployment, Yard, route and Local Pit must still be judged by eye against the **current Master Lab**. If that human review finds one of them still visually below the benchmark, the correct response is another authored correction, not declaring success because automated tests are green.
 
 ---
 
 # Execution order
 
-Autonomous implementation order is locked as:
+Autonomous implementation order was completed as:
 
-`GTD-0 → GTD-1 Yard → GTD-2 Route → GTD-3 Pit Exterior → GTD-4 Pit Interior → GTD-5 Consistency/Cleanup → GTD-6 Sign-off`
+`GTD-0 → GTD-1 Yard → GTD-2 Route → GTD-3 Pit Exterior → GTD-4 Pit Interior → GTD-5 Consistency/Cleanup → GTD-6 Automated Sign-off`
 
-The implementation should proceed without repeated human approval between packages unless a genuinely subjective art-direction fork or technical hard stop appears.
+The implementation can now merge once PR checks are green. Human visual review remains the final art-direction acceptance gate for Pass D.
