@@ -13,40 +13,44 @@ import {
   isYardPositionBlocked,
 } from '../src/world/yard.js';
 
-test('WP0.6I authors both route visual states against the existing opening-world geometry', () => {
+test('GTD-2 authors both route visual states against the existing opening-world geometry', () => {
   assert.equal(ROUTE_PRODUCTION_ART_CONTRACT.locationId, 'route');
   assert.equal(ROUTE_PRODUCTION_ART_CONTRACT.geometryId, ENVIRONMENT_CAPABILITIES.route.geometryId);
   assert.deepEqual([...ROUTE_PRODUCTION_ART_CONTRACT.authoredStates], ['bright', 'dark']);
   assert.equal(ROUTE_PRODUCTION_ART_CONTRACT.collisionTopology, 'unchanged');
+  assert.equal(ROUTE_PRODUCTION_ART_CONTRACT.activeArtGeneration, 'graphics-tightening-pass-d');
+  assert.equal(ROUTE_PRODUCTION_ART_CONTRACT.qualityReference, 'master-lab-and-approved-protagonists');
+  assert.equal(ROUTE_PRODUCTION_ART_CONTRACT.replacementMode, 'authored-route-plates-not-legacy-overlay-stack');
   assert.equal(ENVIRONMENT_CAPABILITIES.route.darkArtStatus, 'authored');
   assert.equal(OPENING_ROUTE_ENVIRONMENT_X, 1720);
 });
 
-test('WP0.6I bright route covers the locked production-art detail groups', () => {
+test('GTD-2 bright route covers the full-redraw authored composition groups', () => {
   assert.deepEqual([...ROUTE_PRODUCTION_ART_CONTRACT.brightDetailGroups], [
-    'road-edge-and-wear',
-    'terrain-transitions',
+    'authored-road-surface',
+    'lab-approach',
+    'old-toll-debt-layby',
+    'pit-approach',
     'drainage-and-verges',
-    'fencing-and-signage',
-    'local-infrastructure',
-    'navigation-landmarks',
-    'vegetation-clusters',
-    'route-storytelling',
+    'animal-transport-remnants',
+    'utility-infrastructure',
+    'foreground-depth',
   ]);
 });
 
-test('WP0.6I dark route uses location-specific environmental storytelling', () => {
+test('GTD-2 dark route uses location-specific physical environmental storytelling', () => {
   assert.deepEqual([...ROUTE_PRODUCTION_ART_CONTRACT.darkStoryGroups], [
-    'contaminated-runoff',
-    'dead-vegetation',
-    'biological-intrusion',
-    'damaged-signage',
-    'wrong-shadow-pockets',
-    'off-route-horror',
+    'contaminated-drainage',
+    'organic-road-intrusion',
+    'wrong-toll-shadow',
+    'dead-verges',
+    'damaged-route-signage',
+    'pit-bound-residue',
+    'foreground-tissue',
   ]);
 });
 
-test('WP0.6I preserves the WP0.6D route topology and hand-off landmarks', () => {
+test('GTD-2 preserves the WP0.6D route topology and hand-off landmarks', () => {
   assert.deepEqual(YARD_SPAWN, { x: 900, y: 562 });
   assert.equal(YARD_WORLD_WIDTH, 2920);
   assert.equal(YARD_WORLD_HEIGHT, 1600);
