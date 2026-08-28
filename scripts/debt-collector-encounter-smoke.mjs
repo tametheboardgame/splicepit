@@ -83,7 +83,7 @@ try {
       if (!yard || !debt || !cutscene) return null;
       const dialogue = document.querySelector('#debt-collector-dialogue');
       return {
-        yard: { phase: yard.phase, x: yard.playerX, y: yard.playerY },
+        yard: { ready: yard.ready, phase: yard.phase, x: yard.playerX, y: yard.playerY },
         debt: { ...debt.state, flags: { ...debt.state.flags } },
         cutscene: { ...cutscene.state, flags: { ...cutscene.state.flags } },
         dialogueVisible: Boolean(dialogue && !dialogue.hidden),
@@ -99,7 +99,10 @@ try {
   await waitFor(async () => (await state())?.debt?.ready === true, 20000);
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => (await state())?.debt?.ready === true, 20000);
+  await waitFor(async () => {
+    const value = await state();
+    return value?.debt?.ready === true && value.yard.ready === true && value.yard.phase === 'select' ? value : null;
+  }, 20000);
   await cdp('Page.bringToFront');
   await key('Enter', 'Enter', 13);
 
