@@ -117,11 +117,10 @@ try {
   if (premature !== false) throw new Error('WP0.7E started before the Pit-route hand-off was armed.');
 
   await evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.armForPitRoute()`);
-  const armed = await waitFor(async () => {
+  await waitFor(async () => {
     const value = await state();
-    return value?.debt?.armed ? value : null;
+    return value?.debt?.armed && value.debt.representativeVisible ? value : null;
   });
-  if (!armed.debt.representativeVisible) throw new Error(`WP0.7E representative did not appear when armed: ${JSON.stringify(armed.debt)}`);
 
   await evaluate(`(() => { void globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start(); return true; })()`);
   const running = await waitFor(async () => {
