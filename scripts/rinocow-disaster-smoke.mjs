@@ -123,8 +123,11 @@ try {
 
   const initial = await waitFor(async () => {
     const value = await state();
-    return value?.lab?.active && value.lab.rendered && value.disaster.ready && value.passC.ready && value.passC.labBenchmarkRendered ? value : null;
+    return value?.lab?.active && value.lab.rendered && value.disaster.ready && value.passC.ready && value.passC.assetsReady && value.passC.labBenchmarkRendered ? value : null;
   }, 20000);
+  if (initial.passC.assetMode !== 'authored-pixel-assets') {
+    throw new Error(`Pass C did not boot the authored pixel-asset runtime: ${JSON.stringify(initial.passC)}`);
+  }
   if (!initial.overlayVisible) throw new Error(`WP0.7B presentation overlay did not attach to Master Lab: ${JSON.stringify(initial)}`);
   if (!initial.passCStageVisible) throw new Error(`Pass C hero-art stage did not attach to Master Lab: ${JSON.stringify(initial.passC)}`);
   if (initial.legacyOverlayOpacity !== '0') {
@@ -146,15 +149,20 @@ try {
     throw new Error(`WP0.7B player moved while disaster cutscene was locked: ${JSON.stringify({ running, afterMoveAttempt })}`);
   }
 
+  let sawDialogue = false;
   const heroBeat = await waitFor(async () => {
     const value = await state();
-    return value?.disaster?.breachStarted && value.passC.cutsceneHeroRendered ? value : null;
+    if (!value) return null;
+    if (value.dialogueVisible) sawDialogue = true;
+    if (value.cutscene.dialogueCueId) {
+      await evaluate(`globalThis.__SPLICEPIT_CUTSCENE__.advanceDialogue()`);
+    }
+    return value.disaster.breachStarted && value.passC.cutsceneHeroRendered ? value : null;
   }, 20000, 70);
   if (!heroBeat.passC.legacyRinoCowStageSuperseded) {
     throw new Error(`Pass C did not register the superseded RinoCow layer: ${JSON.stringify(heroBeat.passC)}`);
   }
 
-  let sawDialogue = false;
   const completed = await waitFor(async () => {
     const value = await state();
     if (!value) return null;
@@ -198,7 +206,7 @@ try {
     throw new Error(`Pass C aftermath benchmark did not persist into the post-death Lab: ${JSON.stringify(aftermath.passC)}`);
   }
 
-  console.log(`WP0.7B + Pass C RinoCow hero-art smoke passed: ${JSON.stringify({ transitions: completed.disaster.transitions, flags: completed.cutscene.flags, passC: aftermath.passC, authoredBefore, authoredAfter: completed.corruption.authoredEventCount })}`);
+  console.log(`WP0.7B + Pass C authored RinoCow hero-art smoke passed: ${JSON.stringify({ transitions: completed.disaster.transitions, flags: completed.cutscene.flags, passC: aftermath.passC, authoredBefore, authoredAfter: completed.corruption.authoredEventCount })}`);
   ws.close();
   cleanup();
 } catch (error) {
