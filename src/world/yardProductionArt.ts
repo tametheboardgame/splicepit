@@ -1,19 +1,17 @@
 import {
-  drawYardBrightProductionArt as drawLegacyBright,
-  drawYardDarkProductionArt as drawLegacyDark,
-} from './yardProductionArtLegacy.js';
-import {
-  drawPassCYardBase,
-} from './graphicsTighteningPassCEnvironment.js';
+  drawPassDYardBright,
+  drawPassDYardDark,
+  YARD_PRODUCTION_ART_CONTRACT,
+} from './yardProductionArtPassD.js';
 
-export * from './yardProductionArtLegacy.js';
+export { YARD_PRODUCTION_ART_CONTRACT } from './yardProductionArtPassD.js';
 
 export function drawYardBrightProductionArt(ctx: CanvasRenderingContext2D, now: number): void {
-  drawLegacyBright(ctx, now);
-  drawPassCYardBase(ctx, now, 0);
+  drawPassDYardBright(ctx, now);
 }
 
 export function drawYardDarkProductionArt(ctx: CanvasRenderingContext2D, now: number): void {
-  drawLegacyDark(ctx, now);
-  drawPassCYardBase(ctx, now, 1);
+  drawPassDYardDark(ctx, now);
 }
+
+void YARD_PRODUCTION_ART_CONTRACT;

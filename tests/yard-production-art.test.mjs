@@ -11,38 +11,43 @@ import {
   YARD_WORLD_WIDTH,
 } from '../src/world/yard.js';
 
-test('WP0.6H authors both Yard visual states against the existing opening-world geometry', () => {
+test('GTD-1 authors both Yard visual states against the existing opening-world geometry', () => {
   assert.equal(YARD_PRODUCTION_ART_CONTRACT.locationId, 'yard');
   assert.equal(YARD_PRODUCTION_ART_CONTRACT.geometryId, ENVIRONMENT_CAPABILITIES.yard.geometryId);
   assert.deepEqual([...YARD_PRODUCTION_ART_CONTRACT.authoredStates], ['bright', 'dark']);
   assert.equal(YARD_PRODUCTION_ART_CONTRACT.collisionTopology, 'unchanged');
+  assert.equal(YARD_PRODUCTION_ART_CONTRACT.activeArtGeneration, 'graphics-tightening-pass-d');
+  assert.equal(YARD_PRODUCTION_ART_CONTRACT.qualityReference, 'master-lab-and-approved-protagonists');
+  assert.equal(YARD_PRODUCTION_ART_CONTRACT.replacementMode, 'opaque-core-redraw-not-overlay-stack');
   assert.equal(ENVIRONMENT_CAPABILITIES.yard.darkArtStatus, 'authored');
 });
 
-test('WP0.6H bright Yard covers the locked production-art detail groups', () => {
+test('GTD-1 bright Yard covers the full-redraw authored detail groups', () => {
   assert.deepEqual([...YARD_PRODUCTION_ART_CONTRACT.brightDetailGroups], [
-    'traffic-wear',
-    'workshop-materials',
-    'containment-hardware',
+    'authored-ground-plate',
+    'apprentice-workshop',
+    'animal-handling',
     'biotech-service',
-    'drainage',
-    'foliage-variation',
-    'ambient-machinery',
+    'containment-hardware',
+    'waste-and-repairs',
+    'directional-lighting',
+    'foreground-depth',
   ]);
 });
 
-test('WP0.6H dark Yard covers authored environmental storytelling rather than a scene filter', () => {
+test('GTD-1 dark Yard changes physical storytelling rather than applying a scene filter', () => {
   assert.deepEqual([...YARD_PRODUCTION_ART_CONTRACT.darkStoryGroups], [
-    'containment-failure',
-    'biological-intrusion',
-    'dead-vegetation',
-    'runoff-and-staining',
-    'damaged-equipment',
-    'wrong-silhouettes',
+    'ruptured-containment',
+    'organic-pipe-intrusion',
+    'wrong-pen-silhouettes',
+    'failed-cleanup',
+    'dead-ground',
+    'biological-runoff',
+    'foreground-tissue',
   ]);
 });
 
-test('WP0.6H leaves the accepted Yard traversal topology intact', () => {
+test('GTD-1 leaves the accepted Yard traversal topology intact', () => {
   assert.deepEqual(YARD_SPAWN, { x: 900, y: 562 });
   assert.equal(YARD_WORLD_WIDTH, 2920);
   assert.equal(YARD_WORLD_HEIGHT, 1600);

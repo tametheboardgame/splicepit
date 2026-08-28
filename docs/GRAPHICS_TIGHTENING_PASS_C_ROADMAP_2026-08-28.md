@@ -88,3 +88,15 @@ The final visual hierarchy is:
 5. persistent physical aftermath and authored dark-state object changes supplying the horror contrast.
 
 **Graphics Tightening Pass C is complete and ready for the project’s normal autonomous merge flow once the final exact-tree CI run is green.**
+
+## Human visual review after merge
+
+Human review on 28 August 2026 accepted the Master Lab improvement but rejected the assumption that the rest of the opening environment had reached the same quality bar.
+
+The specific correction is:
+
+- **Master Lab:** major visual success and now the frozen benchmark;
+- **Yard / route / Local Pit:** technically improved, but still visually messy and too dependent on accumulated Pass B + Pass C layers;
+- subsequent work must redraw/re-author these environments rather than add another decorative overlay.
+
+This correction is implemented by `docs/GRAPHICS_TIGHTENING_PASS_D_ROADMAP_2026-08-28.md`, which supersedes the older Pass D naming in the opening-slice roadmap.

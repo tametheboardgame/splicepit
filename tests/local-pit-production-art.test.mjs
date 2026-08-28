@@ -13,39 +13,42 @@ import {
 } from '../src/world/localPit.js';
 import { LOCAL_PIT_PRODUCTION_ART_CONTRACT } from '../src/world/localPitProductionArt.js';
 
-test('WP0.6K authors bright and dark Local Pit art against the locked Pit geometry', () => {
+test('GTD-3/4 authors bright and dark Local Pit art against the locked Pit geometry', () => {
   assert.equal(LOCAL_PIT_PRODUCTION_ART_CONTRACT.locationId, 'local-pit');
   assert.equal(LOCAL_PIT_PRODUCTION_ART_CONTRACT.geometryId, ENVIRONMENT_CAPABILITIES['local-pit'].geometryId);
   assert.deepEqual([...LOCAL_PIT_PRODUCTION_ART_CONTRACT.authoredStates], ['bright', 'dark']);
   assert.equal(LOCAL_PIT_PRODUCTION_ART_CONTRACT.collisionTopology, 'unchanged');
+  assert.equal(LOCAL_PIT_PRODUCTION_ART_CONTRACT.activeArtGeneration, 'graphics-tightening-pass-d');
+  assert.equal(LOCAL_PIT_PRODUCTION_ART_CONTRACT.qualityReference, 'master-lab-and-approved-protagonists');
+  assert.equal(LOCAL_PIT_PRODUCTION_ART_CONTRACT.replacementMode, 'authored-exterior-and-interior-not-legacy-overlay-stack');
   assert.equal(ENVIRONMENT_CAPABILITIES['local-pit'].darkArtStatus, 'authored');
 });
 
-test('WP0.6K bright Pit covers the locked production-art detail groups', () => {
+test('GTD-3/4 bright Pit covers the full-redraw authored composition groups', () => {
   assert.deepEqual([...LOCAL_PIT_PRODUCTION_ART_CONTRACT.brightDetailGroups], [
-    'exterior-facade-fencing-signage',
-    'reception-registration-payout-clutter',
-    'prep-weigh-cages-decon',
-    'drains-stains-patching-rust-tape',
-    'arena-construction-and-worn-rails',
-    'spectator-and-business-clutter',
-    'local-league-personality',
-    'cheap-venue-lighting-and-depth',
+    'authored-exterior-arrival',
+    'venue-facade-and-gate',
+    'animal-handling-and-loading',
+    'reception-and-registration',
+    'prep-weigh-and-decon',
+    'results-payout-and-medical',
+    'arena-and-spectator-business',
+    'directional-lighting-and-depth',
   ]);
 });
 
-test('WP0.6K dark Pit tells local combat-venue horror stories instead of applying a generic tint', () => {
+test('GTD-3/4 dark Pit tells local combat-venue horror stories through physical changes', () => {
   assert.deepEqual([...LOCAL_PIT_PRODUCTION_ART_CONTRACT.darkStoryGroups], [
-    'old-blood-organic-residue',
-    'failed-cleanup-and-nasty-drains',
-    'warped-cages-and-equipment',
-    'crowd-and-arena-silhouettes',
-    'prep-bay-biological-wrongness',
-    'fight-floor-brutality-evidence',
+    'exterior-organic-intrusion',
+    'failed-cleanup-and-runoff',
+    'warped-holding-equipment',
+    'arena-rail-and-floor-intrusion',
+    'wrong-crowd-and-shadow',
+    'blood-and-biological-residue',
   ]);
 });
 
-test('WP0.6K preserves the WP0.6F floorplan, staging and collision topology', () => {
+test('GTD-3/4 preserves the WP0.6F floorplan, staging and collision topology', () => {
   assert.equal(LOCAL_PIT_WORLD_WIDTH, 2360);
   assert.equal(LOCAL_PIT_WORLD_HEIGHT, 1480);
   assert.deepEqual(LOCAL_PIT_ENTRY_SPAWN, { x: 1180, y: 1320 });
