@@ -26,13 +26,13 @@ test('WP0.7D converts the Master Lab into a durable post-death aftermath state',
   assert.equal(state.snapshot().masterLabState, 'aftermath');
 });
 
-test('WP0.7D exposes the splice bench as the post-death route forward', () => {
+test('WP0.7D exposes one stable splice-bench hand-off after the disaster', () => {
   const state = new PostDeathLabStateController();
   assert.equal(state.requestSpliceBench(), false, 'the bench cannot become the route forward before the disaster');
   state.activateAfterDisaster();
   assert.equal(state.requestSpliceBench(), true);
-  assert.equal(state.requestSpliceBench(), true);
-  assert.equal(state.snapshot().spliceBenchInteractionCount, 2);
+  assert.equal(state.requestSpliceBench(), false, 'overlapping semantic aliases must not duplicate the hand-off');
+  assert.equal(state.snapshot().spliceBenchInteractionCount, 1);
 });
 
 test('WP0.7D state listeners receive activation and bench hand-off changes', () => {
@@ -42,8 +42,8 @@ test('WP0.7D state listeners receive activation and bench hand-off changes', () 
 
   state.activateAfterDisaster();
   state.requestSpliceBench();
-  unsubscribe();
   state.requestSpliceBench();
+  unsubscribe();
 
   assert.equal(snapshots.length, 2);
   assert.equal(snapshots[0].masterPresent, false);
