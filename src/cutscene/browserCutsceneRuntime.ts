@@ -1,9 +1,9 @@
+import { resolveDarkLayerStoryCue, type DarkLayerStoryCue } from '../environment/darkLayerStoryLanguage.js';
 import { ACTIONS, SEMANTIC_INPUT_EVENT, type SemanticInputEventDetail } from '../input/actions.js';
 import { browserCutsceneRegistry } from './browserCutsceneRegistry.js';
 import { cutsceneControlGate } from './cutsceneControl.js';
 import {
   CutsceneRuntime,
-  type CutsceneCorruptionIntensity,
   type CutsceneDefinition,
   type CutsceneFlagValue,
   type CutsceneRuntimeAdapter,
@@ -17,7 +17,8 @@ const CONTROL_LOCK_REASON = 'wp0.7a-cutscene-runtime';
 const CORRUPTION_SUPPRESSION_REASON = 'cutscene-runtime';
 
 type CorruptionGlobal = {
-  triggerAuthored?: (locationId?: never, intensity?: CutsceneCorruptionIntensity) => void;
+  triggerAuthored?: (locationId?: never, intensity?: 'blink' | 'rupture' | 'linger') => void;
+  triggerStory?: (cue: DarkLayerStoryCue, locationId?: never) => void;
   suppress?: (reason?: string) => void;
   resume?: (reason?: string) => void;
 };
@@ -144,8 +145,12 @@ const adapter: CutsceneRuntimeAdapter = {
     }));
     await wait(durationMs, signal);
   },
-  triggerCorruption(intensity): void {
-    (globalThis as RuntimeGlobal).__SPLICEPIT_CORRUPTION__?.triggerAuthored?.(undefined as never, intensity);
+  async triggerCorruption(cue, signal): Promise<void> {
+    const corruption = (globalThis as RuntimeGlobal).__SPLICEPIT_CORRUPTION__;
+    const preset = resolveDarkLayerStoryCue(cue);
+    if (corruption?.triggerStory) corruption.triggerStory(cue, undefined as never);
+    else corruption?.triggerAuthored?.(undefined as never, preset.intensity);
+    await wait(preset.durationMs, signal);
   },
   setAmbientCorruptionSuppressed(suppressed): void {
     const corruption = (globalThis as RuntimeGlobal).__SPLICEPIT_CORRUPTION__;
