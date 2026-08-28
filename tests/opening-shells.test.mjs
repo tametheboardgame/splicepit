@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   OPENING_INVENTORY,
   OPENING_OBJECTIVES,
+  POST_DEATH_LAB_OBJECTIVE,
   OpeningShellController,
 } from '../src/onboarding/openingShells.js';
+import { postDeathLabState } from '../src/story/postDeathLabState.js';
 
 test('WP0.6B opening inventory stays deliberately small and concrete', () => {
   assert.deepEqual(OPENING_INVENTORY.map((entry) => entry.id), ['apprentice-kit', 'sample-vials']);
@@ -40,4 +42,26 @@ test('objective controller exposes current objective and basic progression witho
   shells.reset();
   assert.equal(shells.activeShell(), null);
   assert.equal(shells.currentObjective().id, 'yard-orientation');
+});
+
+test('WP0.7D post-death state takes ownership of the opening objective without rewriting the earlier sequence', () => {
+  const shells = new OpeningShellController();
+  try {
+    shells.setObjective('find-master');
+    assert.equal(shells.currentObjective().id, 'find-master');
+    assert.equal(shells.objectiveStep(), 2);
+    assert.equal(shells.objectiveCount(), 2);
+
+    postDeathLabState.activateAfterDisaster();
+    assert.deepEqual(shells.currentObjective(), POST_DEATH_LAB_OBJECTIVE);
+    assert.equal(shells.currentObjective().id, 'use-splice-bench');
+    assert.equal(shells.objectiveStep(), 3);
+    assert.equal(shells.objectiveCount(), 3);
+    assert.equal(shells.advanceObjective(), false);
+
+    shells.reset();
+    assert.equal(shells.currentObjective().id, 'use-splice-bench', 'ordinary shell reset must not resurrect the pre-death objective');
+  } finally {
+    postDeathLabState.resetForNewGame();
+  }
 });

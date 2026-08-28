@@ -1,3 +1,5 @@
+import { postDeathLabState } from '../story/postDeathLabState.js';
+
 export type OpeningShellId = 'bag' | 'map';
 
 export type OpeningInventoryKind = 'gear' | 'supplies';
@@ -10,7 +12,7 @@ export interface OpeningInventoryEntry {
   readonly description: string;
 }
 
-export type OpeningObjectiveId = 'yard-orientation' | 'find-master';
+export type OpeningObjectiveId = 'yard-orientation' | 'find-master' | 'use-splice-bench';
 
 export interface OpeningObjectiveDefinition {
   readonly id: OpeningObjectiveId;
@@ -51,6 +53,13 @@ export const OPENING_OBJECTIVES: readonly OpeningObjectiveDefinition[] = [
   },
 ] as const;
 
+export const POST_DEATH_LAB_OBJECTIVE: OpeningObjectiveDefinition = {
+  id: 'use-splice-bench',
+  title: 'Use the splice bench',
+  detail: 'Viktor is dead, the lab is wrecked, and tonight’s Pit booking is still active. Get to the Primary Splice Bench. You need something that can fight.',
+  trackerText: 'Get to the Primary Splice Bench.',
+};
+
 export class OpeningShellController {
   private shell: OpeningShellId | null = null;
   private objectiveIndex = 0;
@@ -90,24 +99,26 @@ export class OpeningShellController {
   }
 
   currentObjective(): OpeningObjectiveDefinition {
+    if (postDeathLabState.isActive()) return POST_DEATH_LAB_OBJECTIVE;
     return this.objectives[this.objectiveIndex];
   }
 
   objectiveStep(): number {
-    return this.objectiveIndex + 1;
+    return postDeathLabState.isActive() ? this.objectives.length + 1 : this.objectiveIndex + 1;
   }
 
   objectiveCount(): number {
-    return this.objectives.length;
+    return this.objectives.length + (postDeathLabState.isActive() ? 1 : 0);
   }
 
   advanceObjective(): boolean {
-    if (this.objectiveIndex >= this.objectives.length - 1) return false;
+    if (postDeathLabState.isActive() || this.objectiveIndex >= this.objectives.length - 1) return false;
     this.objectiveIndex += 1;
     return true;
   }
 
   setObjective(id: OpeningObjectiveId): boolean {
+    if (id === POST_DEATH_LAB_OBJECTIVE.id) return postDeathLabState.isActive();
     const nextIndex = this.objectives.findIndex((objective) => objective.id === id);
     if (nextIndex < 0 || nextIndex === this.objectiveIndex) return false;
     this.objectiveIndex = nextIndex;

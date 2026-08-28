@@ -29,9 +29,12 @@ import {
 import {
   OPENING_INVENTORY,
   OPENING_OBJECTIVES,
+  POST_DEATH_LAB_OBJECTIVE,
+  type OpeningObjectiveDefinition,
   type OpeningShellId,
 } from './onboarding/openingShells.js';
 import { PROTAGONIST_IDS, type ProtagonistId } from './player/protagonists.js';
+import { postDeathLabState } from './story/postDeathLabState.js';
 import { drawOpeningObjectiveTracker, drawOpeningShell } from './ui/openingShells.js';
 import {
   drawMasterLabBase,
@@ -85,6 +88,11 @@ type MasterLabDebug = {
   active: boolean;
   rendered: boolean;
   state: MasterLabState;
+  postDeath: boolean;
+  masterPresent: boolean;
+  spliceBenchReady: boolean;
+  spliceBenchInteractionCount: number;
+  nearSpliceBench: boolean;
   playerX: number;
   playerY: number;
   cameraX: number;
@@ -122,7 +130,7 @@ const player: LabPlayer = {
 };
 const camera = { x: 0, y: 0 };
 let active = false;
-let state: MasterLabState = 'pre-disaster';
+let state: MasterLabState = postDeathLabState.snapshot().masterLabState;
 let framesPromise: Promise<void> | null = null;
 let framesReady = false;
 let lastNow = performance.now();
@@ -130,14 +138,20 @@ let collisionCount = 0;
 let lastCollision = false;
 let suppressSemanticUntil = 0;
 
-const objective = OPENING_OBJECTIVES.find((entry) => entry.id === 'find-master') ?? OPENING_OBJECTIVES[OPENING_OBJECTIVES.length - 1];
-if (!objective) throw new Error('WP0.6E requires the opening Find your Master objective.');
+const preDeathObjective = OPENING_OBJECTIVES.find((entry) => entry.id === 'find-master') ?? OPENING_OBJECTIVES[OPENING_OBJECTIVES.length - 1];
+if (!preDeathObjective) throw new Error('WP0.6E requires the opening Find your Master objective.');
 
+const initialStoryState = postDeathLabState.snapshot();
 const debug: MasterLabDebug = {
   ready: true,
   active: false,
   rendered: false,
   state,
+  postDeath: initialStoryState.active,
+  masterPresent: initialStoryState.masterPresent,
+  spliceBenchReady: initialStoryState.spliceBenchReady,
+  spliceBenchInteractionCount: initialStoryState.spliceBenchInteractionCount,
+  nearSpliceBench: false,
   playerX: player.x,
   playerY: player.y,
   cameraX: 0,
@@ -153,6 +167,20 @@ const debug: MasterLabDebug = {
   framesReady: false,
 };
 (globalThis as DebugGlobal).__SPLICEPIT_MASTER_LAB__ = debug;
+
+function syncPostDeathState(): void {
+  const snapshot = postDeathLabState.snapshot();
+  state = snapshot.masterLabState;
+  debug.state = state;
+  debug.postDeath = snapshot.active;
+  debug.masterPresent = snapshot.masterPresent;
+  debug.spliceBenchReady = snapshot.spliceBenchReady;
+  debug.spliceBenchInteractionCount = snapshot.spliceBenchInteractionCount;
+}
+
+function currentObjective(): OpeningObjectiveDefinition {
+  return postDeathLabState.isActive() ? POST_DEATH_LAB_OBJECTIVE : preDeathObjective;
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -242,10 +270,9 @@ function resetLabRuntime(): void {
 function enterLab(): void {
   if (active || !gameplayReady()) return;
   active = true;
-  state = 'pre-disaster';
+  syncPostDeathState();
   resetLabRuntime();
   debug.active = true;
-  debug.state = state;
   debug.rendered = false;
   suppressSemanticUntil = performance.now() + 80;
   void ensureFrames();
@@ -258,6 +285,7 @@ function exitLab(): void {
   debug.active = false;
   debug.rendered = false;
   debug.activeShell = null;
+  debug.nearSpliceBench = false;
   suppressSemanticUntil = performance.now() + 100;
   syncMasterLabProductionArtDebug(environmentVisualController.sample('master-lab'), false);
   const canvas = document.getElementById(LAB_CANVAS_ID) as HTMLCanvasElement | null;
@@ -281,7 +309,14 @@ function handleLabAction(action: SemanticAction): void {
     return;
   }
   if (action === ACTIONS.INTERACT || action === ACTIONS.LAB_INTERACT || action === ACTIONS.CONFIRM) {
-    if (pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE)) exitLab();
+    if (pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE)) {
+      exitLab();
+      return;
+    }
+    if (postDeathLabState.isActive() && nearestMasterLabStage(player.x, player.y)?.id === 'splice-bench') {
+      postDeathLabState.requestSpliceBench();
+      syncPostDeathState();
+    }
   }
 }
 
@@ -498,10 +533,13 @@ function renderInactiveDoorPrompt(canvas: HTMLCanvasElement, ctx: CanvasRenderin
 }
 
 function renderLab(ctx: CanvasRenderingContext2D, now: number): void {
+  syncPostDeathState();
   update(now);
   const renderCameraX = Math.round(camera.x);
   const renderCameraY = Math.round(camera.y);
   const artSample = environmentVisualController.sample('master-lab', now);
+  const objective = currentObjective();
+  const postDeath = postDeathLabState.isActive();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
   ctx.save();
@@ -514,24 +552,27 @@ function renderLab(ctx: CanvasRenderingContext2D, now: number): void {
   ctx.restore();
   syncMasterLabProductionArtDebug(artSample, true);
 
-  drawOpeningObjectiveTracker(ctx, objective, 2, 2);
+  drawOpeningObjectiveTracker(ctx, objective, postDeath ? 3 : 2, postDeath ? 3 : 2);
   const shell = currentShell();
+  const stage = nearestMasterLabStage(player.x, player.y);
+  const nearSpliceBench = postDeath && stage?.id === 'splice-bench';
   if (pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE) && shell === null) {
     drawInteractionPrompt(ctx, 'ACTION / BACK  Return to the Yard');
+  } else if (nearSpliceBench && shell === null) {
+    drawInteractionPrompt(ctx, 'ACTION  Use the Primary Splice Bench');
   }
   drawOpeningShell(ctx, {
     activeShell: shell,
     inventory: OPENING_INVENTORY,
     objective,
-    objectiveStep: 2,
-    objectiveCount: 2,
+    objectiveStep: postDeath ? 3 : 2,
+    objectiveCount: postDeath ? 3 : 2,
     playerX: player.x,
     playerY: player.y,
     worldWidth: MASTER_LAB_WORLD_WIDTH,
     worldHeight: MASTER_LAB_WORLD_HEIGHT,
   }, MASTER_LAB_VIEW_WIDTH, MASTER_LAB_VIEW_HEIGHT);
 
-  const stage = nearestMasterLabStage(player.x, player.y);
   debug.active = true;
   debug.rendered = true;
   debug.state = state;
@@ -545,6 +586,7 @@ function renderLab(ctx: CanvasRenderingContext2D, now: number): void {
   debug.lastCollision = lastCollision;
   debug.nearExit = pointInsideMasterLabRect(player.x, player.y, MASTER_LAB_EXIT_ZONE);
   debug.stageId = stage?.id ?? null;
+  debug.nearSpliceBench = nearSpliceBench;
   debug.activeShell = shell;
 }
 
@@ -574,6 +616,7 @@ function autoActivateTestMode(): void {
   poll();
 }
 
+postDeathLabState.subscribe(() => syncPostDeathState());
 window.addEventListener('keydown', onKeyDown, { capture: true });
 window.addEventListener('keyup', onKeyUp, { capture: true });
 window.addEventListener(SEMANTIC_INPUT_EVENT, onSemanticInput, { capture: true });
