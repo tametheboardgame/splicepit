@@ -22,6 +22,16 @@ async function waitFor(fn, timeoutMs = 30000, intervalMs = 90) {
   throw lastError ?? new Error(`Timed out after ${timeoutMs}ms`);
 }
 
+function isRenderedBox(box) {
+  return Boolean(
+    box
+    && box.display !== 'none'
+    && box.visibility !== 'hidden'
+    && box.width > 0
+    && box.height > 0
+  );
+}
+
 const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], {
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -177,19 +187,19 @@ try {
   if (!running.classes.includes('wp07b-objective-cleared')) {
     throw new Error(`WP0.7B did not clear the Find your Master objective on cutscene start: ${JSON.stringify(running)}`);
   }
-  if (running.objectiveRect?.display !== 'none' || running.tutorialRect?.display !== 'none') {
+  if (isRenderedBox(running.objectiveRect) || isRenderedBox(running.tutorialRect)) {
     throw new Error(`WP0.7B mobile HUD still occupies the dialogue area: ${JSON.stringify(running)}`);
   }
   for (const [name, box] of [['dpad', running.dpadRect], ['bag', running.bagRect], ['map', running.mapRect], ['back', running.backRect]]) {
-    if (box?.display !== 'none') throw new Error(`WP0.7B ${name} control remained visible during cutscene: ${JSON.stringify(running)}`);
+    if (isRenderedBox(box)) throw new Error(`WP0.7B ${name} control remained visible during cutscene: ${JSON.stringify(running)}`);
   }
-  if (!running.actionRect || running.actionRect.display === 'none' || running.actionRect.width < 40 || running.actionRect.height < 40) {
+  if (!isRenderedBox(running.actionRect) || running.actionRect.width < 40 || running.actionRect.height < 40) {
     throw new Error(`WP0.7B ACTION control is not available during mobile dialogue: ${JSON.stringify(running)}`);
   }
 
   const dialogue = await waitFor(async () => {
     const value = await snapshot();
-    return value?.cutscene?.dialogueCueId && value.dialogueRect?.display !== 'none' ? value : null;
+    return value?.cutscene?.dialogueCueId && isRenderedBox(value.dialogueRect) ? value : null;
   });
   if (dialogue.dialogueRect.top > 70) {
     throw new Error(`WP0.7B dialogue did not take over the top objective region: ${JSON.stringify(dialogue.dialogueRect)}`);
@@ -231,11 +241,11 @@ try {
   if (completed.classes.includes('wp07b-cutscene-active')) {
     throw new Error(`WP0.7B did not restore normal controls after completion: ${JSON.stringify(completed)}`);
   }
-  if (!completed.classes.includes('wp07b-objective-cleared') || completed.objectiveRect?.display !== 'none') {
+  if (!completed.classes.includes('wp07b-objective-cleared') || isRenderedBox(completed.objectiveRect)) {
     throw new Error(`WP0.7B Find your Master objective returned after Viktor was found: ${JSON.stringify(completed)}`);
   }
-  if (completed.dpadRect?.display === 'none' || completed.bagRect?.display === 'none' || completed.mapRect?.display === 'none' || completed.backRect?.display === 'none') {
-    throw new Error(`WP0.7B did not restore mobile gameplay controls after the scene: ${JSON.stringify(completed)}`);
+  for (const [name, box] of [['dpad', completed.dpadRect], ['bag', completed.bagRect], ['map', completed.mapRect], ['back', completed.backRect]]) {
+    if (!isRenderedBox(box)) throw new Error(`WP0.7B did not restore ${name} control after the scene: ${JSON.stringify(completed)}`);
   }
 
   console.log(`WP0.7B portrait mobile presentation smoke passed: ${JSON.stringify({ initialLab: initial.labRect, dialogue: dialogue.dialogueRect, action: dialogue.actionRect, completedClasses: completed.classes })}`);
