@@ -117,3 +117,5 @@ function syncPresentationState(): void {
 
 ensureStyle();
 syncPresentationState();
+
+export {};
