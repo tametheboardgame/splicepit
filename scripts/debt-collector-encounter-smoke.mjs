@@ -140,7 +140,12 @@ try {
     if (!value) return null;
     if (value.dialogueVisible) sawDialogue = true;
     if (value.cutscene.dialogueCueId) await evaluate(`globalThis.__SPLICEPIT_CUTSCENE__.advanceDialogue()`);
-    return value.debt.completed && value.cutscene.status === 'completed' ? value : null;
+    return value.debt.completed
+      && value.cutscene.status === 'completed'
+      && !value.bodyClass.includes('wp07e-debt-encounter-active')
+      && !value.debt.representativeVisible
+      ? value
+      : null;
   }, 20000, 70);
 
   if (!sawDialogue) throw new Error('WP0.7E never displayed debt confrontation dialogue.');
@@ -149,9 +154,6 @@ try {
   }
   for (const flag of ['debt-collector-encounter-started', 'inherited-debt-confirmed', 'debt-collector-encounter-complete']) {
     if (completed.cutscene.flags[flag] !== true) throw new Error(`WP0.7E missing flag ${flag}: ${JSON.stringify(completed.cutscene.flags)}`);
-  }
-  if (completed.bodyClass.includes('wp07e-debt-encounter-active') || completed.debt.representativeVisible) {
-    throw new Error(`WP0.7E presentation did not clean up: ${JSON.stringify(completed)}`);
   }
   const secondStart = await evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start()`);
   if (secondStart !== false) throw new Error('WP0.7E confrontation replayed after completion.');
