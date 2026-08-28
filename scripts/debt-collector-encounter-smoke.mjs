@@ -80,13 +80,19 @@ try {
       const yard = globalThis.__SPLICEPIT_VISUAL_RESET__;
       const debt = globalThis.__SPLICEPIT_DEBT_ENCOUNTER__;
       const cutscene = globalThis.__SPLICEPIT_CUTSCENE__;
-      if (!yard || !debt || !cutscene) return null;
+      const passC = globalThis.__SPLICEPIT_GRAPHICS_PASS_C__;
+      if (!yard || !debt || !cutscene || !passC) return null;
       const dialogue = document.querySelector('#debt-collector-dialogue');
+      const legacyStage = document.querySelector('#debt-collector-stage');
+      const passCStage = document.querySelector('#graphics-tightening-pass-c-stage');
       return {
         yard: { ready: yard.ready, phase: yard.phase, x: yard.playerX, y: yard.playerY },
         debt: { ...debt.state, flags: { ...debt.state.flags } },
         cutscene: { ...cutscene.state, flags: { ...cutscene.state.flags } },
+        passC: { ...passC },
         dialogueVisible: Boolean(dialogue && !dialogue.hidden),
+        legacyStageOpacity: legacyStage ? getComputedStyle(legacyStage).opacity : null,
+        passCStageVisible: Boolean(passCStage && getComputedStyle(passCStage).display !== 'none'),
         bodyClass: document.body.className,
       };
     })()`);
@@ -101,7 +107,7 @@ try {
   await cdp('Page.reload', { ignoreCache: true });
   await waitFor(async () => {
     const value = await state();
-    return value?.debt?.ready === true && value.yard.ready === true && value.yard.phase === 'select' ? value : null;
+    return value?.debt?.ready === true && value.passC?.ready === true && value.yard.ready === true && value.yard.phase === 'select' ? value : null;
   }, 20000);
   await cdp('Page.bringToFront');
   await key('Enter', 'Enter', 13);
@@ -117,10 +123,17 @@ try {
   if (premature !== false) throw new Error('WP0.7E started before the Pit-route hand-off was armed.');
 
   await evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.armForPitRoute()`);
-  await waitFor(async () => {
+  const staged = await waitFor(async () => {
     const value = await state();
-    return value?.debt?.armed && value.debt.representativeVisible ? value : null;
+    return value?.debt?.armed && value.debt.representativeVisible && value.passC.creditorRendered ? value : null;
   });
+  if (!staged.passCStageVisible) throw new Error(`Pass C creditor stage was not visible: ${JSON.stringify(staged.passC)}`);
+  if (staged.legacyStageOpacity !== '0') {
+    throw new Error(`Pass C did not visually supersede the legacy creditor primitive layer: ${JSON.stringify(staged)}`);
+  }
+  if (!staged.passC.legacyCreditorStageSuperseded) {
+    throw new Error(`Pass C did not register the superseded creditor layer: ${JSON.stringify(staged.passC)}`);
+  }
 
   await evaluate(`(() => { void globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start(); return true; })()`);
   const running = await waitFor(async () => {
@@ -157,8 +170,11 @@ try {
   }
   const secondStart = await evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.start()`);
   if (secondStart !== false) throw new Error('WP0.7E confrontation replayed after completion.');
+  if (!completed.passC.creditorRendered) {
+    throw new Error(`Pass C creditor hero art never rendered during the encounter: ${JSON.stringify(completed.passC)}`);
+  }
 
-  console.log(`WP0.7E debt collector browser smoke passed: ${JSON.stringify({ flags: completed.cutscene.flags, encounterCount: completed.debt.encounterCount, inheritedDebtConfirmed: completed.debt.inheritedDebtConfirmed })}`);
+  console.log(`WP0.7E + Pass C creditor hero-art smoke passed: ${JSON.stringify({ flags: completed.cutscene.flags, encounterCount: completed.debt.encounterCount, inheritedDebtConfirmed: completed.debt.inheritedDebtConfirmed, passC: completed.passC })}`);
   ws.close();
   cleanup();
 } catch (error) {
