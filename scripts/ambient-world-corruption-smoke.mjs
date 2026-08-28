@@ -192,7 +192,7 @@ try {
   await moveAxis('y', 700, down, up);
   await moveAxis('x', 1200, right, left);
   await moveAxis('x', 1450, right, left);
-  await moveAxis('y', 655, down, up);
+  await moveAxis('y', 655, down, up, 6);
   await moveAxis('x', 1840, right, left);
   await verifyCurrentLocation('route', '__SPLICEPIT_ROUTE_ART__', '__SPLICEPIT_VISUAL_RESET__');
 
