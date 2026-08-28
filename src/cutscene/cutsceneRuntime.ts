@@ -1,5 +1,12 @@
+import {
+  validateDarkLayerStorySequence,
+  type DarkLayerStoryCue,
+  type DarkLayerStoryRole,
+} from '../environment/darkLayerStoryLanguage.js';
+
 export type CutsceneFacing = 'down' | 'left' | 'right' | 'up';
-export type CutsceneCorruptionIntensity = 'blink' | 'rupture' | 'linger';
+export type CutsceneCorruptionRole = DarkLayerStoryRole;
+export type CutsceneCorruptionCue = DarkLayerStoryCue;
 export type CutsceneFlagValue = boolean | number | string | null;
 
 export interface CutscenePoint {
@@ -17,7 +24,7 @@ export type CutsceneStep =
   | { readonly kind: 'dialogue'; readonly cueId: string; readonly durationMs?: number }
   | { readonly kind: 'flag'; readonly flag: string; readonly value: CutsceneFlagValue }
   | { readonly kind: 'transition'; readonly transitionId: string; readonly durationMs?: number }
-  | { readonly kind: 'corruption'; readonly intensity: CutsceneCorruptionIntensity };
+  | { readonly kind: 'corruption'; readonly cueId: string; readonly role: CutsceneCorruptionRole };
 
 export interface CutsceneDefinition {
   readonly id: string;
@@ -42,7 +49,7 @@ export interface CutsceneRuntimeAdapter {
   readonly showDialogue: (cueId: string, durationMs: number | undefined, signal: AbortSignal) => Promise<void>;
   readonly setEventFlag: (flag: string, value: CutsceneFlagValue) => void | Promise<void>;
   readonly transition: (transitionId: string, durationMs: number, signal: AbortSignal) => Promise<void>;
-  readonly triggerCorruption: (intensity: CutsceneCorruptionIntensity) => void | Promise<void>;
+  readonly triggerCorruption: (cue: CutsceneCorruptionCue, signal: AbortSignal) => void | Promise<void>;
   readonly setAmbientCorruptionSuppressed: (suppressed: boolean) => void | Promise<void>;
 }
 
@@ -114,6 +121,11 @@ export class CutsceneRuntime {
   async play(definition: CutsceneDefinition): Promise<void> {
     if (!definition.id.trim()) throw new Error('Cutscene definitions require an id.');
     if (this.isRunning()) throw new Error(`Cutscene ${this.sceneId ?? 'unknown'} is already running.`);
+
+    const storyLanguageIssues = validateDarkLayerStorySequence(definition.steps);
+    if (storyLanguageIssues.length > 0) {
+      throw new Error(`Cutscene ${definition.id} violates dark-layer story language: ${storyLanguageIssues.join(' ')}`);
+    }
 
     const abortController = new AbortController();
     this.abortController = abortController;
@@ -190,7 +202,7 @@ export class CutsceneRuntime {
         await this.adapter.transition(step.transitionId, safeDuration(step.durationMs, DEFAULT_TRANSITION_DURATION_MS), signal);
         return;
       case 'corruption':
-        await this.adapter.triggerCorruption(step.intensity);
+        await this.adapter.triggerCorruption({ cueId: step.cueId, role: step.role }, signal);
         return;
     }
   }
