@@ -84,7 +84,7 @@ try {
       const corruption = globalThis.__SPLICEPIT_CORRUPTION__;
       if (!yard || !cutscene || !corruption) return null;
       return {
-        yard: { phase: yard.phase, x: yard.playerX, y: yard.playerY, moving: yard.moving },
+        yard: { ready: yard.ready, phase: yard.phase, x: yard.playerX, y: yard.playerY, moving: yard.moving },
         cutscene: { ...cutscene.state, flags: { ...cutscene.state.flags } },
         corruption: { ...corruption.state },
         transitions: globalThis.__WP07A_TRANSITIONS__ ?? [],
@@ -100,7 +100,10 @@ try {
   await waitFor(async () => (await state())?.cutscene?.ready === true);
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => (await state())?.cutscene?.ready === true);
+  await waitFor(async () => {
+    const value = await state();
+    return value?.cutscene?.ready === true && value.yard.ready === true && value.yard.phase === 'select' ? value : null;
+  });
   await cdp('Page.bringToFront');
   await key('Enter', 'Enter', 13);
   const start = await waitFor(async () => {
