@@ -1,38 +1,30 @@
 import {
-  drawRouteBrightProductionArt as drawLegacyBright,
-  drawRouteDarkProductionArt as drawLegacyDark,
-  drawRouteBrightProductionArtForeground as drawLegacyBrightForeground,
-  drawRouteDarkProductionArtForeground as drawLegacyDarkForeground,
-} from './routeProductionArtLegacy.js';
-import {
-  drawPassCRouteBase,
-  drawPassCRouteForeground,
-} from './graphicsTighteningPassCEnvironment.js';
+  drawPassDRouteBright,
+  drawPassDRouteBrightForeground,
+  drawPassDRouteDark,
+  drawPassDRouteDarkForeground,
+} from './routeProductionArtPassD.js';
 
-export * from './routeProductionArtLegacy.js';
+export { ROUTE_PRODUCTION_ART_CONTRACT } from './routeProductionArtPassD.js';
 
 export function drawRouteBrightProductionArt(ctx: CanvasRenderingContext2D, now: number): void {
-  drawLegacyBright(ctx, now);
-  drawPassCRouteBase(ctx, now, 0);
+  drawPassDRouteBright(ctx, now);
 }
 
 export function drawRouteDarkProductionArt(ctx: CanvasRenderingContext2D, now: number): void {
-  drawLegacyDark(ctx, now);
-  drawPassCRouteBase(ctx, now, 1);
+  drawPassDRouteDark(ctx, now);
 }
 
 export function drawRouteBrightProductionArtForeground(
   ctx: CanvasRenderingContext2D,
   playerFeetY: number,
 ): void {
-  drawLegacyBrightForeground(ctx, playerFeetY);
-  drawPassCRouteForeground(ctx, playerFeetY, 0);
+  drawPassDRouteBrightForeground(ctx, playerFeetY);
 }
 
 export function drawRouteDarkProductionArtForeground(
   ctx: CanvasRenderingContext2D,
   playerFeetY: number,
 ): void {
-  drawLegacyDarkForeground(ctx, playerFeetY);
-  drawPassCRouteForeground(ctx, playerFeetY, 1);
+  drawPassDRouteDarkForeground(ctx, playerFeetY);
 }
