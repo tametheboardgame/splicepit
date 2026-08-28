@@ -6,6 +6,8 @@ This document refines **Graphics Tightening Pass C — Cutscene / Horror Contras
 
 Pass C begins after WP0.7E and is explicitly a quality escalation, not another generic decoration pass. The protagonist sprites remain the visual quality reference.
 
+**Status: COMPLETE — implementation and automated integration gates passed before final merge.**
+
 ## Locked quality target
 
 - Major figures and hero props must read as authored pixel art rather than block geometry.
@@ -16,64 +18,73 @@ Pass C begins after WP0.7E and is explicitly a quality escalation, not another g
 - Existing traversal geometry, collision and camera scale remain locked unless a genuine bug is found.
 - Prefer replacement of weak hero art over endless layering of extra detail onto weak shapes.
 
-## Execution sequence
+## Completed work packages
 
-### GTC-1 — Master Lab benchmark and RinoCow hero art
+### GTC-1 — Master Lab benchmark and RinoCow hero art — COMPLETE
 
-- replace coarse cutscene figures with authored pixel-sprite treatment;
-- improve RinoCow silhouette, anatomy, splice seams, containment hardware, cow/rhino read and animation accents;
-- improve Viktor’s cutscene figure to protagonist-compatible detail density;
-- replace the simple broken-containment block with shattered glass, bent steel, tubing, fluid and readable depth;
-- add restrained Lab lighting/material accents so the scene and characters belong to the same art language.
+- Replaced coarse cutscene hero presentation with authored pixel assets.
+- Added protagonist-compatible Viktor artwork.
+- Added authored RinoCow living/dead presentation with stronger anatomy, horn silhouette and splice detail.
+- Replaced the coarse containment breach with a dedicated shattered-containment plate.
+- Integrated restrained Lab lighting, material and depth accents around the hero staging.
 
-Gate: a disaster screenshot no longer contains visibly prototype-grade character or containment art.
+Gate result: the disaster no longer relies on prototype-grade hero figures or containment art.
 
-### GTC-2 — Post-disaster environmental aftermath
+### GTC-2 — Post-disaster environmental aftermath — COMPLETE
 
-- make the Lab retain physical evidence of the event without leaving obsolete cutscene actors permanently painted into normal exploration;
-- add authored glass fragments, damaged rails, biological residue, hoof/gouge marks, displaced equipment and cleanup failure;
-- keep splice-bench readability and post-death interaction clear.
+- Preserved physical evidence of the disaster in normal post-death Lab exploration.
+- Retained broken glass, damaged containment hardware, biological residue, blood, gouges and failed-cleanup evidence.
+- Kept obsolete cutscene actors out of normal exploration state.
+- Preserved splice-bench readability and post-death interaction.
 
-Gate: returning to the Lab communicates what happened before any text is read.
+Gate result: the changed Lab communicates the disaster visually before explanatory text is required.
 
-### GTC-3 — Creditor encounter staging
+### GTC-3 — Creditor encounter staging — COMPLETE
 
-- replace the route representative’s coarse block figure with a protagonist-compatible authored NPC sprite;
-- strengthen silhouette, clothing/material detail and carried debt/ledger props;
-- use restrained ground shadow and local staging accents so the encounter feels deliberately composed rather than an overlay pasted onto the route.
+- Replaced the coarse creditor representative with an authored protagonist-scale NPC sprite.
+- Added clothing, silhouette and carried ledger/debt-prop detail.
+- Added route-local composition and grounding around the confrontation.
+- The authored Pass C runtime visually supersedes the old primitive creditor canvas.
 
-Gate: the creditor can share the screen with the protagonist without a visible quality mismatch.
+Gate result: creditor and protagonist now share a compatible visual quality level.
 
-### GTC-4 — Opening-environment benchmark propagation
+### GTC-4 — Opening-environment benchmark propagation — COMPLETE
 
-Use the Lab benchmark to review Yard, route and Local Pit for:
+The Master Lab benchmark was propagated without changing gameplay geometry or collision topology.
 
-- hero asset quality;
-- repeated flat geometry;
-- material definition;
-- focal-point hierarchy;
-- foreground/midground/background depth;
-- authored irregularity;
-- protagonist/environment integration;
-- bright/dark counterpart quality.
+- Yard: stronger workshop/containment focal hierarchy, irregular silhouettes, service hardware, stepped lighting and foreground depth.
+- Route: stronger debt-encounter framing, worn infrastructure, local props, dark residue and foreground separation.
+- Master Lab: strengthened containment gantry, lighting hierarchy, foreground rails and dark-state physical wrongness.
+- Local Pit: stronger arena gantry/lighting, crowd silhouettes, banners, foreground rails and dark organic intrusion.
+- Existing Pass B material/detail work remains intact and is wrapped rather than replaced wholesale.
+- Bright/dark counterparts continue to alter physical storytelling, not merely colour balance.
 
-Replace genuinely weak hero assets rather than merely adding more clutter.
+Gate result: the opening environments retain their accepted gameplay scale while presenting clearer focal composition and greater authored depth.
 
-### GTC-5 — Pass C integration and sign-off
+### GTC-5 — Pass C integration and sign-off — COMPLETE
 
-Validate:
+- Added a stable gameplay-aware bootstrap so Pass C hero assets load only after the gameplay runtime exists.
+- Removed the abandoned procedural Pass C hero prototype from the active codebase.
+- Strengthened RinoCow and creditor browser regression coverage to verify authored-asset mode and legacy-layer supersession.
+- Desktop and mobile presentation validated.
+- Cutscene dialogue/control overlays validated.
+- Dark-layer transitions and ambient corruption validated.
+- Persistent post-death Lab state validated.
+- Debt encounter validated.
+- Yard, route, Lab and Local Pit traversal/render integrations validated.
+- TypeScript, content validation, RNG validation, unit/domain/save tests and production build validated.
+- Full player-facing browser smoke chain validated across the complete opening path.
 
-- desktop and mobile presentation;
-- cutscene dialogue/control overlays;
-- dark-layer transitions;
-- post-death state;
-- debt encounter;
-- Lab traversal/collision;
-- opening visual integration;
-- TypeScript/build/smoke suites.
+## Final implementation contract
 
-Pass C is complete only when the inciting-event presentation and its immediate aftermath no longer fall below the approved protagonist quality bar.
+Pass C uses authored pixel assets for the key cutscene subjects and a dedicated focal-composition/depth layer for the opening environments. Existing Pass B production art is deliberately retained beneath that layer. No traversal geometry or collision topology was changed by the pass.
 
-## Immediate implementation decision
+The final visual hierarchy is:
 
-GTC-1 starts with the largest visible mismatch currently present: the existing RinoCow disaster runtime draws Viktor, RinoCow and containment damage from coarse rectangular primitives. Those legacy figures will be visually superseded by a dedicated authored hero-art layer while preserving the existing cutscene timing, flags, actor coordinates, collision and story logic.
+1. approved protagonist sprites as the character-scale quality reference;
+2. authored Pass C Viktor, RinoCow, broken-containment and creditor hero assets;
+3. Master Lab as the opening environment benchmark;
+4. Yard, route and Local Pit focal composition/depth brought up towards that benchmark while preserving their established material art;
+5. persistent physical aftermath and authored dark-state object changes supplying the horror contrast.
+
+**Graphics Tightening Pass C is complete and ready for the project’s normal autonomous merge flow once the final exact-tree CI run is green.**
