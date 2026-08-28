@@ -23,8 +23,13 @@ const DIALOGUE_ID = 'debt-collector-dialogue';
 const STYLE_ID = 'wp07e-debt-collector-style';
 const ACTIVE_BODY_CLASS = 'wp07e-debt-encounter-active';
 
-const DEBT_LANDMARK = OPENING_ROUTE_LANDMARKS.find((landmark) => landmark.id === 'debt-encounter');
-if (!DEBT_LANDMARK) throw new Error('WP0.7E requires the authored debt-encounter route landmark.');
+function requireDebtLandmark() {
+  const landmark = OPENING_ROUTE_LANDMARKS.find((entry) => entry.id === 'debt-encounter');
+  if (!landmark) throw new Error('WP0.7E requires the authored debt-encounter route landmark.');
+  return landmark;
+}
+
+const DEBT_LANDMARK = requireDebtLandmark();
 const TRIGGER_RADIUS = Math.min(150, DEBT_LANDMARK.radius);
 
 type YardDebug = {
@@ -40,7 +45,11 @@ type LayerDebug = {
   active?: boolean;
 };
 
-type DebtEncounterDebugState = DebtEncounterSnapshot & {
+type MutableDebtEncounterSnapshot = {
+  -readonly [Key in keyof DebtEncounterSnapshot]: DebtEncounterSnapshot[Key];
+};
+
+type DebtEncounterDebugState = MutableDebtEncounterSnapshot & {
   ready: true;
   status: 'locked' | 'armed' | 'running' | 'completed' | 'failed';
   error: string | null;
