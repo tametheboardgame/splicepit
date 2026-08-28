@@ -41,8 +41,8 @@ export class PostDeathLabStateController {
   }
 
   requestSpliceBench(): boolean {
-    if (!this.isActive()) return false;
-    this.spliceBenchInteractionCount += 1;
+    if (!this.isActive() || this.spliceBenchInteractionCount > 0) return false;
+    this.spliceBenchInteractionCount = 1;
     this.emit();
     return true;
   }
