@@ -145,9 +145,13 @@ try {
     const value = await snapshot();
     if (!value) return null;
     if (value.cutscene.dialogueCueId) await evaluate(`globalThis.__SPLICEPIT_CUTSCENE__.advanceDialogue()`);
-    return value.debt.completed && value.cutscene.status === 'completed' ? value : null;
+    return value.debt.completed
+      && value.cutscene.status === 'completed'
+      && !value.bodyClass.includes('wp07e-debt-encounter-active')
+      && !value.debt.representativeVisible
+      ? value
+      : null;
   }, 20000, 70);
-  if (completed.bodyClass.includes('wp07e-debt-encounter-active')) throw new Error('WP0.7E mobile presentation class did not clear.');
 
   console.log(`WP0.7E portrait mobile smoke passed: ${JSON.stringify({ dialogue: running.dialogue, action: running.action })}`);
   ws.close();
