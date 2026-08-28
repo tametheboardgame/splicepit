@@ -1,3 +1,4 @@
+import { drawDarkLayerFlickerOverlay } from '../render/darkLayerFlicker.js';
 import {
   environmentVisualController,
   openingWorldEnvironmentAt,
@@ -10,6 +11,11 @@ import {
   type AmbientCorruptionEvent,
   type AmbientCorruptionIntensity,
 } from './ambientWorldCorruption.js';
+import {
+  resolveDarkLayerStoryCue,
+  type DarkLayerStoryCue,
+  type DarkLayerStoryRole,
+} from './darkLayerStoryLanguage.js';
 
 type YardDebug = {
   ready?: boolean;
@@ -47,6 +53,8 @@ type AmbientWorldCorruptionDebugState = {
   activeEventId: number | null;
   activeSource: AmbientCorruptionEvent['source'] | null;
   intensity: AmbientCorruptionIntensity | null;
+  storyCueId: string | null;
+  storyRole: DarkLayerStoryRole | null;
   nextDueInMs: number | null;
   overlayVisible: boolean;
   suppressionReasons: string[];
@@ -57,6 +65,7 @@ type AmbientWorldCorruptionDebugControl = {
   intensities: typeof AMBIENT_CORRUPTION_INTENSITIES;
   forceAmbient: (locationId?: EnvironmentLocationId, intensity?: AmbientCorruptionIntensity) => void;
   triggerAuthored: (locationId?: EnvironmentLocationId, intensity?: AmbientCorruptionIntensity) => void;
+  triggerStory: (cue: DarkLayerStoryCue, locationId?: EnvironmentLocationId) => void;
   suppress: (reason?: string) => void;
   resume: (reason?: string) => void;
   setEnabled: (enabled: boolean) => void;
@@ -65,6 +74,8 @@ type AmbientWorldCorruptionDebugControl = {
 
 const scheduler = new AmbientWorldCorruptionScheduler();
 const OVERLAY_CANVAS_ID = 'ambient-world-corruption';
+let activeStoryEventId: number | null = null;
+let activeStoryCue: DarkLayerStoryCue | null = null;
 
 const corruptionDebugState: AmbientWorldCorruptionDebugState = {
   ready: true,
@@ -77,6 +88,8 @@ const corruptionDebugState: AmbientWorldCorruptionDebugState = {
   activeEventId: null,
   activeSource: null,
   intensity: null,
+  storyCueId: null,
+  storyRole: null,
   nextDueInMs: null,
   overlayVisible: false,
   suppressionReasons: [],
@@ -148,6 +161,13 @@ function sourceCanvasFor(locationId: EnvironmentLocationId): HTMLCanvasElement |
   return document.getElementById(id) as HTMLCanvasElement | null;
 }
 
+function locationSeed(locationId: EnvironmentLocationId): number {
+  if (locationId === 'yard') return 4919;
+  if (locationId === 'route') return 7127;
+  if (locationId === 'master-lab') return 9341;
+  return 11549;
+}
+
 function drawCorruptionOverlay(
   ctx: CanvasRenderingContext2D,
   source: HTMLCanvasElement,
@@ -171,18 +191,15 @@ function drawCorruptionOverlay(
     ctx.globalAlpha = 0.18 + strength * 0.42;
     ctx.drawImage(source, 0, y, 1280, sliceHeight, shift, y, 1280, sliceHeight);
   }
-
-  for (let y = 0; y < 720; y += 14) {
-    if (((y / 14) + tick) % 3 !== 0) continue;
-    ctx.fillStyle = `rgba(12, 7, 10, ${0.04 + strength * 0.11})`;
-    ctx.fillRect(0, y, 1280, 2 + ((tick + y) % 4));
-  }
-
-  if (progress < 0.22 || progress > 0.72) {
-    ctx.fillStyle = `rgba(116, 22, 34, ${strength * 0.09})`;
-    ctx.fillRect(0, 0, 1280, 720);
-  }
   ctx.restore();
+
+  drawDarkLayerFlickerOverlay(ctx, {
+    amount: strength,
+    elapsedMs: elapsed,
+    width: 1280,
+    height: 720,
+    seed: locationSeed(event.locationId) + event.id * 37,
+  });
 }
 
 function renderOverlay(now: number, event: AmbientCorruptionEvent | null): void {
@@ -210,10 +227,18 @@ function startEvent(event: AmbientCorruptionEvent): void {
   );
 }
 
+function clearStoryMetadata(): void {
+  activeStoryEventId = null;
+  activeStoryCue = null;
+}
+
 function syncCorruptionDebug(now: number, locationId: EnvironmentLocationId, exploring: boolean): void {
   const snapshot = scheduler.snapshot();
   const active = snapshot.activeEvent;
   const environment = environmentVisualController.snapshot(now);
+  const storyActive = Boolean(active && active.id === activeStoryEventId && activeStoryCue);
+  if (!storyActive) clearStoryMetadata();
+
   corruptionDebugState.enabled = snapshot.enabled;
   corruptionDebugState.exploring = exploring;
   corruptionDebugState.locationId = locationId;
@@ -223,6 +248,8 @@ function syncCorruptionDebug(now: number, locationId: EnvironmentLocationId, exp
   corruptionDebugState.activeEventId = active?.id ?? null;
   corruptionDebugState.activeSource = active?.source ?? null;
   corruptionDebugState.intensity = active?.intensity ?? null;
+  corruptionDebugState.storyCueId = storyActive ? activeStoryCue?.cueId ?? null : null;
+  corruptionDebugState.storyRole = storyActive ? activeStoryCue?.role ?? null : null;
   corruptionDebugState.nextDueInMs = snapshot.nextDueAt === null ? null : Math.max(0, Math.round(snapshot.nextDueAt - now));
   corruptionDebugState.suppressionReasons = [...environment.suppressionReasons];
 }
@@ -231,6 +258,7 @@ const corruptionDebugControl: AmbientWorldCorruptionDebugControl = {
   state: corruptionDebugState,
   intensities: AMBIENT_CORRUPTION_INTENSITIES,
   forceAmbient(locationId = activeLocation(), intensity = 'rupture'): void {
+    clearStoryMetadata();
     const now = runtimeNow();
     const event = scheduler.force(locationId, now, intensity, 'debug', false);
     startEvent(event);
@@ -238,8 +266,21 @@ const corruptionDebugControl: AmbientWorldCorruptionDebugControl = {
     syncCorruptionDebug(now, locationId, explorationActive());
   },
   triggerAuthored(locationId = activeLocation(), intensity = 'rupture'): void {
+    clearStoryMetadata();
     const now = runtimeNow();
     const event = scheduler.force(locationId, now, intensity, 'authored', true);
+    startEvent(event);
+    refreshEnvironmentVisualDebug(now);
+    syncCorruptionDebug(now, locationId, explorationActive());
+  },
+  triggerStory(cue, locationId = activeLocation()): void {
+    const cueId = cue.cueId.trim();
+    if (!cueId) throw new Error('Dark-layer story cues require an id.');
+    const preset = resolveDarkLayerStoryCue({ cueId, role: cue.role });
+    const now = runtimeNow();
+    const event = scheduler.force(locationId, now, preset.intensity, 'authored', true);
+    activeStoryEventId = event.id;
+    activeStoryCue = { cueId, role: cue.role };
     startEvent(event);
     refreshEnvironmentVisualDebug(now);
     syncCorruptionDebug(now, locationId, explorationActive());
@@ -255,7 +296,10 @@ const corruptionDebugControl: AmbientWorldCorruptionDebugControl = {
   setEnabled(enabled: boolean): void {
     const now = runtimeNow();
     const cancelled = scheduler.setEnabled(enabled, now);
-    if (cancelled) environmentVisualController.clearTransition();
+    if (cancelled) {
+      environmentVisualController.clearTransition();
+      clearStoryMetadata();
+    }
     refreshEnvironmentVisualDebug(now);
     syncCorruptionDebug(now, activeLocation(), explorationActive());
   },
@@ -284,7 +328,11 @@ function tick(now: number): void {
     || (environmentBefore.transitionLocation !== null && !schedulerOwnsTransition);
 
   const update = scheduler.update({ now, locationId, exploring, blocked });
-  if (update.cancelled && schedulerOwnsTransition) environmentVisualController.clearTransition();
+  if (update.cancelled && schedulerOwnsTransition) {
+    environmentVisualController.clearTransition();
+    if (update.cancelled.id === activeStoryEventId) clearStoryMetadata();
+  }
+  if (update.ended?.id === activeStoryEventId) clearStoryMetadata();
   if (update.started) startEvent(update.started);
 
   refreshEnvironmentVisualDebug(now);
