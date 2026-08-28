@@ -38,8 +38,8 @@ function ensureStyle(): void {
       display: none !important;
     }
 
-    /* During cutscenes only ACTION remains. Movement, run, bag, map and back
-       would otherwise cover dialogue despite being runtime-locked anyway. */
+    /* During the RinoCow cutscene only ACTION remains. Movement, run, bag,
+       map and back would otherwise cover dialogue despite being locked. */
     body.wp07b-cutscene-active #mobile-gameplay-controls .mobile-dpad,
     body.wp07b-cutscene-active #mobile-gameplay-controls .mobile-utility-row,
     body.wp07b-cutscene-active #mobile-gameplay-controls .mobile-back-button {
@@ -106,8 +106,10 @@ function ensureStyle(): void {
 
 function syncPresentationState(): void {
   const global = globalThis as PresentationGlobal;
-  const cutsceneActive = Boolean(global.__SPLICEPIT_CUTSCENE__?.state?.controlLocked);
-  const disasterStarted = Boolean(global.__SPLICEPIT_RINOCOW_DISASTER__?.state?.started);
+  const disaster = global.__SPLICEPIT_RINOCOW_DISASTER__?.state;
+  const disasterStarted = Boolean(disaster?.started);
+  const disasterRunning = disaster?.status === 'running';
+  const cutsceneActive = disasterRunning && Boolean(global.__SPLICEPIT_CUTSCENE__?.state?.controlLocked);
 
   document.body.classList.toggle('wp07b-cutscene-active', cutsceneActive);
   if (disasterStarted) document.body.classList.add('wp07b-objective-cleared');
