@@ -17,7 +17,7 @@ From this point forward:
 
 This renumbering changes visual-pass labels only. R0.8, R0.9 and R0.10 gameplay sequencing does not move.
 
-**Status: IN PROGRESS.**
+**Status: IN PROGRESS — GTD-0 complete; GTD-1 through GTD-4 implemented; GTD-5 cleanup in progress; GTD-6 exact-tree/browser sign-off pending.**
 
 ---
 
@@ -63,126 +63,115 @@ The art must improve around the game, not force the game to be rebuilt around th
 
 # Work-package sequence
 
-## GTD-0 — Environment Redraw Contract / Legacy Audit — IN PROGRESS
+## GTD-0 — Environment Redraw Contract / Legacy Audit — COMPLETE
 
 Purpose: stop Pass D becoming another layer accumulation exercise.
 
-Build/decide:
+Completed:
 
-- freeze Master Lab as the visual benchmark;
-- inventory active Yard/route/Pit Pass B and Pass C layers;
-- identify which assets/shapes survive, which are redrawn and which are deleted;
-- define a Pass D authored-environment module boundary separate from legacy production art;
-- require replacements to supersede legacy scenery rather than always drawing over it;
-- retain only gameplay-relevant geometry/data from older implementations where practical.
+- froze Master Lab as the visual benchmark;
+- audited the active Yard, route and Local Pit Pass B/Pass C stacks;
+- established separate Pass D authored renderers;
+- locked replacement-mode metadata into each production-art contract;
+- kept gameplay geometry/data independent from the replaced art layers;
+- switched the active Yard, route and Local Pit paths away from legacy + Pass C stacking.
 
-Gate:
+Gate result:
 
-- there is a clear active art path for each environment;
-- no package is allowed to call itself complete merely because a new overlay exists.
+- each problem environment now has one explicit Pass D active art path rather than a new overlay on top of the previous generation.
 
-## GTD-1 — Apprentice Splicer Yard Full Redraw
+## GTD-1 — Apprentice Splicer Yard Full Redraw — IMPLEMENTED / VALIDATING
 
 Purpose: rebuild the first normal gameplay area to the Lab benchmark.
 
-Required result:
+Implemented:
 
-- remove the current layered/messy visual composition;
-- establish one clear hero focal area for apprentice work/containment;
-- create coherent workshop, animal-handling and biotech infrastructure;
-- replace repetitive rectangular ground/path treatment with irregular authored edges and material transitions;
-- reduce random clutter while increasing meaningful detail;
-- add believable workbenches, pens/cages, tanks, pipes, waste, repairs, stains and discarded experiment equipment;
-- use directional lighting, cast/contact shadows and controlled foreground depth;
-- preserve obvious playable routes and interaction readability;
-- author a true dark Yard in which objects physically become wrong rather than simply darker;
-- retire superseded Yard Pass B/C decoration once the new scene is proven.
+- replaced the active layered Yard renderer with an opaque authored core redraw;
+- rebuilt the arrival/work path with irregular ground transitions and clear desire lines;
+- established a patched apprentice workshop as the principal architectural focal point;
+- added animal-handling pen, specimen vat, quarantine cage and biotech service bench;
+- clustered waste, repairs, hose and service equipment instead of scattering decorative clutter;
+- added directional lighting, contact shadows and controlled foreground service-rail depth;
+- authored physically different dark-state specimens, pipe intrusions, runoff and tissue;
+- preserved world dimensions, colliders, spawn, tutorial and objective topology;
+- removed superseded Yard production-art and foreground legacy files from the branch.
 
-Gate:
+Validation already passed before later branch advances:
 
-- Yard can sit beside the current Master Lab without looking like an earlier prototype phase;
-- player path remains immediately readable on desktop and mobile;
-- existing Yard movement/tutorial/objective smokes remain green.
+- strict TypeScript;
+- content/RNG validation;
+- all unit/domain/save tests;
+- production build.
 
-## GTD-2 — Opening Route Full Redraw
+Full browser validation is being repeated on the combined final redraw tree.
+
+## GTD-2 — Opening Route Full Redraw — IMPLEMENTED / VALIDATING
 
 Purpose: make the route feel like an authored place rather than connective terrain.
 
-Required result:
+Implemented:
 
-- redesign the route around a readable path hierarchy and recognisable landmarks;
-- integrate the Lab approach, debt lay-by and Pit road into a coherent journey;
-- replace long generic road rectangles with irregular shoulders, drainage, verge damage and hand-authored surface transitions;
-- add believable utility/industrial/animal-transport remnants linked to the setting;
-- strengthen the creditor encounter location without turning the whole route into clutter;
-- create foreground/background separation and local lighting/focal moments;
-- author physical dark-state changes specific to route objects and landmarks;
-- retain the current traversal/collision corridor exactly unless a genuine bug is found.
+- replaced the active legacy + Pass C route stack with one Pass D route renderer;
+- rebuilt the Yard/Lab road with irregular shoulders, hand-patched road wear and authored drainage;
+- gave the Lab approach its own utility/checkpoint identity;
+- rebuilt the Old Toll/debt lay-by as a deliberate confrontation location while retaining the accepted walk-through inspection bay;
+- added a crashed animal-transport cage and debt/ledger staging props;
+- rebuilt the lower Pit road around haulage remnants, drainage and a stronger Local Pit approach billboard;
+- authored location-specific dark road intrusions, contaminated drainage, wrong toll shadows and Pit-bound residue;
+- preserved every existing route landmark, corridor and collider contract;
+- removed the superseded route production-art legacy file from the branch.
 
-Gate:
-
-- the route is visually memorable even without NPCs;
-- debt encounter staging reads naturally from the environment;
-- route/corruption/integration smokes remain green.
-
-## GTD-3 — Local Pit Exterior / Arrival Redraw
+## GTD-3 — Local Pit Exterior / Arrival Redraw — IMPLEMENTED / VALIDATING
 
 Purpose: make arriving at the Local Pit feel like reaching a real underground animal-fighting operation.
 
-Required result:
+Implemented:
 
-- redesign approach, entrance, signage, queue/service/loading areas and external animal-handling infrastructure;
-- create one strong architectural silhouette/focal entrance;
-- communicate illegal/improvised venue operation through repairs, rubbish, cages, transport gear, betting/fight signage and security/barriers;
-- remove generic frontage and decorative noise;
-- maintain clean route from arrival to interior trigger;
-- create authored dark-state physical corruption around the entrance.
+- replaced generic exterior frontage with an authored arrival apron and a single strong venue silhouette;
+- built a large Bramble Pit frontage/sign as the architectural focal point;
+- retained the exact entrance gate collider geometry while visually rebuilding its towers and overhead structure;
+- added waiver/ticket hatch, fight board, loading queues, security floodlights and purposeful service fencing;
+- added animal holding/loading cages, wash-down gear, crates, rubbish and repair clusters;
+- authored exterior dark-state tissue intrusion, mutated holding silhouettes, blood/runoff and corrupted entrance supports;
+- kept the arrival-to-interior route visually clear.
 
-Gate:
-
-- the exterior instantly communicates "local underground splice-fighting venue" before dialogue explains it;
-- entrance and interaction points remain readable on mobile and desktop.
-
-## GTD-4 — Local Pit Interior / Arena Redraw
+## GTD-4 — Local Pit Interior / Arena Redraw — IMPLEMENTED / VALIDATING
 
 Purpose: bring the Pit interior up to the same authored standard as the Lab.
 
-Required result:
+Implemented:
 
-- rebuild reception/service zone, holding infrastructure and arena focal composition;
-- make the space look operational rather than like a generic dark room with props;
-- establish believable crowd/betting/service/animal-flow architecture;
-- give the arena a strong hero silhouette and lighting hierarchy;
-- use grime/blood/damage intentionally rather than as uniform noise;
-- build foreground rails, overhead structures, cage/holding details and selective background life;
-- preserve first-fight staging requirements for R0.9;
-- author a physically wrong dark counterpart instead of a palette-only variant.
+- replaced the repeated tiled-floor look with large authored floor/material zones and clear traffic flow;
+- rebuilt reception/registration as a functioning intake business with forms, specimen jars, terminal and queue board;
+- rebuilt prep/weigh, holding and decon infrastructure around the locked collider footprint;
+- rebuilt results/payout/medical staging as an operational desk rather than generic props;
+- made the tutorial arena the dominant interior hero composition with worn rails, strong fight lighting, grouped spectator/business infrastructure and a readable battle floor;
+- concentrated grime/blood/scuff evidence around believable traffic/impact areas instead of spreading it uniformly;
+- authored physical dark-state arena rail/floor intrusion, warped holding equipment and biological contamination;
+- preserved all R0.9 battle-floor staging and Local Pit collision topology.
 
-Gate:
-
-- Pit interior reaches the Lab benchmark for composition, materials and environmental storytelling;
-- battle staging remains unobstructed and readable.
-
-## GTD-5 — Cross-Location Consistency / Legacy Removal
+## GTD-5 — Cross-Location Consistency / Legacy Removal — IN PROGRESS
 
 Purpose: make the opening world read as one art-directed game.
 
-Required result:
+Completed so far:
 
-- normalise pixel density, outline weight, highlight/shadow language and material contrast across Yard, route, Lab and Pit;
-- align protagonist contact shadows/grounding with each environment;
-- verify foreground layers never hide interaction-critical space;
-- remove superseded Pass B/C environment wrappers/legacy art where they no longer serve an active purpose;
-- preserve the Master Lab unless a small consistency correction is necessary;
-- verify bright/dark transitions across all locations;
-- validate portrait/landscape mobile framing and accepted 1280 × 720 desktop composition.
+- normalised Pass D contracts around the Master Lab/protagonist quality reference;
+- moved Yard, route and Local Pit to replacement-mode render paths;
+- removed superseded `yardProductionArtLegacy.ts`;
+- removed superseded `yardProductionArtDepthLegacy.ts`;
+- removed superseded `routeProductionArtLegacy.ts`;
+- removed superseded `localPitProductionArtLegacy.ts`;
+- deliberately retained Master Lab Pass C production art because it is the accepted benchmark;
+- preserved player scale, camera scale and gameplay geometry.
 
-Gate:
+Remaining before GTD-5 completion:
 
-- no opening environment looks like it belongs to an older visual generation;
-- screenshot review should show one coherent visual language across the full opening route.
+- exact-tree browser review of foreground occlusion and mobile framing;
+- confirm no remaining active imports rely on deleted generations;
+- address any visual/runtime regression found by the combined smoke suite.
 
-## GTD-6 — Pass D Integration / Sign-off
+## GTD-6 — Pass D Integration / Sign-off — PENDING EXACT-TREE BROWSER GATE
 
 Required validation:
 
