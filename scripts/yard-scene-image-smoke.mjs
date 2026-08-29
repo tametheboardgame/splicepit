@@ -137,8 +137,14 @@ try {
   const startY = current.playerY;
   await holdControl('move-up', 850);
   current = await waitForPrompt('interact');
-  if (current.collisionCount < 1 || current.playerY >= startY - 20 || current.playerY < 475) {
-    throw new Error(`YSP-0 deterministic scene collision failed: ${JSON.stringify(current)}`);
+  if (current.playerY >= startY - 20 || current.playerY > 440) {
+    throw new Error(`YSP-0 scene movement did not enter the workshop collision band: ${JSON.stringify(current)}`);
+  }
+  const collisionApproachX = current.playerX;
+  await holdControl('move-left', 450, 9);
+  current = await state();
+  if (current.collisionCount < 1 || current.playerX >= collisionApproachX || current.playerX < 885) {
+    throw new Error(`YSP-0 deterministic workshop collision failed: ${JSON.stringify(current)}`);
   }
 
   const interactionsBefore = current.interactionCount;
