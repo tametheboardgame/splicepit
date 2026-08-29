@@ -10,7 +10,7 @@ For the Apprentice Splicer Yard proof of concept, the environment will be treate
 
 If this Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions are deliberately deferred until the Yard passes a human visual gate.
 
-**Status: READY.**
+**Status: ACTIVE — YSP-0 and YSP-1 complete; YSP-2 is next.**
 
 ---
 
@@ -122,56 +122,57 @@ The dark version should preserve navigational readability but physically change 
 
 # Work-package sequence
 
-## YSP-0 — Yard Scene Contract / Technical Spike
+## YSP-0 — Yard Scene Contract / Technical Spike — COMPLETE
 
 Purpose: prove the image-backed renderer can coexist safely with current movement, camera, UI and story systems before spending time on final art.
 
-Build/decide:
+Completed:
 
-- define the scene-pack runtime interface;
-- define base-image and transparent-foreground loading;
-- define how world dimensions are read from scene metadata;
-- define collision/walkable representation;
-- define spawn, exit and interaction-anchor metadata;
-- define camera bounds from the new scene rather than the old Yard constants;
-- add a development-only renderer switch if useful for comparison, but never draw the old and new Yard simultaneously;
-- keep the current Pass D Yard available only as a temporary fallback on the proof-of-concept branch until the new renderer is proven.
+- defined the scene-pack runtime interface;
+- defined base-image and transparent-foreground loading;
+- defined world dimensions from scene metadata;
+- defined authored collision representation;
+- defined spawn, exit and interaction-anchor metadata;
+- defined camera bounds from scene metadata rather than old Yard constants;
+- added an opt-in `?yardRenderer=scene-image` development renderer path;
+- kept the current Pass D Yard as the normal fallback while the proof of concept is developed;
+- proved renderer isolation, deterministic collision, mobile controls/HUD, Bag, Map, Action, objective progression and camera follow with browser smoke coverage.
 
-Gate:
+Gate result:
 
-- a temporary test image can replace the Yard visually;
-- Milo can walk over it with deterministic collision;
-- camera, mobile controls, Bag, Map, Action and objective UI still function;
-- the old Yard is not visible underneath the test scene.
+- temporary scene imagery replaces the Yard in scene-image mode;
+- Milo walks over it with deterministic collision;
+- camera, mobile controls, Bag, Map, Action and objective UI remain functional;
+- the old Yard is not visible under the scene-image renderer.
 
-## YSP-1 — Holistic Yard Art Brief / Composition Lock
+Merged by PR #69.
+
+## YSP-1 — Holistic Yard Art Brief / Composition Lock — COMPLETE
 
 Purpose: define the whole location before generating final scene art.
 
-The brief must establish:
+Locked source of truth:
 
-- one strong visual identity for the Apprentice Splicer Yard;
-- one primary focal composition around apprentice biotech work/containment;
-- a clear player arrival/spawn area;
-- a readable route towards the Master Lab exit;
-- workshop/service architecture that feels built for irresponsible gene-splicing apprentices;
-- believable animal holding, specimen containment, tanks, pipes, cages, drains, workbenches, repairs and waste;
-- attractive bright-world colour and warmth;
-- environmental storytelling without procedural-looking clutter;
-- enough open walkable space for movement and touch controls;
-- composition that works at the accepted gameplay camera scale.
+- `docs/YSP1_HOLISTIC_YARD_ART_BRIEF_2026-08-29.md`
 
-Visual constraints:
+The completed brief establishes:
 
-- premium detailed pixel-art appearance;
-- environment detail density compatible with the approved protagonist sprites;
-- readable silhouettes at mobile gameplay size;
-- no board-game rectangles, arbitrary lawn panels or isolated pasted-on prop islands;
-- paths and architecture must belong to one designed place.
+- a warm pastoral-biotech identity: attractive first, concerning second;
+- an asymmetrical diagonal arrival-to-Lab composition rather than board geometry;
+- a crooked apprentice workshop / splice shed as the primary architectural mass;
+- a connected central specimen-processing/work cluster as the primary activity focal point;
+- an animal handling/quarantine area as the secondary mass;
+- drainage/water/vegetation as a soft compositional counterweight;
+- a believable facility service lane towards the Master Lab rather than a level portal;
+- generous negative space and loose-loop movement intent for keyboard and touch;
+- deliberately limited foreground/occlusion opportunities for later depth separation;
+- colour/material direction compatible with the accepted protagonist sprites and Master Lab benchmark;
+- bright-state biological wrongness and future dark-state transformation hooks;
+- generation rejection criteria that explicitly forbid procedural-looking lawns, prop islands and generic sci-fi/farm compositions.
 
-Gate:
+Gate result:
 
-- the scene can be described as one coherent location before any collision data is considered.
+- the Yard is now described as one coherent place without reference to legacy Yard coordinates or collision topology.
 
 ## YSP-2 — Generate and Select Bright Yard Master Scene
 
