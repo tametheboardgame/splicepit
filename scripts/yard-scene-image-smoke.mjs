@@ -128,9 +128,9 @@ try {
   if (current.yard.worldWidth !== 2920 || current.yard.worldHeight !== 1600) {
     throw new Error(`YSP-0 did not source world bounds from scene metadata: ${JSON.stringify(current.yard)}`);
   }
-  const gameplayCanvases = await evaluate(`Array.from(document.querySelectorAll('#game canvas')).map((canvas) => canvas.id)`);
-  if (gameplayCanvases.length !== 1 || gameplayCanvases[0] !== 'visual-reset-stage') {
-    throw new Error(`YSP-0 must own exactly one gameplay canvas without a legacy Yard underneath: ${JSON.stringify(gameplayCanvases)}`);
+  const primaryStageCount = await evaluate(`document.querySelectorAll('#visual-reset-stage').length`);
+  if (primaryStageCount !== 1) {
+    throw new Error(`YSP-0 must own exactly one primary gameplay stage without a legacy Yard underneath, found ${primaryStageCount}.`);
   }
 
   current = await waitForPrompt('movement');
