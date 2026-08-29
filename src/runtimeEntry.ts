@@ -1,3 +1,5 @@
+export {};
+
 const query = new URLSearchParams(window.location.search);
 const yardRenderer = query.get('yardRenderer');
 
