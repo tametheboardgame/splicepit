@@ -10,7 +10,7 @@ For the Apprentice Splicer Yard proof of concept, the environment will be treate
 
 If this Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions are deliberately deferred until the Yard passes a human visual gate.
 
-**Status: ACTIVE — YSP-0 and YSP-1 complete; YSP-2 is next.**
+**Status: ACTIVE — YSP-0, YSP-1 and YSP-2 complete; YSP-3 is next.**
 
 ---
 
@@ -174,27 +174,30 @@ Gate result:
 
 - the Yard is now described as one coherent place without reference to legacy Yard coordinates or collision topology.
 
-## YSP-2 — Generate and Select Bright Yard Master Scene
+## YSP-2 — Generate and Select Bright Yard Master Scene — COMPLETE
 
 Purpose: create the actual holistic scene rather than another code-drawn approximation.
 
-Process:
+Completed:
 
-- generate full-scene Yard concepts using the approved SplicePit visual direction, protagonist scale and Master Lab quality target;
-- favour a small number of strong complete compositions rather than many minor variations;
-- select the strongest composition autonomously unless there is a genuine art-direction fork;
-- iterate obvious generation defects before integration;
-- preserve the selected master as the visual source of truth for the scene.
+- generated a small complete-composition concept pass rather than disconnected environment pieces;
+- selected the user-approved open-centre composition;
+- regenerated it as a clean environment image without the presentation frame or baked player characters;
+- preserved broad central movement space and strong upper-left/right structural hierarchy;
+- retained integrated biotech infrastructure, fencing, tanks, service clutter, vegetation and deliberate foreground-depth opportunities;
+- recorded the selected clean generation and production-crop identity in `docs/YSP2_BRIGHT_YARD_MASTER_2026-08-29.md`.
 
-Important:
+Selection source of truth:
 
-- generation is for the entire scene composition;
-- generated text/signage should not be trusted where exact readable wording matters; exact signs can be repaired/authored during asset preparation;
-- gameplay geometry is not derived until the selected image exists.
+- clean generation ID `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`;
+- raw generation dimensions `1536 × 1024`;
+- selected direction **open-centre Yard**.
 
-Gate:
+Gate result:
 
-- by-eye screenshot review of the raw scene should already look substantially better and more holistic than the current deployed Yard before runtime integration begins.
+- by-eye review passes: the selected raw scene reads substantially more like one authored location than the Pass D Yard;
+- generated signage remains non-authoritative and may be repaired during YSP-3;
+- gameplay geometry remains intentionally unmodified until asset preparation is complete.
 
 ## YSP-3 — Game-Ready Asset Preparation
 
