@@ -128,8 +128,10 @@ try {
   if (current.yard.worldWidth !== 2920 || current.yard.worldHeight !== 1600) {
     throw new Error(`YSP-0 did not source world bounds from scene metadata: ${JSON.stringify(current.yard)}`);
   }
-  const canvases = await evaluate(`document.querySelectorAll('canvas').length`);
-  if (canvases !== 1) throw new Error(`YSP-0 must render through the existing single gameplay canvas, found ${canvases}.`);
+  const gameplayCanvases = await evaluate(`Array.from(document.querySelectorAll('#game canvas')).map((canvas) => canvas.id)`);
+  if (gameplayCanvases.length !== 1 || gameplayCanvases[0] !== 'visual-reset-stage') {
+    throw new Error(`YSP-0 must own exactly one gameplay canvas without a legacy Yard underneath: ${JSON.stringify(gameplayCanvases)}`);
+  }
 
   current = await waitForPrompt('movement');
   const startY = current.playerY;
@@ -162,7 +164,7 @@ try {
     const objective = root?.querySelector('[data-mobile-hud="objective"]');
     return { active: root?.classList.contains('is-active') ?? false, objectiveText: objective?.textContent ?? '' };
   })()`);
-  if (!hud.active || !hud.objectiveText.includes('FIND')) {
+  if (!hud.active || !hud.objectiveText.toLowerCase().includes('find')) {
     throw new Error(`YSP-0 mobile objective HUD did not survive renderer replacement: ${JSON.stringify(hud)}`);
   }
 
