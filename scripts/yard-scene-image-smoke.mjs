@@ -103,6 +103,13 @@ try {
       return value?.tutorialPromptId === id && value.tutorialPromptVisible ? value : null;
     });
   }
+  async function mobileHudState() {
+    return evaluate(`(() => {
+      const root = document.querySelector('#mobile-gameplay-hud');
+      const objective = root?.querySelector('[data-mobile-hud="objective"]');
+      return { active: root?.classList.contains('is-active') ?? false, objectiveText: objective?.textContent ?? '' };
+    })()`);
+  }
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
@@ -165,11 +172,10 @@ try {
     return value?.openingSequenceComplete && value?.objectiveId === 'find-master' && value?.activeOpeningShell === 'map' ? value : null;
   });
 
-  const hud = await evaluate(`(() => {
-    const root = document.querySelector('#mobile-gameplay-hud');
-    const objective = root?.querySelector('[data-mobile-hud="objective"]');
-    return { active: root?.classList.contains('is-active') ?? false, objectiveText: objective?.textContent ?? '' };
-  })()`);
+  const hud = await waitFor(async () => {
+    const value = await mobileHudState();
+    return value?.active && value.objectiveText.toLowerCase().includes('find') ? value : null;
+  });
   if (!hud.active || !hud.objectiveText.toLowerCase().includes('find')) {
     throw new Error(`YSP-0 mobile objective HUD did not survive renderer replacement: ${JSON.stringify(hud)}`);
   }
