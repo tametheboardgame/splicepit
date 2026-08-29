@@ -147,16 +147,18 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
     return false;
   }
 
-  context.imageSmoothingEnabled = false;
+  const stageContext: CanvasRenderingContext2D = context;
+  const miloFrames: Record<YardFacing, HTMLImageElement> = frames;
+  stageContext.imageSmoothingEnabled = false;
   const input = new BrowserSemanticInput();
   input.setEnabled(true);
   const tutorial = new TutorialPromptController();
   const openingSequence = new OpeningObjectiveSequenceController();
   const openingShells = new OpeningShellController();
-  const player = {
+  const player: { x: number; y: number; facing: YardFacing; moving: boolean } = {
     x: YSP0_YARD_SCENE_PACK.spawn.x,
     y: YSP0_YARD_SCENE_PACK.spawn.y,
-    facing: 'down' as YardFacing,
+    facing: 'down',
     moving: false,
   };
   const camera = { x: 0, y: 0 };
@@ -334,11 +336,11 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
   }
 
   function drawPlayer(): void {
-    context.fillStyle = 'rgba(38,56,47,0.28)';
-    context.beginPath();
-    context.ellipse(Math.round(player.x), Math.round(player.y - 4), 22, 7, 0, 0, Math.PI * 2);
-    context.fill();
-    context.drawImage(frames[player.facing], Math.round(player.x - FRAME_WIDTH / 2), Math.round(player.y - 88), FRAME_WIDTH, FRAME_HEIGHT);
+    stageContext.fillStyle = 'rgba(38,56,47,0.28)';
+    stageContext.beginPath();
+    stageContext.ellipse(Math.round(player.x), Math.round(player.y - 4), 22, 7, 0, 0, Math.PI * 2);
+    stageContext.fill();
+    stageContext.drawImage(miloFrames[player.facing], Math.round(player.x - FRAME_WIDTH / 2), Math.round(player.y - 88), FRAME_WIDTH, FRAME_HEIGHT);
   }
 
   function render(now: number): void {
@@ -348,18 +350,18 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
     const renderCameraX = Math.round(camera.x);
     const renderCameraY = Math.round(camera.y);
 
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
-    context.save();
-    context.translate(-renderCameraX, -renderCameraY);
-    drawYardSceneImageBase(context);
+    stageContext.setTransform(1, 0, 0, 1, 0, 0);
+    stageContext.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+    stageContext.save();
+    stageContext.translate(-renderCameraX, -renderCameraY);
+    drawYardSceneImageBase(stageContext);
     drawPlayer();
-    drawYardSceneImageForeground(context);
-    context.restore();
+    drawYardSceneImageForeground(stageContext);
+    stageContext.restore();
 
-    drawOpeningObjectiveTracker(context, objective, openingShells.objectiveStep(), openingShells.objectiveCount());
-    if (tutorialPrompt) drawTutorialPrompt(context, tutorialPrompt, VIEW_WIDTH, VIEW_HEIGHT);
-    drawOpeningShell(context, {
+    drawOpeningObjectiveTracker(stageContext, objective, openingShells.objectiveStep(), openingShells.objectiveCount());
+    if (tutorialPrompt) drawTutorialPrompt(stageContext, tutorialPrompt, VIEW_WIDTH, VIEW_HEIGHT);
+    drawOpeningShell(stageContext, {
       activeShell: openingShells.activeShell(),
       inventory: openingShells.inventory(),
       objective,
