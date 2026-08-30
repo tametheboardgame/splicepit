@@ -32,6 +32,15 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
+      - name: Upload YSP-4 collision-authoring master
+        uses: actions/upload-artifact@v4
+        with:
+          name: ysp4-yard-authoring-master
+          path: |
+            dist/generated/ysp3/yard-bright-base.webp
+            dist/generated/ysp3/yard-bright-scene.json
+          if-no-files-found: error
+          retention-days: 1
   browser-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
