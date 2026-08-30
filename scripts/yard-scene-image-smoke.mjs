@@ -171,6 +171,14 @@ try {
     throw new Error(`YSP-6 service-ring foreground depth did not activate cleanly: ${JSON.stringify(serviceDepth)}`);
   }
 
+  // Return to the same proven YSP-5 traversal baseline after the isolated depth
+  // probe. This keeps the route test independent from the extra YSP-6 movement.
+  await holdControl('move-down', 150, 9);
+  current = await state();
+  if (current.playerY < 650 || current.playerY > 670) {
+    throw new Error(`YSP-6 depth probe did not return to the route baseline: ${JSON.stringify(current)}`);
+  }
+
   const interactionsBefore = current.interactionCount;
   await tapControl('action');
   current = await waitForPrompt('bag');
@@ -200,8 +208,9 @@ try {
 
   await tapControl('back');
 
+  // Reuse the exact YSP-5 route sequence after returning to its known baseline.
   await holdControl('move-left', 1000, 11);
-  await holdControl('move-up', 1900, 12);
+  await holdControl('move-up', 2050, 12);
   await holdControl('move-right', 1200, 13);
   await holdControl('move-down', 500, 14);
   await holdControl('move-right', 1850, 15);
