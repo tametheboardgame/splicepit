@@ -83,7 +83,7 @@ try {
   async function tapControl(control, id = 3) {
     const point = await controlPoint(control);
     if (!point || point.width < 44 || point.height < 44 || point.display === 'none' || point.visibility === 'hidden') {
-      throw new Error(`YSP-4 touch control ${control} is not usable: ${JSON.stringify(point)}`);
+      throw new Error(`YSP-5 touch control ${control} is not usable: ${JSON.stringify(point)}`);
     }
     await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, radiusX: 5, radiusY: 5, force: 1, id }] });
     await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -91,7 +91,7 @@ try {
   }
   async function holdControl(control, durationMs, id = 7) {
     const point = await controlPoint(control);
-    if (!point || point.width < 44 || point.height < 44) throw new Error(`YSP-4 touch control ${control} is unavailable.`);
+    if (!point || point.width < 44 || point.height < 44) throw new Error(`YSP-5 touch control ${control} is unavailable.`);
     await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, radiusX: 5, radiusY: 5, force: 1, id }] });
     await sleep(durationMs);
     await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -126,42 +126,43 @@ try {
       : null;
   });
 
-  if (current.yard.yardRenderer !== 'scene-image' || current.yard.scenePackId !== 'yard-bright-scene-ysp4-v1') {
-    throw new Error(`YSP-4 scene pack was not selected: ${JSON.stringify(current)}`);
+  if (current.yard.yardRenderer !== 'scene-image' || current.yard.scenePackId !== 'yard-bright-scene-ysp5-v1') {
+    throw new Error(`YSP-5 semantic scene pack was not selected: ${JSON.stringify(current)}`);
   }
-  if (current.image.assetPackId !== 'yard-bright-scene-v1' || current.image.sourceWidth !== 1280 || current.image.sourceHeight !== 720) {
-    throw new Error(`YSP-4 did not render the recovered YSP-3 Bright Yard asset: ${JSON.stringify(current.image)}`);
+  if (current.image.scenePackId !== 'yard-bright-scene-ysp5-v1' || current.image.assetPackId !== 'yard-bright-scene-v1' || current.image.sourceWidth !== 1280 || current.image.sourceHeight !== 720) {
+    throw new Error(`YSP-5 did not render the recovered YSP-3 Bright Yard asset through the semantic pack: ${JSON.stringify(current.image)}`);
   }
   if (current.image.fallback || current.image.legacyRendererRendered) {
-    throw new Error(`YSP-4 mixed or fell back to the legacy Yard renderer: ${JSON.stringify(current.image)}`);
+    throw new Error(`YSP-5 mixed or fell back to the legacy Yard renderer: ${JSON.stringify(current.image)}`);
   }
-  if (current.yard.worldWidth !== 1280 || current.yard.worldHeight !== 720) {
-    throw new Error(`YSP-4 did not source world bounds from the approved scene metadata: ${JSON.stringify(current.yard)}`);
+  if (current.yard.sceneMode !== 'yard' || current.yard.worldWidth !== 1280 || current.yard.worldHeight !== 720) {
+    throw new Error(`YSP-5 did not start in the authored Yard world: ${JSON.stringify(current.yard)}`);
   }
   if (Math.abs(current.yard.playerX - 575) > 1 || Math.abs(current.yard.playerY - 660) > 1) {
-    throw new Error(`YSP-4 did not use the authored lower-centre spawn: ${JSON.stringify(current.yard)}`);
+    throw new Error(`YSP-5 did not use the authored lower-centre spawn: ${JSON.stringify(current.yard)}`);
   }
   const primaryStageCount = await evaluate(`document.querySelectorAll('#visual-reset-stage').length`);
   if (primaryStageCount !== 1) {
-    throw new Error(`YSP-4 must own exactly one primary gameplay stage without a legacy Yard underneath, found ${primaryStageCount}.`);
+    throw new Error(`YSP-5 must own exactly one primary gameplay stage, found ${primaryStageCount}.`);
   }
 
   current = await waitForPrompt('movement');
   await holdControl('move-right', 1200);
   current = await waitForPrompt('interact');
   if (current.collisionCount < 1 || current.playerX < 700 || current.playerX > 750) {
-    throw new Error(`YSP-4 authored service-ring collision failed: ${JSON.stringify(current)}`);
+    throw new Error(`YSP-5 authored service-ring collision failed: ${JSON.stringify(current)}`);
   }
 
   const interactionsBefore = current.interactionCount;
   await tapControl('action');
   current = await waitForPrompt('bag');
-  if (current.interactionCount <= interactionsBefore) {
-    throw new Error(`YSP-4 ACTION did not reach semantic interaction handling: ${JSON.stringify(current)}`);
+  if (current.interactionCount <= interactionsBefore || current.lastInteractionAnchor !== 'service-ring-inspection') {
+    throw new Error(`YSP-5 ACTION did not resolve the authored service-ring semantic anchor: ${JSON.stringify(current)}`);
   }
+
   await tapControl('bag');
   current = await waitForPrompt('confirm-cancel');
-  if (current.activeOpeningShell !== 'bag') throw new Error(`YSP-4 Bag shell failed: ${JSON.stringify(current)}`);
+  if (current.activeOpeningShell !== 'bag') throw new Error(`YSP-5 Bag shell failed: ${JSON.stringify(current)}`);
   await tapControl('action');
   await tapControl('back');
   await waitForPrompt('map');
@@ -176,33 +177,45 @@ try {
     return value?.active && value.objectiveText.toLowerCase().includes('find') ? value : null;
   });
   if (!hud.active || !hud.objectiveText.toLowerCase().includes('find')) {
-    throw new Error(`YSP-4 mobile objective HUD did not survive renderer replacement: ${JSON.stringify(hud)}`);
+    throw new Error(`YSP-5 mobile objective HUD did not reach Find your Master: ${JSON.stringify(hud)}`);
   }
 
   await tapControl('back');
 
-  // Traverse the authored open court to the visible Master Lab tunnel. The
-  // route deliberately threads above the west machinery and below the retaining
-  // wall, proving the approved pixels and collision geometry agree on mobile.
+  // Traverse the approved scene to the visible right-side tunnel. Entering the
+  // tunnel while Find your Master is active must perform the semantic handoff
+  // into the existing authored Master Lab approach without resetting onboarding.
   await holdControl('move-left', 1000, 11);
   await holdControl('move-up', 2050, 12);
   await holdControl('move-right', 1200, 13);
   await holdControl('move-down', 500, 14);
   await holdControl('move-right', 1850, 15);
-  current = await state();
-  if (current.playerX < 1070 || current.playerX > 1160 || current.playerY < 318 || current.playerY > 400) {
-    throw new Error(`YSP-4 could not traverse from spawn to the visible Master Lab tunnel: ${JSON.stringify(current)}`);
+
+  current = await waitFor(async () => {
+    const value = await state();
+    return value?.sceneMode === 'master-lab-route' && value?.routeRendered && value?.routeHandoffTarget === 'master-lab-route'
+      ? value
+      : null;
+  });
+  if (current.routeHandoffCount !== 1 || current.routeHandoffExitId !== 'master-lab-tunnel') {
+    throw new Error(`YSP-5 tunnel handoff did not fire exactly once: ${JSON.stringify(current)}`);
   }
-  if (Math.abs(current.cameraX) > 0.1 || Math.abs(current.cameraY) > 0.1) {
-    throw new Error(`YSP-4 1280x720 scene should remain exactly framed at the desktop gameplay canvas size: ${JSON.stringify(current)}`);
+  if (!current.openingSequenceComplete || current.objectiveId !== 'find-master') {
+    throw new Error(`YSP-5 route handoff reset onboarding or objective state: ${JSON.stringify(current)}`);
+  }
+  if (current.worldWidth !== 2920 || current.worldHeight !== 1600 || current.playerX < 1760) {
+    throw new Error(`YSP-5 did not enter the existing authored opening-route world at its Lab approach: ${JSON.stringify(current)}`);
+  }
+  if (current.cameraX <= 0) {
+    throw new Error(`YSP-5 route handoff did not switch to the route camera/world bounds: ${JSON.stringify(current)}`);
   }
 
   const imageState = await evaluate(`({ ...globalThis.__SPLICEPIT_YARD_SCENE_IMAGE__ })`);
   if (!imageState.baseRendered || !imageState.foregroundRendered || imageState.legacyRendererRendered) {
-    throw new Error(`YSP-4 image-layer isolation failed: ${JSON.stringify(imageState)}`);
+    throw new Error(`YSP-5 Bright Yard image-layer isolation failed before route handoff: ${JSON.stringify(imageState)}`);
   }
 
-  console.log(`YSP-4 Yard authored-collision smoke passed: ${JSON.stringify({ playerX: current.playerX, playerY: current.playerY, collisions: current.collisionCount, interactions: current.interactionCount })}`);
+  console.log(`YSP-5 Yard interaction/route smoke passed: ${JSON.stringify({ sceneMode: current.sceneMode, playerX: current.playerX, playerY: current.playerY, collisions: current.collisionCount, interactions: current.interactionCount, handoff: current.routeHandoffTarget })}`);
   ws.close();
   cleanup();
 } catch (error) {
