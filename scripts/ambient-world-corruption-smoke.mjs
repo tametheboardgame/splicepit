@@ -7,7 +7,7 @@ let nextId = 0;
 const pending = new Map();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function waitFor(fn, timeoutMs = 20000, intervalMs = 70) {
+async function waitFor(fn, timeoutMs = 25000, intervalMs = 70) {
   const started = Date.now();
   let lastError;
   while (Date.now() - started < timeoutMs) {
@@ -42,13 +42,11 @@ try {
     const list = await response.json();
     return list.length ? list : null;
   });
-
   const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
     ws.addEventListener('error', reject, { once: true });
   });
-
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
     if (!msg.id) return;
@@ -65,52 +63,31 @@ try {
       ws.send(JSON.stringify({ id, method, params }));
     });
   }
-
   async function evaluate(expression) {
     const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Browser evaluation failed');
     return result.result?.value;
   }
-
   async function key(keyName, code, vk) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await sleep(90);
   }
-
   async function holdKey(keyName, code, vk, durationMs = 90) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await sleep(durationMs);
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await sleep(35);
+    await sleep(80);
   }
-
   async function yardState() {
     return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
-
-  async function moveAxis(axis, target, positive, negative, tolerance = 18) {
-    let previous = null;
-    let stalled = 0;
-    for (let attempt = 0; attempt < 220; attempt += 1) {
-      const current = await yardState();
-      const value = axis === 'x' ? current.playerX : current.playerY;
-      const delta = target - value;
-      if (Math.abs(delta) <= tolerance) return current;
-      if (previous !== null && Math.abs(value - previous) < 0.8) stalled += 1;
-      else stalled = 0;
-      if (stalled >= 10) throw new Error(`WP0.6L route movement stalled on ${axis}: ${JSON.stringify(current)}`);
-      previous = value;
-      const control = delta > 0 ? positive : negative;
-      await holdKey(control.key, control.code, control.vk, 90);
-    }
-    throw new Error(`WP0.6L route movement failed to reach ${axis}=${target}: ${JSON.stringify(await yardState())}`);
+  async function waitForPrompt(id) {
+    return waitFor(async () => {
+      const value = await yardState();
+      return value?.tutorialPromptId === id && value?.tutorialPromptVisible && !value?.tutorialPromptCompleting ? value : null;
+    }, 10000);
   }
-
-  const right = { key: 'ArrowRight', code: 'ArrowRight', vk: 39 };
-  const left = { key: 'ArrowLeft', code: 'ArrowLeft', vk: 37 };
-  const down = { key: 'ArrowDown', code: 'ArrowDown', vk: 40 };
-  const up = { key: 'ArrowUp', code: 'ArrowUp', vk: 38 };
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
@@ -170,10 +147,14 @@ try {
       const corruption = globalThis.__SPLICEPIT_CORRUPTION__;
       const overlay = document.querySelector('#ambient-world-corruption');
       return env?.state?.locationId === '${locationId}' && env.state.phase === 'steady' && env.state.darkMix === 0 && corruption?.state?.activeEventId === null && overlay?.getAttribute('aria-hidden') === 'true';
-    })()`), 10000);
+    })()`), 12000);
   }
 
   await openScenario();
+  const productionYard = await yardState();
+  if (productionYard.yardRenderer !== 'scene-image' || productionYard.worldWidth !== 1280 || productionYard.worldHeight !== 720) {
+    throw new Error(`YSP-7 ambient test did not begin in the production Yard: ${JSON.stringify(productionYard)}`);
+  }
   await verifyCurrentLocation('yard', '__SPLICEPIT_YARD_ART__', '__SPLICEPIT_VISUAL_RESET__');
 
   await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.forceAmbient('yard', 'linger')`);
@@ -189,11 +170,32 @@ try {
   })()`));
   await key('b', 'KeyB', 66);
 
-  await moveAxis('y', 700, down, up);
-  await moveAxis('x', 1200, right, left);
-  await moveAxis('x', 1450, right, left);
-  await moveAxis('y', 655, down, up, 6);
-  await moveAxis('x', 1840, right, left);
+  // Complete onboarding and enter the existing route through the authored tunnel.
+  await waitForPrompt('movement');
+  await holdKey('d', 'KeyD', 68, 1200);
+  await waitForPrompt('interact');
+  await key('e', 'KeyE', 69);
+  await waitForPrompt('bag');
+  await key('b', 'KeyB', 66);
+  await waitForPrompt('confirm-cancel');
+  await key('Enter', 'Enter', 13);
+  await key('Escape', 'Escape', 27);
+  await waitForPrompt('map');
+  await key('m', 'KeyM', 77);
+  await waitFor(async () => {
+    const value = await yardState();
+    return value?.openingSequenceComplete && value?.objectiveId === 'find-master' && value?.activeOpeningShell === 'map' ? value : null;
+  });
+  await key('Escape', 'Escape', 27);
+  await holdKey('a', 'KeyA', 65, 1000);
+  await holdKey('w', 'KeyW', 87, 2050);
+  await holdKey('d', 'KeyD', 68, 1200);
+  await holdKey('s', 'KeyS', 83, 500);
+  await holdKey('d', 'KeyD', 68, 1850);
+  await waitFor(async () => {
+    const value = await yardState();
+    return value?.sceneMode === 'master-lab-route' && value?.routeRendered && value?.routeHandoffTarget === 'master-lab-route' ? value : null;
+  });
   await verifyCurrentLocation('route', '__SPLICEPIT_ROUTE_ART__', '__SPLICEPIT_VISUAL_RESET__');
 
   await openScenario('&labTest=1');
@@ -218,7 +220,7 @@ try {
   }
   await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.resume('story-test')`);
 
-  console.log('WP0.6L ambient world corruption smoke passed across Yard, route, Master Lab and Local Pit.');
+  console.log('YSP-7 ambient world corruption smoke passed across scene Yard, tunnel route, Master Lab and Local Pit.');
   ws.close();
   cleanup();
 } catch (error) {
