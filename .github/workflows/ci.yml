@@ -26,6 +26,8 @@ jobs:
         run: npm run validate:content
       - name: Validate RNG boundary
         run: npm run validate:rng
+      - name: Validate YSP-3 Yard source
+        run: npm run validate:ysp3
       - name: Unit, domain and save tests
         run: npm test
       - name: Production build
