@@ -48,42 +48,69 @@ export interface YardScenePack {
   readonly exits: readonly YardSceneExit[];
 }
 
-export const YSP0_YARD_SCENE_PACK = {
-  id: 'yard-scene-spike-v1',
+/**
+ * YSP-4 collision authored from the recovered 1280 × 720 Bright Yard raster.
+ *
+ * The rectangles deliberately follow the large visual masses rather than the
+ * previous procedural Yard topology. Small surface props remain traversable so
+ * the central court keeps the generous movement rhythm locked in YSP-1.
+ */
+export const YSP4_YARD_SCENE_PACK = {
+  id: 'yard-bright-scene-ysp4-v1',
   renderer: 'scene-image',
-  source: { width: 730, height: 400, scale: 4 },
-  world: { width: 2920, height: 1600 },
-  cameraBounds: { x: 0, y: 0, width: 2920, height: 1600 },
+  source: { width: 1280, height: 720, scale: 1 },
+  world: { width: 1280, height: 720 },
+  cameraBounds: { x: 0, y: 0, width: 1280, height: 720 },
   playerFeetHitbox: { offsetX: -11, offsetY: -13, width: 22, height: 15 },
   boundaryInset: 12,
-  spawn: { x: 900, y: 562 },
+  spawn: { x: 575, y: 660 },
   collision: {
     mode: 'blocked-rectangles',
     colliders: [
-      { id: 'workshop', bounds: { x: 288, y: 192, width: 592, height: 280 } },
-      { id: 'west-animal-pen', bounds: { x: 180, y: 760, width: 420, height: 340 } },
-      { id: 'north-pen-a', bounds: { x: 1328, y: 200, width: 260, height: 232 } },
-      { id: 'north-pen-b', bounds: { x: 1680, y: 200, width: 260, height: 232 } },
-      { id: 'science-bench', bounds: { x: 1320, y: 968, width: 540, height: 200 } },
-      { id: 'east-tank-a', bounds: { x: 2440, y: 216, width: 100, height: 204 } },
-      { id: 'east-tank-b', bounds: { x: 2600, y: 216, width: 100, height: 204 } },
-      { id: 'master-lab', bounds: { x: 2420, y: 980, width: 460, height: 468 } },
-      { id: 'service-pipe', bounds: { x: 288, y: 1256, width: 1392, height: 112 } },
+      // Upper-left GENECO workshop and attached service clutter.
+      { id: 'geneco-workshop', bounds: { x: 0, y: 0, width: 465, height: 315 } },
+      { id: 'workshop-service-stack', bounds: { x: 420, y: 78, width: 118, height: 188 } },
+
+      // THE HUT and the physical north perimeter either side of it.
+      { id: 'north-wall-west', bounds: { x: 465, y: 0, width: 92, height: 118 } },
+      { id: 'the-hut', bounds: { x: 552, y: 28, width: 282, height: 222 } },
+      { id: 'north-wall-services', bounds: { x: 834, y: 0, width: 226, height: 150 } },
+      { id: 'north-vats', bounds: { x: 1050, y: 0, width: 230, height: 252 } },
+
+      // Left-side storage and the fenced lower-left specimen tank compound.
+      { id: 'west-storage', bounds: { x: 0, y: 250, width: 178, height: 162 } },
+      { id: 'lower-left-containment', bounds: { x: 0, y: 414, width: 338, height: 306 } },
+      { id: 'containment-fence-return', bounds: { x: 185, y: 390, width: 148, height: 70 } },
+
+      // Pit infrastructure. A deliberate horizontal service gap remains between
+      // the retaining wall and pit lip so the tunnel can be approached naturally.
+      { id: 'pit-west-machinery', bounds: { x: 690, y: 318, width: 112, height: 112 } },
+      { id: 'pit-retaining-wall-west', bounds: { x: 812, y: 172, width: 198, height: 194 } },
+      { id: 'pit-retaining-wall-north', bounds: { x: 1008, y: 172, width: 272, height: 134 } },
+      { id: 'pit-retaining-wall-east', bounds: { x: 1162, y: 300, width: 118, height: 130 } },
+      { id: 'splice-pit', bounds: { x: 730, y: 408, width: 302, height: 142 } },
+
+      // Lower-right storage mass and the small concrete service ring.
+      { id: 'cryo-container-stack', bounds: { x: 962, y: 486, width: 318, height: 234 } },
+      { id: 'lower-right-container-base', bounds: { x: 900, y: 602, width: 380, height: 118 } },
+      { id: 'service-ring', bounds: { x: 754, y: 603, width: 70, height: 69 } },
     ],
   },
-  anchors: [
-    { id: 'workshop-door', kind: 'door', position: { x: 588, y: 500 }, radius: 72 },
-    { id: 'science-bench', kind: 'interaction', position: { x: 1580, y: 1200 }, radius: 96 },
-    { id: 'master-lab-door', kind: 'story', position: { x: 2660, y: 1480 }, radius: 120 },
-  ],
+  // YSP-5 owns final interaction-anchor placement. YSP-4 only establishes the
+  // traversable route and exit footprint against the approved pixels.
+  anchors: [],
   exits: [
     {
-      id: 'east-master-route',
-      bounds: { x: 2860, y: 480, width: 60, height: 260 },
+      id: 'master-lab-tunnel',
+      bounds: { x: 1072, y: 318, width: 88, height: 82 },
       target: 'master-lab-route',
     },
   ],
 } as const satisfies YardScenePack;
+
+// Transitional alias retained so the isolated scene-image spike can consume the
+// new pack without coupling YSP-4 to the normal Yard path before YSP-7.
+export const YSP0_YARD_SCENE_PACK = YSP4_YARD_SCENE_PACK;
 
 function overlaps(a: YardSceneRect, b: YardSceneRect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
