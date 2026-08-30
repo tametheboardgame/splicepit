@@ -1,6 +1,8 @@
-import yardSceneBase from '../assets/ysp0/yard-scene-spike-base.png.base64.txt?raw';
-import yardSceneForeground from '../assets/ysp0/yard-scene-spike-foreground.png.base64.txt?raw';
-import { YSP0_YARD_SCENE_PACK } from '../world/yardScenePack.js';
+import {
+  preloadYsp3BrightYardAssets,
+  YSP3_BRIGHT_YARD_ASSET_PACK,
+} from './yardSceneAssetPack.js';
+import { YSP4_YARD_SCENE_PACK } from '../world/yardScenePack.js';
 
 type YardSceneImageDebug = {
   requested: boolean;
@@ -9,6 +11,7 @@ type YardSceneImageDebug = {
   fallback: boolean;
   error: string | null;
   scenePackId: string;
+  assetPackId: string;
   sourceWidth: number;
   sourceHeight: number;
   worldWidth: number;
@@ -29,11 +32,12 @@ const debug: YardSceneImageDebug = {
   active: false,
   fallback: false,
   error: null,
-  scenePackId: YSP0_YARD_SCENE_PACK.id,
-  sourceWidth: YSP0_YARD_SCENE_PACK.source.width,
-  sourceHeight: YSP0_YARD_SCENE_PACK.source.height,
-  worldWidth: YSP0_YARD_SCENE_PACK.world.width,
-  worldHeight: YSP0_YARD_SCENE_PACK.world.height,
+  scenePackId: YSP4_YARD_SCENE_PACK.id,
+  assetPackId: YSP3_BRIGHT_YARD_ASSET_PACK.id,
+  sourceWidth: YSP4_YARD_SCENE_PACK.source.width,
+  sourceHeight: YSP4_YARD_SCENE_PACK.source.height,
+  worldWidth: YSP4_YARD_SCENE_PACK.world.width,
+  worldHeight: YSP4_YARD_SCENE_PACK.world.height,
   baseRendered: false,
   foregroundRendered: false,
   legacyRendererRendered: false,
@@ -45,26 +49,19 @@ const debug: YardSceneImageDebug = {
 let baseImage: HTMLImageElement | null = null;
 let foregroundImage: HTMLImageElement | null = null;
 
-async function decodeRaster(base64: string, label: string): Promise<HTMLImageElement> {
-  const image = new Image();
-  image.src = `data:image/png;base64,${base64.trim()}`;
-  await image.decode();
-  if (image.naturalWidth !== YSP0_YARD_SCENE_PACK.source.width || image.naturalHeight !== YSP0_YARD_SCENE_PACK.source.height) {
-    throw new Error(`${label} has unexpected dimensions ${image.naturalWidth}x${image.naturalHeight}`);
-  }
-  return image;
-}
-
 export async function prepareYardSceneImageRuntime(): Promise<boolean> {
   try {
-    [baseImage, foregroundImage] = await Promise.all([
-      decodeRaster(yardSceneBase, 'YSP-0 Yard base raster'),
-      decodeRaster(yardSceneForeground, 'YSP-0 Yard foreground raster'),
-    ]);
+    const prepared = await preloadYsp3BrightYardAssets();
+    baseImage = prepared.base;
+    foregroundImage = prepared.foreground;
     debug.ready = true;
     debug.active = true;
+    debug.fallback = false;
+    debug.error = null;
     return true;
   } catch (error) {
+    baseImage = null;
+    foregroundImage = null;
     debug.error = error instanceof Error ? error.message : String(error);
     debug.fallback = true;
     debug.active = false;
@@ -80,12 +77,12 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D): void {
     baseImage,
     0,
     0,
-    YSP0_YARD_SCENE_PACK.source.width,
-    YSP0_YARD_SCENE_PACK.source.height,
+    YSP4_YARD_SCENE_PACK.source.width,
+    YSP4_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP0_YARD_SCENE_PACK.world.width,
-    YSP0_YARD_SCENE_PACK.world.height,
+    YSP4_YARD_SCENE_PACK.world.width,
+    YSP4_YARD_SCENE_PACK.world.height,
   );
   ctx.restore();
   debug.baseRendered = true;
@@ -100,12 +97,12 @@ export function drawYardSceneImageForeground(ctx: CanvasRenderingContext2D): voi
     foregroundImage,
     0,
     0,
-    YSP0_YARD_SCENE_PACK.source.width,
-    YSP0_YARD_SCENE_PACK.source.height,
+    YSP4_YARD_SCENE_PACK.source.width,
+    YSP4_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP0_YARD_SCENE_PACK.world.width,
-    YSP0_YARD_SCENE_PACK.world.height,
+    YSP4_YARD_SCENE_PACK.world.width,
+    YSP4_YARD_SCENE_PACK.world.height,
   );
   ctx.restore();
   debug.foregroundRendered = true;
