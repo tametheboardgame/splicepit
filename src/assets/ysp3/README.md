@@ -1,18 +1,28 @@
 # YSP-3 Bright Yard source
 
-The files in this directory are the lossless repository transport for the selected YSP-2 Bright Yard production candidate.
+This directory contains the deterministic repository transport for the user-approved Bright Yard master recovered on 30 August 2026.
 
 Source of truth:
 
-- generation ID: `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`
+- original selected generation lineage: `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`
 - selected direction: **open-centre Yard**
-- production canvas: **1280 × 720**
+- recovery source: the exact approved Yard image supplied by the user after the original repository transport was found to be truncated
+- recovered production canvas: **1280 × 720**
 - runtime format: WebP
+- exact production byte length: **177,808 bytes**
+- exact SHA-256: `6e525dd2a7e35a1beb3e397040982f750c2b2c0eac86df7264f6462830950beb`
 
-`yard-bright-base.part00.txt` through `yard-bright-base.part06.txt` are ordered base64 chunks of the same WebP image. They are intentionally source material rather than runtime assets.
+`yard-bright-base-v2.part00.txt` through `yard-bright-base-v2.part11.txt` are ordered base64 chunks of that exact recovered WebP. They are source transport, not browser-loaded runtime assets.
 
-`scripts/materialize-ysp3-yard.mjs` validates the RIFF/WebP header, validates the exact 1280 × 720 dimensions, joins the chunks and writes the runtime assets under `public/generated/ysp3/` for development and production builds.
+`scripts/materialize-ysp3-yard.mjs` joins the chunks and refuses to emit the runtime pack unless all of the following match the recovered approved asset:
+
+- exact 177,808-byte length;
+- exact SHA-256;
+- complete RIFF payload length;
+- complete VP8 chunk length;
+- valid VP8 key-frame marker;
+- exact 1280 × 720 dimensions.
 
 The generated foreground is currently a fully transparent, exactly aligned 1280 × 720 staging layer. YSP-6 owns authored foreground/occlusion extraction so that depth pixels are moved only once the collision and interaction geometry from YSP-4/YSP-5 is known.
 
-The discarded q20 compression experiment is not part of the production pack.
+The previous seven-part `yard-bright-base.partXX.txt` transport was incomplete and is obsolete. Temporary recovery fragments and the discarded q20 experiment are not production sources.
