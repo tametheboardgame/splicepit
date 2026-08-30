@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,13 +34,21 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
-      - name: Upload YSP-4 collision-authoring master
+      - name: Recover historical q20 Yard candidate for YSP-4 inspection
+        run: |
+          mkdir -p /tmp/ysp4-authoring
+          git show 3974f7a324efc027b66e097190f5e0e5fcc849b0:src/assets/ysp3/yard-bright-base-q20.part00.txt > /tmp/ysp4-authoring/q20.b64
+          git show 3974f7a324efc027b66e097190f5e0e5fcc849b0:src/assets/ysp3/yard-bright-base-q20.part01.txt >> /tmp/ysp4-authoring/q20.b64
+          tr -d '\r\n' < /tmp/ysp4-authoring/q20.b64 | base64 -d > /tmp/ysp4-authoring/yard-bright-q20.webp
+          file /tmp/ysp4-authoring/yard-bright-q20.webp
+      - name: Upload YSP-4 collision-authoring candidates
         uses: actions/upload-artifact@v4
         with:
           name: ysp4-yard-authoring-master
           path: |
             dist/generated/ysp3/yard-bright-base.webp
             dist/generated/ysp3/yard-bright-scene.json
+            /tmp/ysp4-authoring/yard-bright-q20.webp
           if-no-files-found: error
           retention-days: 1
   browser-smoke:
