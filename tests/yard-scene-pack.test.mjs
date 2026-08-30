@@ -7,8 +7,10 @@ import {
   yardSceneCameraLimits,
   yardSceneExitAt,
   yardSceneExitForTarget,
+  yardSceneForegroundOccluders,
   YSP4_YARD_SCENE_PACK,
   YSP5_YARD_SCENE_PACK,
+  YSP6_YARD_SCENE_PACK,
 } from '../src/world/yardScenePack.js';
 
 function canReach(pack, start, targetBounds, step = 10) {
@@ -117,4 +119,47 @@ test('YSP-5 maps the visible tunnel to the existing authored Master Lab route en
   assert.equal(yardSceneExitAt(pack, 1110, 382)?.id, 'master-lab-tunnel');
   assert.equal(yardSceneExitAt(pack, 900, 382), null);
   assert.equal(canReach(pack, pack.spawn, exit.bounds), true);
+});
+
+test('YSP-6 preserves YSP-5 gameplay while adding exact-base-pixel foreground depth', () => {
+  const pack = YSP6_YARD_SCENE_PACK;
+  assert.equal(pack.id, 'yard-bright-scene-ysp6-v1');
+  assert.deepEqual(pack.collision, YSP5_YARD_SCENE_PACK.collision);
+  assert.deepEqual(pack.anchors, YSP5_YARD_SCENE_PACK.anchors);
+  assert.deepEqual(pack.exits, YSP5_YARD_SCENE_PACK.exits);
+  assert.equal(pack.foreground?.mode, 'exact-base-pixel-regions');
+  assert.equal(pack.foreground?.occluders.length, 4);
+
+  for (const occluder of pack.foreground?.occluders ?? []) {
+    assert.ok(occluder.bounds.width > 0 && occluder.bounds.height > 0, `${occluder.id} must have visible area`);
+    assert.ok(occluder.bounds.x >= 0 && occluder.bounds.y >= 0, `${occluder.id} must start inside the scene`);
+    assert.ok(occluder.bounds.x + occluder.bounds.width <= pack.world.width, `${occluder.id} must remain inside scene width`);
+    assert.ok(occluder.bounds.y + occluder.bounds.height <= pack.world.height, `${occluder.id} must remain inside scene height`);
+  }
+});
+
+test('YSP-6 foreground sorting only occludes the protagonist when their feet are behind the feature', () => {
+  const pack = YSP6_YARD_SCENE_PACK;
+  assert.deepEqual(yardSceneForegroundOccluders(pack, 660).map((entry) => entry.id), []);
+  assert.deepEqual(yardSceneForegroundOccluders(pack, 640).map((entry) => entry.id), ['service-ring-front-rim']);
+  assert.deepEqual(yardSceneForegroundOccluders(pack, 520).map((entry) => entry.id), [
+    'service-ring-front-rim',
+    'pit-front-rail-west',
+    'pit-front-rail-east',
+  ]);
+  assert.deepEqual(yardSceneForegroundOccluders(pack, 380).map((entry) => entry.id), [
+    'service-ring-front-rim',
+    'pit-front-rail-west',
+    'pit-front-rail-east',
+    'lab-tunnel-rail-and-threshold',
+  ]);
+});
+
+test('YSP-6 grounds the protagonist with a restrained scene-specific contact shadow', () => {
+  assert.deepEqual(YSP6_YARD_SCENE_PACK.grounding?.shadow, {
+    offsetY: -4,
+    radiusX: 20,
+    radiusY: 6,
+    alpha: 0.24,
+  });
 });
