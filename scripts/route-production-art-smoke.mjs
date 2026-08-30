@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { traverseAuthoredYardToMasterLabTunnel } from './yard-scene-navigation.mjs';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
 const port = 9236;
@@ -22,9 +23,7 @@ async function waitFor(fn, timeoutMs = 25000, intervalMs = 80) {
   throw lastError ?? new Error(`Timed out after ${timeoutMs}ms`);
 }
 
-const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], {
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
+const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], { stdio: ['ignore', 'pipe', 'pipe'] });
 const chrome = spawn(chromePath, [
   '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
   `--remote-debugging-port=${port}`, '--remote-allow-origins=*', 'about:blank',
@@ -71,13 +70,16 @@ try {
   async function key(keyName, code, vk) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await sleep(100);
+    await sleep(90);
   }
   async function holdKey(keyName, code, vk, durationMs) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await sleep(durationMs);
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await sleep(120);
+    await sleep(90);
+  }
+  async function nudge(keyName, code, vk) {
+    await holdKey(keyName, code, vk, 70);
   }
   async function state() {
     return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
@@ -105,9 +107,6 @@ try {
     throw new Error(`YSP-7 route test did not begin in the production scene Yard: ${JSON.stringify(yardStart)}`);
   }
 
-  // Complete the real opening onboarding in the authored Yard. The long first
-  // right move also establishes the service-ring baseline used by the proven
-  // YSP-5/YSP-6 tunnel traversal.
   await holdKey('d', 'KeyD', 68, 1200);
   await waitForPrompt('interact');
   await key('e', 'KeyE', 69);
@@ -124,17 +123,18 @@ try {
   });
   await key('Escape', 'Escape', 27);
 
-  await holdKey('a', 'KeyA', 65, 1000);
-  await holdKey('w', 'KeyW', 87, 2050);
-  await holdKey('d', 'KeyD', 68, 1200);
-  await holdKey('s', 'KeyS', 83, 500);
-  await holdKey('d', 'KeyD', 68, 1850);
+  await traverseAuthoredYardToMasterLabTunnel({
+    readState: state,
+    moveLeft: () => nudge('a', 'KeyA', 65),
+    moveRight: () => nudge('d', 'KeyD', 68),
+    moveUp: () => nudge('w', 'KeyW', 87),
+    moveDown: () => nudge('s', 'KeyS', 83),
+    label: 'YSP-7 route smoke Yard navigation',
+  });
 
   const routeArrival = await waitFor(async () => {
     const current = await state();
-    return current?.sceneMode === 'master-lab-route' && current?.routeRendered && current?.routeHandoffTarget === 'master-lab-route'
-      ? current
-      : null;
+    return current?.sceneMode === 'master-lab-route' && current?.routeRendered && current?.routeHandoffTarget === 'master-lab-route' ? current : null;
   });
   if (routeArrival.routeHandoffCount !== 1 || routeArrival.routeHandoffExitId !== 'master-lab-tunnel' || routeArrival.playerX < 1760) {
     throw new Error(`YSP-7 did not enter the existing route through the authored tunnel: ${JSON.stringify(routeArrival)}`);
@@ -145,21 +145,14 @@ try {
     const yard = globalThis.__SPLICEPIT_VISUAL_RESET__;
     const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
     if (!route || !yard || !env || !route.active || !route.brightRendered || env.state.locationId !== 'route') return null;
-    return {
-      route: { ...route },
-      environment: { ...env.state },
-      yard: { playerX: yard.playerX, playerY: yard.playerY, worldWidth: yard.worldWidth, worldHeight: yard.worldHeight },
-      overlayExists: Boolean(document.querySelector('#route-production-art-stage')),
-    };
+    return { route: { ...route }, environment: { ...env.state }, yard: { playerX: yard.playerX, playerY: yard.playerY }, overlayExists: Boolean(document.querySelector('#route-production-art-stage')) };
   })()`));
-
   if (brightState.route.geometryId !== 'opening-world-v1' || brightState.route.collisionTopology !== 'unchanged') {
-    throw new Error(`WP0.6I route geometry contract failed after YSP-7 handoff: ${JSON.stringify(brightState)}`);
+    throw new Error(`Route geometry contract failed after YSP-7 handoff: ${JSON.stringify(brightState)}`);
   }
-  if (brightState.route.renderIntegration !== 'opening-world-render-loop' || brightState.route.depthModel !== 'base-before-player-foreground-after-player') {
-    throw new Error(`WP0.6I route depth integration failed after YSP-7 handoff: ${JSON.stringify(brightState.route)}`);
+  if (brightState.route.renderIntegration !== 'opening-world-render-loop' || brightState.route.depthModel !== 'base-before-player-foreground-after-player' || brightState.overlayExists) {
+    throw new Error(`Route depth integration failed after YSP-7 handoff: ${JSON.stringify(brightState.route)}`);
   }
-  if (brightState.overlayExists) throw new Error('Route production art must not use an independent overlay canvas.');
   if (brightState.route.darkMix !== 0 || brightState.environment.visualState !== 'bright') {
     throw new Error(`Route did not begin bright after YSP-7 handoff: ${JSON.stringify(brightState)}`);
   }
@@ -169,17 +162,12 @@ try {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return null;
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    const colours = new Set();
-    let infrastructure = 0;
-    let vegetation = 0;
-    for (let y = 70; y < 650; y += 4) {
-      for (let x = 40; x < 1240; x += 4) {
-        const i = (y * canvas.width + x) * 4;
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        colours.add((r << 16) | (g << 8) | b);
-        if (r > 105 && r < 210 && g > 75 && g < 180 && b < 125) infrastructure += 1;
-        if (g > r + 12 && g > b + 10 && g > 90) vegetation += 1;
-      }
+    const colours = new Set(); let infrastructure = 0; let vegetation = 0;
+    for (let y = 70; y < 650; y += 4) for (let x = 40; x < 1240; x += 4) {
+      const i = (y * canvas.width + x) * 4; const r = data[i], g = data[i + 1], b = data[i + 2];
+      colours.add((r << 16) | (g << 8) | b);
+      if (r > 105 && r < 210 && g > 75 && g < 180 && b < 125) infrastructure += 1;
+      if (g > r + 12 && g > b + 10 && g > 90) vegetation += 1;
     }
     globalThis.__WP06I_BRIGHT_PIXELS__ = data.slice();
     return { uniqueColours: colours.size, infrastructure, vegetation };
@@ -191,8 +179,7 @@ try {
   const positionBeforeDark = { x: brightState.yard.playerX, y: brightState.yard.playerY };
   await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceDark()`);
   const darkState = await waitFor(async () => evaluate(`(() => {
-    const route = globalThis.__SPLICEPIT_ROUTE_ART__;
-    const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
+    const route = globalThis.__SPLICEPIT_ROUTE_ART__; const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
     if (!route || !env || route.darkMix < 0.999 || !route.darkRendered) return null;
     return { route: { ...route }, environment: { ...env.state } };
   })()`), 10000);
@@ -201,23 +188,14 @@ try {
   }
 
   const darkStats = await evaluate(`(() => {
-    const canvas = document.querySelector('#visual-reset-stage');
-    const ctx = canvas?.getContext('2d');
-    const bright = globalThis.__WP06I_BRIGHT_PIXELS__;
+    const canvas = document.querySelector('#visual-reset-stage'); const ctx = canvas?.getContext('2d'); const bright = globalThis.__WP06I_BRIGHT_PIXELS__;
     if (!canvas || !ctx || !bright) return null;
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    let changed = 0;
-    let darkPaint = 0;
-    let biological = 0;
-    for (let y = 70; y < 650; y += 4) {
-      for (let x = 40; x < 1240; x += 4) {
-        const i = (y * canvas.width + x) * 4;
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        const br = bright[i], bg = bright[i + 1], bb = bright[i + 2];
-        if (Math.abs(r - br) + Math.abs(g - bg) + Math.abs(b - bb) > 42) changed += 1;
-        if (r < 100 && g < 100 && b < 95) darkPaint += 1;
-        if (r > g + 12 && r > b + 2 && r > 72) biological += 1;
-      }
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data; let changed = 0; let darkPaint = 0; let biological = 0;
+    for (let y = 70; y < 650; y += 4) for (let x = 40; x < 1240; x += 4) {
+      const i = (y * canvas.width + x) * 4; const r = data[i], g = data[i + 1], b = data[i + 2];
+      if (Math.abs(r - bright[i]) + Math.abs(g - bright[i + 1]) + Math.abs(b - bright[i + 2]) > 42) changed += 1;
+      if (r < 100 && g < 100 && b < 95) darkPaint += 1;
+      if (r > g + 12 && r > b + 2 && r > 72) biological += 1;
     }
     return { changed, darkPaint, biological };
   })()`);
@@ -229,15 +207,11 @@ try {
   if (Math.abs(afterDark.playerX - positionBeforeDark.x) > 1 || Math.abs(afterDark.playerY - positionBeforeDark.y) > 1) {
     throw new Error(`Route visual corruption moved the player: ${JSON.stringify({ positionBeforeDark, afterDark })}`);
   }
-
   await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceBright()`);
   await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ROUTE_ART__?.darkMix === 0 && globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.visualState === 'bright'`));
 
   console.log(`YSP-7 tunnel-to-route production art smoke passed: ${JSON.stringify({ handoff: routeArrival.routeHandoffTarget, brightStats, darkStats })}`);
-  ws.close();
-  cleanup();
+  ws.close(); cleanup();
 } catch (error) {
-  cleanup();
-  console.error(error);
-  process.exit(1);
+  cleanup(); console.error(error); process.exit(1);
 }
