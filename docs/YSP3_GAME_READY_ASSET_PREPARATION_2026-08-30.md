@@ -1,7 +1,7 @@
 # YSP-3 — Game-Ready Asset Preparation
 
 Date: 30 August 2026
-Status: IMPLEMENTED ON BRANCH, CI GATE PENDING
+Status: COMPLETE — merged via PR #73
 
 ## Purpose
 
@@ -12,7 +12,7 @@ Convert the user-approved YSP-2 open-centre Bright Yard master into deterministi
 - selected direction: **open-centre Yard**
 - clean generation ID: `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`
 - selected raw generation: 1536 × 1024
-- production crop already encoded on the YSP-3 branch: **1280 × 720 WebP**
+- production crop: **1280 × 720 WebP**
 
 The production crop is the high-quality candidate. The earlier q20 experiment has been removed so there is only one authoritative Bright Yard source.
 
@@ -33,7 +33,7 @@ The chunks are not loaded by the browser directly.
 - generates an exactly aligned 1280 × 720 transparent foreground PNG;
 - writes a versioned manifest containing SHA-256 identities and rendering requirements.
 
-The script is now part of both `npm run dev` and `npm run build`, so a build cannot silently use an incomplete or malformed Yard source.
+The script is part of both `npm run dev` and `npm run build`, so a build cannot silently use an incomplete or malformed Yard source.
 
 ## Scene-pack asset contract
 
@@ -53,7 +53,7 @@ The script is now part of both `npm run dev` and `npm run build`, so a build can
 
 YSP-3 creates the final-size transparent foreground production layer but does **not** move visible pixels out of the approved base yet.
 
-That is deliberate. YSP-4 and YSP-5 will establish the new walkable geometry and interaction anchors against the authored scene. YSP-6 then owns the actual occlusion/depth extraction, allowing foreground choices to be made against proven player routes rather than guessing before traversal is authored.
+That is deliberate. YSP-4 and YSP-5 establish the new walkable geometry and interaction anchors against the authored scene. YSP-6 then owns the actual occlusion/depth extraction, allowing foreground choices to be made against proven player routes rather than guessing before traversal is authored.
 
 Until YSP-6, base + transparent foreground reproduces the approved production crop exactly and cannot introduce edge duplication or layer drift.
 
@@ -70,13 +70,17 @@ Until YSP-6, base + transparent foreground reproduces the approved production cr
 
 The discarded q20 compression candidate has been deleted. Future packages must use the seven-part high-quality Bright Yard source only.
 
-## Gate
+## Gate result
 
-YSP-3 is complete when CI confirms:
+YSP-3 passed its full gate on PR #73:
 
-- TypeScript still passes;
-- the materialiser accepts the source and confirms 1280 × 720;
-- the production build successfully emits the Yard assets;
-- existing tests and browser smoke remain green.
+- TypeScript, content and RNG validation passed;
+- the authoritative Yard source validated as 1280 × 720;
+- base SHA-256: `c7a4de321971d53660fe42908ae1f14aa17510efbfdca1ad611368c7bcea3d7a`;
+- 177 / 177 unit, domain and save tests passed;
+- the production build emitted the base WebP, transparent foreground PNG and scene manifest;
+- the emitted `dist` scene pack independently revalidated at 1280 × 720 with matching hashes;
+- the full player-facing browser smoke suite passed;
+- PR #73 merged to `main` as merge commit `56589ac83f36b2bfa42e6f1d0fed1e70ff62aa1d`.
 
-After that gate, the next package is **YSP-4 — Re-author Walkable Space / Collision to the Scene**.
+The next package is **YSP-4 — Re-author Walkable Space / Collision to the Scene**.
