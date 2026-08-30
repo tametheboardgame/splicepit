@@ -39,7 +39,7 @@ import {
   isYardScenePositionBlocked,
   yardSceneCameraLimits,
   yardSceneExitAt,
-  YSP5_YARD_SCENE_PACK,
+  YSP6_YARD_SCENE_PACK,
   type YardSceneExit,
   type YardSceneInteractionAnchor,
 } from './world/yardScenePack.js';
@@ -90,6 +90,9 @@ type SpikeDebug = {
   routeHandoffCount: number;
   routeHandoffExitId: string | null;
   routeHandoffTarget: string | null;
+  groundShadowAlpha: number;
+  groundShadowRadiusX: number;
+  groundShadowRadiusY: number;
   tutorialPromptId: TutorialPromptId | null;
   tutorialPromptVisible: boolean;
   tutorialPromptCompleting: boolean;
@@ -132,7 +135,7 @@ async function decodeMiloFrames(): Promise<Record<YardFacing, HTMLImageElement>>
 function nearestAnchor(x: number, y: number): YardSceneInteractionAnchor | null {
   let nearest: YardSceneInteractionAnchor | null = null;
   let distance = Number.POSITIVE_INFINITY;
-  for (const anchor of YSP5_YARD_SCENE_PACK.anchors) {
+  for (const anchor of YSP6_YARD_SCENE_PACK.anchors) {
     const next = Math.hypot(anchor.position.x - x, anchor.position.y - y);
     if (next <= anchor.radius && next < distance) {
       nearest = anchor;
@@ -176,8 +179,8 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
   const openingSequence = new OpeningObjectiveSequenceController();
   const openingShells = new OpeningShellController();
   const player: { x: number; y: number; facing: YardFacing; moving: boolean } = {
-    x: YSP5_YARD_SCENE_PACK.spawn.x,
-    y: YSP5_YARD_SCENE_PACK.spawn.y,
+    x: YSP6_YARD_SCENE_PACK.spawn.x,
+    y: YSP6_YARD_SCENE_PACK.spawn.y,
     facing: 'down',
     moving: false,
   };
@@ -192,6 +195,12 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
   let routeHandoffExitId: string | null = null;
   let routeHandoffTarget: string | null = null;
   const initialObjective = openingShells.currentObjective();
+  const yardShadow = YSP6_YARD_SCENE_PACK.grounding?.shadow ?? {
+    offsetY: -4,
+    radiusX: 20,
+    radiusY: 6,
+    alpha: 0.24,
+  };
 
   const debug: SpikeDebug = {
     ready: true,
@@ -212,16 +221,19 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
     lastCollision: false,
     viewportWidth: VIEW_WIDTH,
     viewportHeight: VIEW_HEIGHT,
-    worldWidth: YSP5_YARD_SCENE_PACK.world.width,
-    worldHeight: YSP5_YARD_SCENE_PACK.world.height,
+    worldWidth: YSP6_YARD_SCENE_PACK.world.width,
+    worldHeight: YSP6_YARD_SCENE_PACK.world.height,
     yardRenderer: 'scene-image',
-    scenePackId: YSP5_YARD_SCENE_PACK.id,
+    scenePackId: YSP6_YARD_SCENE_PACK.id,
     sceneMode,
     interactionCount: 0,
     lastInteractionAnchor: null,
     routeHandoffCount: 0,
     routeHandoffExitId: null,
     routeHandoffTarget: null,
+    groundShadowAlpha: yardShadow.alpha,
+    groundShadowRadiusX: yardShadow.radiusX,
+    groundShadowRadiusY: yardShadow.radiusY,
     tutorialPromptId: null,
     tutorialPromptVisible: false,
     tutorialPromptCompleting: false,
@@ -282,7 +294,7 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
   }
 
   function currentCameraLimits(): { x: number; y: number; width: number; height: number } {
-    if (sceneMode === 'yard') return yardSceneCameraLimits(YSP5_YARD_SCENE_PACK, VIEW_WIDTH, VIEW_HEIGHT);
+    if (sceneMode === 'yard') return yardSceneCameraLimits(YSP6_YARD_SCENE_PACK, VIEW_WIDTH, VIEW_HEIGHT);
     return {
       x: 0,
       y: 0,
@@ -375,20 +387,20 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
       const distance = PLAYER_SPEED * (input.isDown(ACTIONS.RUN) ? RUN_SPEED_MULTIPLIER : 1) * dt;
       const nextX = player.x + dx * distance;
       const xBlocked = sceneMode === 'yard'
-        ? isYardScenePositionBlocked(YSP5_YARD_SCENE_PACK, nextX, player.y)
+        ? isYardScenePositionBlocked(YSP6_YARD_SCENE_PACK, nextX, player.y)
         : isYardPositionBlocked(nextX, player.y);
       if (!xBlocked) player.x = nextX;
       else { collisionCount += 1; lastCollision = true; }
       const nextY = player.y + dy * distance;
       const yBlocked = sceneMode === 'yard'
-        ? isYardScenePositionBlocked(YSP5_YARD_SCENE_PACK, player.x, nextY)
+        ? isYardScenePositionBlocked(YSP6_YARD_SCENE_PACK, player.x, nextY)
         : isYardPositionBlocked(player.x, nextY);
       if (!yBlocked) player.y = nextY;
       else { collisionCount += 1; lastCollision = true; }
     }
 
     if (sceneMode === 'yard' && openingShells.currentObjective().id === 'find-master') {
-      const exit = yardSceneExitAt(YSP5_YARD_SCENE_PACK, player.x, player.y);
+      const exit = yardSceneExitAt(YSP6_YARD_SCENE_PACK, player.x, player.y);
       if (exit?.targetEntry) enterMasterLabRoute(exit);
     }
 
@@ -410,9 +422,18 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
   }
 
   function drawPlayer(): void {
-    stageContext.fillStyle = 'rgba(38,56,47,0.28)';
+    const shadow = sceneMode === 'yard' ? yardShadow : { offsetY: -4, radiusX: 22, radiusY: 7, alpha: 0.28 };
+    stageContext.fillStyle = `rgba(31, 42, 36, ${shadow.alpha})`;
     stageContext.beginPath();
-    stageContext.ellipse(Math.round(player.x), Math.round(player.y - 4), 22, 7, 0, 0, Math.PI * 2);
+    stageContext.ellipse(
+      Math.round(player.x),
+      Math.round(player.y + shadow.offsetY),
+      shadow.radiusX,
+      shadow.radiusY,
+      0,
+      0,
+      Math.PI * 2,
+    );
     stageContext.fill();
     stageContext.drawImage(miloFrames[player.facing], Math.round(player.x - FRAME_WIDTH / 2), Math.round(player.y - 88), FRAME_WIDTH, FRAME_HEIGHT);
   }
@@ -421,7 +442,7 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
     if (sceneMode === 'yard') {
       drawYardSceneImageBase(stageContext);
       drawPlayer();
-      drawYardSceneImageForeground(stageContext);
+      drawYardSceneImageForeground(stageContext, player.y);
       debug.yardRendered = true;
       debug.routeRendered = false;
       return;
@@ -460,8 +481,8 @@ export async function startYardSceneImageSpike(): Promise<boolean> {
       objectiveCount: openingShells.objectiveCount(),
       playerX: player.x,
       playerY: player.y,
-      worldWidth: sceneMode === 'yard' ? YSP5_YARD_SCENE_PACK.world.width : YARD_WORLD_WIDTH,
-      worldHeight: sceneMode === 'yard' ? YSP5_YARD_SCENE_PACK.world.height : YARD_WORLD_HEIGHT,
+      worldWidth: sceneMode === 'yard' ? YSP6_YARD_SCENE_PACK.world.width : YARD_WORLD_WIDTH,
+      worldHeight: sceneMode === 'yard' ? YSP6_YARD_SCENE_PACK.world.height : YARD_WORLD_HEIGHT,
     }, VIEW_WIDTH, VIEW_HEIGHT);
     syncTutorialDebug(tutorialPrompt);
     syncOpeningDebug();

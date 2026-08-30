@@ -8,7 +8,7 @@ The correction is architectural. For the Apprentice Splicer Yard proof of concep
 
 If the Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions remain deferred until the Yard passes the YSP-10 human visual gate.
 
-**Status: ACTIVE — YSP-0 through YSP-4 complete. YSP-5 Interaction Anchors / Tutorial and Objective Integration is next.**
+**Status: ACTIVE — YSP-0 through YSP-6 complete. YSP-7 Bright Yard Runtime Replacement is next.**
 
 ---
 
@@ -58,9 +58,11 @@ The scene owns deterministic gameplay data rather than deriving gameplay from pi
 
 ## 3. Foreground / occlusion layer
 
-A transparent authored layer supplies objects the player can pass behind. Rendering is conceptually:
+An authored foreground treatment supplies objects the player can pass behind. Rendering is conceptually:
 
 `base scene → behind-player actors/effects → player/NPCs → foreground occlusion → UI/effects`.
+
+YSP-6 implements this without generating a second painted scene: selected approved base-image regions are redrawn after the player when their feet are behind those features, guaranteeing exact pixel alignment.
 
 ## 4. Dark/corrupted counterpart
 
@@ -170,50 +172,59 @@ Gate result:
 
 Merged by PR #76.
 
-## YSP-5 — Interaction Anchors / Tutorial and Objective Integration — NEXT
+## YSP-5 — Interaction Anchors / Tutorial and Objective Integration — COMPLETE
 
 Purpose: reconnect opening gameplay semantics to the new layout.
 
-Re-author against the YSP-4 scene:
+Completed:
 
-- opening arrival/spawn semantics;
-- tutorial interaction points;
-- any spatial Bag/Map onboarding expectations;
-- Yard NPC/action anchors;
-- route-to-Lab handoff;
-- camera focus targets used by the opening sequence.
+- versioned the scene contract as `yard-bright-scene-ysp5-v1` without changing YSP-4 collision;
+- authored semantic locations against approved scene pixels for the GENECO workshop door, containment inspection point, service-ring inspection point and Master Lab tunnel;
+- kept each interaction anchor on reachable feet-safe ground;
+- mapped the visible right-side tunnel to the existing authored Master Lab approach at `(1760, 655)`;
+- added semantic exit lookup rather than depending on brittle legacy coordinates;
+- resolved the tutorial ACTION against the authored service-ring interaction anchor;
+- preserved Bag/Map onboarding and progression to `Find your Master`;
+- handed the scene-image Yard into the existing authored opening-route world through the visible tunnel without restarting onboarding or objective state;
+- verified the semantic interaction and route handoff through mobile Chromium smoke.
 
-Rules:
+Gate result:
 
-- choose positions because they make sense in the authored scene;
-- do not preserve old coordinates merely to avoid changing tests;
-- prefer semantic anchor IDs over brittle x/y expectations in tests;
-- keep YSP-4 collision authoritative unless YSP-5 uncovers a genuine traversal defect.
+- fresh onboarding completes in the image-backed Yard;
+- objective reaches `Find your Master`;
+- the visible tunnel performs the intended Master Lab route handoff;
+- full verify and browser suites pass.
 
-Gate:
+Merged by PR #77.
 
-- fresh new-game onboarding completes naturally in the image-backed Yard;
-- objective progression reaches `Find your Master`;
-- the player can activate the intended Master Lab route handoff from the new scene.
+## YSP-6 — Foreground Depth / Character Grounding — COMPLETE
 
-## YSP-6 — Foreground Depth / Character Grounding
+Source of truth: `docs/YSP6_FOREGROUND_DEPTH_GROUNDING_2026-08-30.md`.
 
-Purpose: make protagonist sprites feel embedded in the scene rather than pasted over it.
+Purpose: make the protagonist feel embedded in the authored scene without generating or repainting another Yard image.
 
-Build:
+Completed:
 
-- author the currently transparent foreground layer;
-- establish intentional behind/in-front relationships;
-- align contact shadow and foot position with the scene;
-- ensure foreground does not hide controls, interaction points or the protagonist unintentionally;
-- verify depth behaviour during movement.
+- versioned the scene contract as `yard-bright-scene-ysp6-v1` while preserving all YSP-5 collision, interaction and route semantics;
+- authored four depth regions around the service ring, pit front rail and Master Lab tunnel;
+- redraws those regions from the exact already-decoded approved Bright Yard base after the protagonist only when the protagonist's feet are behind the feature;
+- retained the precisely aligned transparent foreground staging layer while avoiding a second lossy/colour-shifted painted source;
+- added a restrained scene-specific contact shadow tied to the protagonist feet;
+- verified deterministic depth sorting at multiple vertical positions;
+- verified in Chromium that the service-ring foreground actually activates after Milo moves behind it;
+- retained semantic interaction, onboarding, `Find your Master` and the Master Lab route handoff;
+- retained complete separation from the normal/live Yard path until YSP-7.
 
-Gate:
+Gate result:
 
-- the player visually occupies the same world as the background;
-- appropriate objects occlude the player without depth popping.
+- exact approved scene pixels occlude the protagonist in intended depth relationships;
+- player grounding is improved without changing collision or feet position;
+- mobile interaction and traversal remain functional;
+- GitHub Actions run #1131 passes the full verify and player-facing browser suites.
 
-## YSP-7 — Bright Yard Runtime Replacement
+PR #78 is the YSP-6 delivery PR.
+
+## YSP-7 — Bright Yard Runtime Replacement — NEXT
 
 Purpose: make the image-backed Yard the normal production path.
 
@@ -297,7 +308,7 @@ Autonomous order:
 
 Current position:
 
-`YSP-0 ✓ → YSP-1 ✓ → YSP-2 ✓ → YSP-3 ✓ → YSP-4 ✓ → YSP-5 NEXT`
+`YSP-0 ✓ → YSP-1 ✓ → YSP-2 ✓ → YSP-3 ✓ → YSP-4 ✓ → YSP-5 ✓ → YSP-6 ✓ → YSP-7 NEXT`
 
 Proceed autonomously between technical packages. Stop for user input only if a genuine visual choice cannot be resolved from the approved direction, or when YSP-10 is reached.
 
