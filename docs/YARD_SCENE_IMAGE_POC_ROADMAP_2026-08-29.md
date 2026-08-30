@@ -2,21 +2,17 @@
 
 ## Why this exists
 
-Human review of the merged Pass D build found a structural visual problem that automated tests could not detect: the new environment art still reads as if it has been pasted onto the footprint of the old board-like Yard rather than authored as one holistic scene.
+Human review of the merged Pass D build found a structural visual problem that automated tests could not detect: the environment art still read as scenery pasted onto the footprint of the old board-like Yard rather than one holistic authored location.
 
-The correction is architectural, not another detail pass.
+The correction is architectural. For the Apprentice Splicer Yard proof of concept, the environment is treated as an **authored scene image with explicit gameplay data layered over it**, rather than a procedural/code-drawn collection of scenery shapes.
 
-For the Apprentice Splicer Yard proof of concept, the environment will be treated as an **authored scene image with gameplay data layered over it**, rather than a procedural/code-drawn collection of scenery shapes.
+If the Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions remain deferred until the Yard passes the YSP-10 human visual gate.
 
-If this Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions are deliberately deferred until the Yard passes a human visual gate.
-
-**Status: BLOCKED — YSP-0 through YSP-2 complete; YSP-3 reopened after a truncated Bright Yard raster was discovered at YSP-4 start. YSP-4 cannot proceed until the complete approved master is restored or a replacement master is visually approved.**
+**Status: ACTIVE — YSP-0 through YSP-4 complete. YSP-5 Interaction Anchors / Tutorial and Objective Integration is next.**
 
 ---
 
 # Locked decisions
-
-## What remains locked
 
 The proof of concept keeps:
 
@@ -30,93 +26,45 @@ The proof of concept keeps:
 - the opening story requirement that the player begins in the Apprentice Splicer Yard and can leave towards the Master Lab;
 - save/story/event contracts that do not depend on exact Yard coordinates.
 
-## What is explicitly unlocked
+The following Yard details remain free to change when required by the authored scene:
 
-Unlike Pass D, the following Yard details may change if the authored scene benefits from it:
-
-- Yard world dimensions;
-- internal Yard layout;
-- exact road/path shape;
-- building placement;
-- prop placement;
-- spawn coordinates;
-- exit coordinates;
-- collision geometry;
-- walkable-space topology inside the Yard;
+- internal layout and exact route shape;
+- prop/building placement;
+- spawn and exit coordinates;
+- collision geometry and walkable-space topology;
 - interaction-anchor coordinates;
-- camera bounds inside the Yard.
+- camera bounds.
 
-The gameplay **meaning** of the Yard remains the same, but the old map footprint is no longer a constraint.
-
-This is essential. Reusing the old geometry underneath a new generated background would recreate the same visual failure in another form.
+The gameplay **meaning** of the Yard remains locked. Legacy map geometry is not.
 
 ---
 
 # Target architecture
 
-The Yard scene pack should be conceptually split into four concerns.
-
 ## 1. Authored base scene
 
-A full-scene raster image supplies the visible environment:
+A complete raster supplies coherent ground, paths, architecture, containment areas, biotech infrastructure, vegetation, material detail, lighting and environmental storytelling. The old procedural Yard must not remain visible beneath it.
 
-- coherent ground and path composition;
-- buildings and workshop architecture;
-- animal-handling / containment areas;
-- biotech equipment and service infrastructure;
-- vegetation, waste, repairs and environmental storytelling;
-- baked material detail, shadows and lighting;
-- no old Yard renderer visible beneath it.
+## 2. Explicit gameplay geometry
 
-The scene should be generated as a complete composition and then normalised into a game-ready asset. It must not be assembled by stamping disconnected generated props onto the previous map.
+The scene owns deterministic gameplay data rather than deriving gameplay from pixels at runtime:
 
-## 2. Gameplay geometry
-
-Gameplay is authored to match the approved scene rather than the other way around.
-
-The scene receives:
-
-- a walkable-space / collision mask or equivalent compiled collision representation;
-- feet-based collision checks for the protagonist;
-- spawn point;
-- Lab-route exit trigger;
+- walkable/blocked space;
+- feet-based collision;
+- spawn;
+- Lab-route exit;
 - interaction anchors;
 - camera/world bounds.
 
-The visible background image is never trusted by itself for gameplay. Movement remains deterministic because collision and trigger data are explicit.
-
 ## 3. Foreground / occlusion layer
 
-A transparent authored foreground layer supplies objects the player can pass behind, for example:
-
-- fences;
-- gantries;
-- pipes;
-- hanging cables;
-- bench edges;
-- tree canopies;
-- containment structures.
-
-The rendering order becomes approximately:
+A transparent authored layer supplies objects the player can pass behind. Rendering is conceptually:
 
 `base scene → behind-player actors/effects → player/NPCs → foreground occlusion → UI/effects`.
 
-This is how the location can look like one finished picture without flattening the player on top of every object.
-
 ## 4. Dark/corrupted counterpart
 
-Once the bright scene is approved technically, author a matching dark scene pack rather than relying on a colour filter.
-
-The dark version should preserve navigational readability but physically change the environment through things such as:
-
-- breached containment;
-- biological growth through architecture;
-- failed specimens;
-- contaminated runoff;
-- damaged equipment;
-- wrong silhouettes;
-- changed lighting sources;
-- persistent aftermath where story state requires it.
+The dark Yard will be a matching authored scene pack with physical environmental changes, not merely a colour filter. Navigation should remain recognisable unless a story beat deliberately changes it.
 
 ---
 
@@ -124,282 +72,239 @@ The dark version should preserve navigational readability but physically change 
 
 ## YSP-0 — Yard Scene Contract / Technical Spike — COMPLETE
 
-Purpose: prove the image-backed renderer can coexist safely with current movement, camera, UI and story systems before spending time on final art.
+Purpose: prove an image-backed Yard can coexist safely with movement, camera, mobile controls, UI and story systems.
 
 Completed:
 
-- defined the scene-pack runtime interface;
-- defined base-image and transparent-foreground loading;
-- defined world dimensions from scene metadata;
-- defined authored collision representation;
-- defined spawn, exit and interaction-anchor metadata;
-- defined camera bounds from scene metadata rather than old Yard constants;
-- added an opt-in `?yardRenderer=scene-image` development renderer path;
-- kept the current Pass D Yard as the normal fallback while the proof of concept is developed;
-- proved renderer isolation, deterministic collision, mobile controls/HUD, Bag, Map, Action, objective progression and camera follow with browser smoke coverage.
-
-Gate result:
-
-- temporary scene imagery replaces the Yard in scene-image mode;
-- Milo walks over it with deterministic collision;
-- camera, mobile controls, Bag, Map, Action and objective UI remain functional;
-- the old Yard is not visible under the scene-image renderer.
+- scene-pack runtime interface;
+- image base/foreground loading contract;
+- scene-owned world/camera dimensions;
+- explicit blocked-geometry representation;
+- feet-based collision;
+- scene-owned spawn, exit and anchor metadata;
+- opt-in `?yardRenderer=scene-image` path;
+- renderer isolation from the live Pass D Yard;
+- mobile controls/HUD, Bag, Map, Action and objective regression coverage.
 
 Merged by PR #69.
 
 ## YSP-1 — Holistic Yard Art Brief / Composition Lock — COMPLETE
 
-Purpose: define the whole location before generating final scene art.
+Source of truth: `docs/YSP1_HOLISTIC_YARD_ART_BRIEF_2026-08-29.md`.
 
-Locked source of truth:
+Locked direction:
 
-- `docs/YSP1_HOLISTIC_YARD_ART_BRIEF_2026-08-29.md`
-
-The completed brief establishes:
-
-- a warm pastoral-biotech identity: attractive first, concerning second;
-- an asymmetrical diagonal arrival-to-Lab composition rather than board geometry;
-- a crooked apprentice workshop / splice shed as the primary architectural mass;
-- a connected central specimen-processing/work cluster as the primary activity focal point;
-- an animal handling/quarantine area as the secondary mass;
-- drainage/water/vegetation as a soft compositional counterweight;
-- a believable facility service lane towards the Master Lab rather than a level portal;
-- generous negative space and loose-loop movement intent for keyboard and touch;
-- deliberately limited foreground/occlusion opportunities for later depth separation;
-- colour/material direction compatible with the accepted protagonist sprites and Master Lab benchmark;
-- bright-state biological wrongness and future dark-state transformation hooks;
-- generation rejection criteria that explicitly forbid procedural-looking lawns, prop islands and generic sci-fi/farm compositions.
-
-Gate result:
-
-- the Yard is now described as one coherent place without reference to legacy Yard coordinates or collision topology.
+- warm pastoral-biotech identity, attractive first and concerning second;
+- asymmetrical authored composition rather than board geometry;
+- crooked apprentice workshop as the primary architectural mass;
+- connected biotech work cluster and animal/quarantine area;
+- drainage/vegetation counterweight;
+- believable service route towards the Master Lab;
+- generous movement space suitable for keyboard and touch;
+- limited intentional foreground-depth opportunities;
+- no procedural-looking lawns, prop islands or generic sci-fi/farm layout.
 
 ## YSP-2 — Generate and Select Bright Yard Master Scene — COMPLETE
 
-Purpose: create the actual holistic scene rather than another code-drawn approximation.
+Source of truth: `docs/YSP2_BRIGHT_YARD_MASTER_2026-08-29.md`.
+
+Selected direction:
+
+- **open-centre Yard**;
+- clean generation lineage `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`;
+- raw generation dimensions 1536 × 1024;
+- broad central movement space;
+- strong integrated workshop/containment/service composition;
+- no baked protagonist characters.
+
+The selected scene passed the human composition gate as substantially more like one authored location than the Pass D Yard.
+
+## YSP-3 — Game-Ready Asset Preparation — COMPLETE
+
+Source of truth: `docs/YSP3_GAME_READY_ASSET_PREPARATION_2026-08-30.md`.
+
+The first YSP-3 transport merged by PR #73 was later found to be truncated when YSP-4 attempted to use the actual emitted pixels. The recovery work did not accept the broken source or guess geometry around it.
+
+PR #75 restored the exact approved Bright Yard image supplied by the user and established the production identity:
+
+- canvas: **1280 × 720**;
+- format: WebP;
+- exact byte length: **177,808 bytes**;
+- SHA-256: `6e525dd2a7e35a1beb3e397040982f750c2b2c0eac86df7264f6462830950beb`;
+- complete RIFF and VP8 payload validation;
+- Chromium `image.decode()` validation;
+- deterministic emitted-pack hashes;
+- aligned transparent foreground staging layer for YSP-6.
+
+The strengthened YSP-3 gate now prevents header-valid but truncated images from passing again.
+
+Merged by PR #75.
+
+## YSP-4 — Re-author Walkable Space / Collision to the Scene — COMPLETE
+
+Source of truth: `docs/YSP4_AUTHORED_YARD_COLLISION_2026-08-30.md`.
+
+Purpose: make movement fit the approved scene rather than forcing the scene to fit legacy colliders.
 
 Completed:
 
-- generated a small complete-composition concept pass rather than disconnected environment pieces;
-- selected the user-approved open-centre composition;
-- regenerated it as a clean environment image without the presentation frame or baked player characters;
-- preserved broad central movement space and strong upper-left/right structural hierarchy;
-- retained integrated biotech infrastructure, fencing, tanks, service clutter, vegetation and deliberate foreground-depth opportunities;
-- recorded the selected clean generation and production-crop identity in `docs/YSP2_BRIGHT_YARD_MASTER_2026-08-29.md`.
-
-Selection source of truth:
-
-- clean generation ID `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`;
-- raw generation dimensions `1536 × 1024`;
-- selected direction **open-centre Yard**.
+- authored geometry directly against the recovered 1280 × 720 Yard pixels;
+- scene/world/camera bounds now match the production raster;
+- retained the established feet-based protagonist hitbox;
+- established a safe lower-centre spawn at `(575, 660)`;
+- made major visible structures solid, including GENECO, THE HUT, containment, vats, pit infrastructure, retaining walls and storage masses;
+- preserved the broad central court and usable movement rhythm;
+- authored the visible right-side Master Lab tunnel as the route exit footprint;
+- proved deterministic reachability from spawn to that tunnel;
+- wired the opt-in scene-image renderer to the exact recovered YSP-3 production raster rather than the YSP-0 placeholder;
+- verified touch movement, collision, onboarding UI and physical traversal in Chromium;
+- retained the current normal/live Yard renderer unchanged until YSP-7;
+- deliberately left interaction anchors empty for YSP-5 instead of copying legacy coordinates.
 
 Gate result:
 
-- by-eye review passes: the selected raw scene reads substantially more like one authored location than the Pass D Yard;
-- generated signage remains non-authoritative and may be repaired during YSP-3;
-- gameplay geometry remains intentionally unmodified until asset preparation is complete.
+- production/type/unit/build checks pass;
+- full browser regression passes;
+- mobile character collides with authored visible geometry and can traverse from spawn to the Master Lab tunnel;
+- old Yard geometry is not used by the image-backed path.
 
-## YSP-3 — Game-Ready Asset Preparation — REOPENED / BLOCKED
+Merged by PR #76.
 
-Purpose: turn the selected generated master into deterministic production assets.
-
-PR #73 completed the scene-pack plumbing and originally passed the available automated gate:
-
-- a 1280 × 720 WebP source transport was stored as seven deterministic base64 chunks;
-- a precisely aligned transparent foreground staging layer was generated;
-- a versioned scene manifest, hashes and atomic preloader were added;
-- materialisation was wired into development, build and CI;
-- 177 / 177 tests and the existing player-facing browser regression suite passed.
-
-However, YSP-4 began by exporting the actual materialised raster from CI for independent collision authoring. That exposed a source-integrity failure which the original checks did not detect:
-
-- high-quality WebP RIFF header declares **214,308 bytes**;
-- committed source reconstructs to only **102,975 bytes**;
-- independent decoders reject the WebP payload;
-- historical q20 fallback declares **95,908 bytes** but reconstructs to only **24,000 bytes**;
-- therefore neither stored candidate is a complete image and no complete Bright Yard raster remains in Git history.
-
-Corrective action already prepared on draft PR #74:
-
-- RIFF-declared total length must equal actual source length;
-- VP8 chunk length must terminate exactly at the end of the source;
-- truncated image transports now fail `validate:ysp3` immediately;
-- the current source correctly fails with `RIFF declares 214308 bytes but source contains 102975`.
-
-Gate required before YSP-3 can close again:
-
-- restore the complete approved Bright Yard master, or generate and visually approve a replacement master;
-- normalise it to the production canvas;
-- pass strict RIFF/VP8 payload integrity;
-- successfully decode the image independently;
-- preserve exact base/foreground alignment and deterministic hashes;
-- pass production build and player-facing browser regression;
-- confirm by eye that the final raster is the intended Yard.
-
-No collision, anchor or runtime-replacement work should use the truncated file.
-
-## YSP-4 — Re-author Walkable Space / Collision to the Scene — BLOCKED BY YSP-3 RASTER INTEGRITY
-
-Purpose: make movement fit the art rather than forcing the art to fit legacy colliders.
-
-Build:
-
-- create a Yard-specific walkable/collision mask or equivalent authored representation;
-- use protagonist feet/hitbox checks against the new geometry;
-- create a safe spawn area;
-- create a clear Lab-route exit corridor;
-- keep important visual objects solid where expected;
-- make paths, gates, fences, buildings and water visually agree with collision;
-- update camera/world bounds to the new scene;
-- remove dependence on old `YARD_COLLIDERS` for the image-backed Yard path once replacement geometry is proven.
-
-Gate:
-
-- no invisible walls in visually open space;
-- no walking through visually solid architecture;
-- player can reach all required Yard tutorial/objective points and the Lab-route exit;
-- movement remains reliable with keyboard and touch controls.
-
-YSP-4 must be authored from the actual approved scene pixels. Do not guess geometry from the written brief and do not copy legacy Yard coordinates as a substitute for the missing raster.
-
-## YSP-5 — Interaction Anchors / Tutorial and Objective Integration
+## YSP-5 — Interaction Anchors / Tutorial and Objective Integration — NEXT
 
 Purpose: reconnect opening gameplay semantics to the new layout.
 
-Re-author coordinates for:
+Re-author against the YSP-4 scene:
 
-- opening spawn/arrival;
+- opening arrival/spawn semantics;
 - tutorial interaction points;
-- Bag/Map onboarding expectations where spatially relevant;
-- any Yard NPC/action anchors;
+- any spatial Bag/Map onboarding expectations;
+- Yard NPC/action anchors;
 - route-to-Lab handoff;
 - camera focus targets used by the opening sequence.
 
 Rules:
 
-- interaction positions must be chosen because they make sense in the new scene;
+- choose positions because they make sense in the authored scene;
 - do not preserve old coordinates merely to avoid changing tests;
-- tests must follow semantic anchors/IDs where possible instead of brittle legacy x/y assumptions.
+- prefer semantic anchor IDs over brittle x/y expectations in tests;
+- keep YSP-4 collision authoritative unless YSP-5 uncovers a genuine traversal defect.
 
 Gate:
 
-- fresh new-game onboarding completes naturally in the new Yard;
-- objective progression reaches `Find your Master` and exits correctly toward the Lab route.
+- fresh new-game onboarding completes naturally in the image-backed Yard;
+- objective progression reaches `Find your Master`;
+- the player can activate the intended Master Lab route handoff from the new scene.
 
 ## YSP-6 — Foreground Depth / Character Grounding
 
-Purpose: make protagonist sprites feel embedded in the image rather than pasted over it.
+Purpose: make protagonist sprites feel embedded in the scene rather than pasted over it.
 
 Build:
 
-- integrate the transparent foreground layer;
+- author the currently transparent foreground layer;
 - establish intentional behind/in-front relationships;
-- ensure foreground never hides critical controls, interaction points or large parts of the protagonist unintentionally;
-- align protagonist contact shadow and foot position with the scene lighting/materials;
-- verify foreground behaviour across vertical movement and camera scrolling.
+- align contact shadow and foot position with the scene;
+- ensure foreground does not hide controls, interaction points or the protagonist unintentionally;
+- verify depth behaviour during movement.
 
 Gate:
 
-- screenshots show the character occupying the same visual world as the background;
-- player can walk behind appropriate objects without depth popping or incorrect occlusion.
+- the player visually occupies the same world as the background;
+- appropriate objects occlude the player without depth popping.
 
 ## YSP-7 — Bright Yard Runtime Replacement
 
-Purpose: make the image-backed Yard the real production path for the proof of concept.
+Purpose: make the image-backed Yard the normal production path.
 
 Build:
 
 - switch normal Yard rendering to the scene pack;
-- stop drawing Pass D procedural Yard scenery in the active path;
-- retain old renderer only behind an explicit temporary development fallback until human approval if rollback safety is useful;
-- ensure asset loading failure produces a controlled error/fallback rather than a partially layered scene;
-- update visual/runtime contracts and smoke tests to assert the image-backed scene mode.
+- stop drawing Pass D Yard scenery in the active path;
+- retain an explicit temporary development fallback only if useful for rollback;
+- fail/fallback atomically if scene assets cannot load;
+- update runtime/smoke contracts to assert the image-backed production path.
 
 Gate:
 
-- deployed bright Yard contains no visible old-board scenery underneath or around the scene image;
-- full onboarding and route handoff work on the image-backed renderer.
+- deployed Bright Yard contains no visible old-board scenery underneath or around the authored scene;
+- onboarding and route handoff work on the production scene-image renderer.
 
 ## YSP-8 — Authored Dark Yard Scene Pack
 
-Purpose: prove the architecture also supports SplicePit’s bright/dark story language.
+Purpose: prove the architecture supports SplicePit’s bright/dark story language.
 
 Process:
 
 - use the approved bright Yard as the layout reference;
-- generate/author a matching dark counterpart with physical environmental changes;
-- normalise dark base and foreground to the exact bright-scene dimensions and anchor system;
-- keep collision stable unless a story beat explicitly requires an authored movement change;
-- transition corruption/flicker between coherent scene states rather than between procedural overlays.
+- author a matching dark counterpart with physical environmental changes;
+- keep dimensions and anchors aligned with the bright scene;
+- keep collision stable unless a story beat explicitly requires a movement change;
+- transition between coherent scene states rather than procedural overlays.
 
 Gate:
 
-- bright ↔ dark transitions preserve player position/camera correctly;
+- bright/dark transitions preserve player position and camera correctly;
 - dark state is recognisably the same Yard but physically wrong;
-- no alignment jump between scene packs.
+- no scene-pack alignment jump.
 
 ## YSP-9 — Mobile / Performance / Regression Hardening
-
-Purpose: prove the approach is practical, not merely prettier.
 
 Validate:
 
 - 1280 × 720 desktop composition;
-- current portrait mobile layout;
-- landscape mobile layout;
+- portrait and landscape mobile layout;
 - touch movement and run controls;
-- camera bounds at all Yard edges;
-- image decode/preload time;
-- memory footprint acceptable for the opening slice;
-- no browser canvas smoothing/blur regressions;
-- Bag/Map/Action objective UI unchanged;
-- route handoff into the existing opening route;
-- save/story state compatibility;
-- title/narration/selection/Yard integration regression.
+- image decode/preload time and memory footprint;
+- canvas smoothing/blur behaviour;
+- Bag/Map/Action/objective UI;
+- route handoff;
+- save/story compatibility;
+- title/narration/selection/Yard integration.
 
 Gate:
 
-- image-backed Yard performs smoothly on the target mobile browser and desktop browser used by current smoke tests;
-- no new soft lock or traversal regression.
+- smooth target-browser performance on mobile and desktop;
+- no new soft lock, traversal or presentation regression.
 
 ## YSP-10 — Yard Scene-Image Human Gate
 
-This is a hard visual decision point.
+This is the hard visual decision point.
 
 User review should answer:
 
 1. Does the Yard finally read as one holistic authored place rather than scenery pasted onto a board?
 2. Does it look like it belongs in the same game as the protagonist sprites and Master Lab?
 3. Does the protagonist look naturally embedded in it?
-4. Is movement/readability still good on mobile?
+4. Is movement/readability good on mobile?
 5. Is the scene-image architecture good enough to propagate to the opening route and Local Pit?
 
 Outcomes:
 
-- **APPROVE:** scene-image architecture becomes the preferred environment model for the remaining weak opening locations; create follow-on Route and Local Pit conversion packages.
-- **REVISE:** iterate the Yard scene only; do not propagate yet.
+- **APPROVE:** scene-image architecture becomes the preferred environment model for remaining weak opening locations; create follow-on Route and Local Pit conversion packages.
+- **REVISE:** iterate the Yard only; do not propagate yet.
 - **REJECT ARCHITECTURE:** keep the experiment isolated and reassess without destabilising the rest of the game.
 
-No Route or Local Pit scene-image conversion begins before this human gate.
+No Route or Local Pit scene-image conversion begins before this gate.
 
 ---
 
 # Implementation order
 
-Autonomous order remains:
+Autonomous order:
 
 `YSP-0 Technical Spike → YSP-1 Art Brief → YSP-2 Bright Master Generation → YSP-3 Asset Preparation → YSP-4 Collision/Walkability → YSP-5 Interactions → YSP-6 Foreground Depth → YSP-7 Bright Runtime Replacement → YSP-8 Dark Scene → YSP-9 Hardening → YSP-10 Human Gate`
 
-Current recovery insertion:
+Current position:
 
-`restore/regenerate complete Bright Yard raster → re-close YSP-3 with strict decode/integrity gate → resume YSP-4`
+`YSP-0 ✓ → YSP-1 ✓ → YSP-2 ✓ → YSP-3 ✓ → YSP-4 ✓ → YSP-5 NEXT`
 
-The implementation should proceed autonomously between technical packages. Stop for user input only if a genuine visual choice cannot be made from the existing direction, or when YSP-10 is reached.
+Proceed autonomously between technical packages. Stop for user input only if a genuine visual choice cannot be resolved from the approved direction, or when YSP-10 is reached.
 
 ---
 
 # Success criterion
 
-The proof of concept is successful only if the deployed Yard looks like **one authored scene first and a navigable game map second**, while still playing reliably.
+The proof of concept succeeds only if the deployed Yard looks like **one authored scene first and a navigable game map second**, while still playing reliably.
 
 Automated tests are necessary but cannot pass YSP-10 on their own.
