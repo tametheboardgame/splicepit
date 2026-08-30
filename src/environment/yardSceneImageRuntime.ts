@@ -2,7 +2,10 @@ import {
   preloadYsp3BrightYardAssets,
   YSP3_BRIGHT_YARD_ASSET_PACK,
 } from './yardSceneAssetPack.js';
-import { YSP5_YARD_SCENE_PACK } from '../world/yardScenePack.js';
+import {
+  yardSceneForegroundOccluders,
+  YSP6_YARD_SCENE_PACK,
+} from '../world/yardScenePack.js';
 
 type YardSceneImageDebug = {
   requested: boolean;
@@ -18,6 +21,9 @@ type YardSceneImageDebug = {
   worldHeight: number;
   baseRendered: boolean;
   foregroundRendered: boolean;
+  foregroundMode: string;
+  activeOccluderIds: string[];
+  occluderRenderCount: number;
   legacyRendererRendered: boolean;
   renderCount: number;
 };
@@ -32,14 +38,17 @@ const debug: YardSceneImageDebug = {
   active: false,
   fallback: false,
   error: null,
-  scenePackId: YSP5_YARD_SCENE_PACK.id,
+  scenePackId: YSP6_YARD_SCENE_PACK.id,
   assetPackId: YSP3_BRIGHT_YARD_ASSET_PACK.id,
-  sourceWidth: YSP5_YARD_SCENE_PACK.source.width,
-  sourceHeight: YSP5_YARD_SCENE_PACK.source.height,
-  worldWidth: YSP5_YARD_SCENE_PACK.world.width,
-  worldHeight: YSP5_YARD_SCENE_PACK.world.height,
+  sourceWidth: YSP6_YARD_SCENE_PACK.source.width,
+  sourceHeight: YSP6_YARD_SCENE_PACK.source.height,
+  worldWidth: YSP6_YARD_SCENE_PACK.world.width,
+  worldHeight: YSP6_YARD_SCENE_PACK.world.height,
   baseRendered: false,
   foregroundRendered: false,
+  foregroundMode: YSP6_YARD_SCENE_PACK.foreground?.mode ?? 'none',
+  activeOccluderIds: [],
+  occluderRenderCount: 0,
   legacyRendererRendered: false,
   renderCount: 0,
 };
@@ -77,35 +86,60 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D): void {
     baseImage,
     0,
     0,
-    YSP5_YARD_SCENE_PACK.source.width,
-    YSP5_YARD_SCENE_PACK.source.height,
+    YSP6_YARD_SCENE_PACK.source.width,
+    YSP6_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP5_YARD_SCENE_PACK.world.width,
-    YSP5_YARD_SCENE_PACK.world.height,
+    YSP6_YARD_SCENE_PACK.world.width,
+    YSP6_YARD_SCENE_PACK.world.height,
   );
   ctx.restore();
   debug.baseRendered = true;
   debug.renderCount += 1;
 }
 
-export function drawYardSceneImageForeground(ctx: CanvasRenderingContext2D): void {
-  if (!foregroundImage || !debug.active) return;
+/**
+ * Draw the transparent staging foreground first, then redraw authored crops from
+ * the exact already-decoded Bright Yard base over the protagonist when their
+ * feet are behind those features. No new foreground artwork is generated and
+ * there is no colour/compression mismatch at the occlusion edge.
+ */
+export function drawYardSceneImageForeground(ctx: CanvasRenderingContext2D, playerFeetY: number): void {
+  if (!foregroundImage || !baseImage || !debug.active) return;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
     foregroundImage,
     0,
     0,
-    YSP5_YARD_SCENE_PACK.source.width,
-    YSP5_YARD_SCENE_PACK.source.height,
+    YSP6_YARD_SCENE_PACK.source.width,
+    YSP6_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP5_YARD_SCENE_PACK.world.width,
-    YSP5_YARD_SCENE_PACK.world.height,
+    YSP6_YARD_SCENE_PACK.world.width,
+    YSP6_YARD_SCENE_PACK.world.height,
   );
+
+  const activeOccluders = yardSceneForegroundOccluders(YSP6_YARD_SCENE_PACK, playerFeetY);
+  for (const occluder of activeOccluders) {
+    const bounds = occluder.bounds;
+    ctx.drawImage(
+      baseImage,
+      bounds.x,
+      bounds.y,
+      bounds.width,
+      bounds.height,
+      bounds.x,
+      bounds.y,
+      bounds.width,
+      bounds.height,
+    );
+  }
   ctx.restore();
+
   debug.foregroundRendered = true;
+  debug.activeOccluderIds = activeOccluders.map((occluder) => occluder.id);
+  debug.occluderRenderCount += activeOccluders.length;
 }
 
 export function markYardSceneImageFallback(): void {
