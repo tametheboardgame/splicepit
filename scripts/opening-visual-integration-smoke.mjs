@@ -7,7 +7,7 @@ let nextId = 0;
 const pending = new Map();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function waitFor(fn, timeoutMs = 20000, intervalMs = 70) {
+async function waitFor(fn, timeoutMs = 25000, intervalMs = 70) {
   const started = Date.now();
   let lastError;
   while (Date.now() - started < timeoutMs) {
@@ -22,9 +22,7 @@ async function waitFor(fn, timeoutMs = 20000, intervalMs = 70) {
   throw lastError ?? new Error(`Timed out after ${timeoutMs}ms`);
 }
 
-const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], {
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
+const server = spawn('python3', ['-m', 'http.server', String(gamePort), '--bind', '127.0.0.1', '--directory', 'dist'], { stdio: ['ignore', 'pipe', 'pipe'] });
 const chrome = spawn(chromePath, [
   '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
   `--remote-debugging-port=${port}`, '--remote-allow-origins=*', 'about:blank',
@@ -42,13 +40,11 @@ try {
     const list = await response.json();
     return list.length ? list : null;
   });
-
   const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
     ws.addEventListener('error', reject, { once: true });
   });
-
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
     if (!msg.id) return;
@@ -65,52 +61,31 @@ try {
       ws.send(JSON.stringify({ id, method, params }));
     });
   }
-
   async function evaluate(expression) {
     const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Browser evaluation failed');
     return result.result?.value;
   }
-
   async function key(keyName, code, vk) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await sleep(85);
+    await sleep(90);
   }
-
   async function holdKey(keyName, code, vk, durationMs = 90) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await sleep(durationMs);
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
-    await sleep(35);
+    await sleep(80);
   }
-
   async function yardState() {
     return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
-
-  async function moveAxis(axis, target, positive, negative, tolerance = 18) {
-    let previous = null;
-    let stalled = 0;
-    for (let attempt = 0; attempt < 220; attempt += 1) {
-      const current = await yardState();
-      const value = axis === 'x' ? current.playerX : current.playerY;
-      const delta = target - value;
-      if (Math.abs(delta) <= tolerance) return current;
-      if (previous !== null && Math.abs(value - previous) < 0.8) stalled += 1;
-      else stalled = 0;
-      if (stalled >= 10) throw new Error(`WP0.6M route movement stalled on ${axis}: ${JSON.stringify(current)}`);
-      previous = value;
-      const control = delta > 0 ? positive : negative;
-      await holdKey(control.key, control.code, control.vk, 90);
-    }
-    throw new Error(`WP0.6M route movement failed to reach ${axis}=${target}: ${JSON.stringify(await yardState())}`);
+  async function waitForPrompt(id) {
+    return waitFor(async () => {
+      const value = await yardState();
+      return value?.tutorialPromptId === id && value?.tutorialPromptVisible && !value?.tutorialPromptCompleting ? value : null;
+    }, 10000);
   }
-
-  const right = { key: 'ArrowRight', code: 'ArrowRight', vk: 39 };
-  const left = { key: 'ArrowLeft', code: 'ArrowLeft', vk: 37 };
-  const down = { key: 'ArrowDown', code: 'ArrowDown', vk: 40 };
-  const up = { key: 'ArrowUp', code: 'ArrowUp', vk: 38 };
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
@@ -127,7 +102,7 @@ try {
     await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.phase === 'confirmed'`));
   }
 
-  async function verifyLocation(locationId, artGlobalName, playerGlobalName, canvasId, shellProperty) {
+  async function verifyLocation(locationId, artGlobalName, playerGlobalName, canvasId, shellProperty, expectDarkPixels = true) {
     await waitFor(async () => evaluate(`(() => {
       const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
       const art = globalThis['${artGlobalName}'];
@@ -150,17 +125,15 @@ try {
           colours.add((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]);
         }
       }
-      const rect = canvas.getBoundingClientRect();
       return {
         uniqueColours: colours.size,
         width: canvas.width,
         height: canvas.height,
-        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
         player: { x: state.playerX ?? null, y: state.playerY ?? null, zone: state.zone ?? null, stageId: state.stageId ?? null },
       };
     })()`);
     if (!bright || bright.width !== 1280 || bright.height !== 720 || bright.uniqueColours < 24) {
-      throw new Error(`WP0.6M ${locationId} bright integration contract failed: ${JSON.stringify(bright)}`);
+      throw new Error(`Opening visual ${locationId} bright contract failed: ${JSON.stringify(bright)}`);
     }
 
     await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.clearForce(); globalThis.__SPLICEPIT_CORRUPTION__.reschedule()`);
@@ -182,8 +155,8 @@ try {
       }
       return { changed };
     })()`);
-    if (!dark || dark.changed < 120) {
-      throw new Error(`WP0.6M ${locationId} dark layer is not materially distinct: ${JSON.stringify(dark)}`);
+    if (!dark || (expectDarkPixels ? dark.changed < 120 : dark.changed > 8)) {
+      throw new Error(`Opening visual ${locationId} dark-boundary contract failed: ${JSON.stringify({ dark, expectDarkPixels })}`);
     }
 
     await key('b', 'KeyB', 66);
@@ -195,31 +168,57 @@ try {
       return { darkMix: env.state.darkMix, reasons: [...corruption.state.suppressionReasons], shell: state['${shellProperty}'] };
     })()`));
     if (shell.darkMix <= 0.1 || !shell.reasons.includes('opening-shell')) {
-      throw new Error(`WP0.6M ${locationId} UI/corrupted-visual compatibility failed: ${JSON.stringify(shell)}`);
+      throw new Error(`Opening visual ${locationId} UI/corruption compatibility failed: ${JSON.stringify(shell)}`);
     }
     await key('Escape', 'Escape', 27);
 
-    await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.phase === 'steady' && globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.darkMix === 0`), 10000);
+    await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.phase === 'steady' && globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.darkMix === 0`), 12000);
     const after = await evaluate(`(() => {
       const state = globalThis['${playerGlobalName}'];
       return state ? { x: state.playerX ?? null, y: state.playerY ?? null, zone: state.zone ?? null, stageId: state.stageId ?? null } : null;
     })()`);
     if (JSON.stringify(bright.player) !== JSON.stringify(after)) {
-      throw new Error(`WP0.6M ${locationId} visual integration changed gameplay state: ${JSON.stringify({ before: bright.player, after })}`);
+      throw new Error(`Opening visual ${locationId} changed gameplay state: ${JSON.stringify({ before: bright.player, after })}`);
     }
-
     return { locationId, uniqueColours: bright.uniqueColours, changedPixels: dark.changed };
   }
 
   const results = [];
   await openScenario();
-  results.push(await verifyLocation('yard', '__SPLICEPIT_YARD_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell'));
+  const scene = await yardState();
+  if (scene.yardRenderer !== 'scene-image' || scene.worldWidth !== 1280 || scene.worldHeight !== 720) {
+    throw new Error(`YSP-7 final visual integration did not begin in the scene Yard: ${JSON.stringify(scene)}`);
+  }
+  // YSP-8 owns the authored dark Yard scene. For YSP-7 the important contract
+  // is that dark-state signalling and UI suppression still work without the old
+  // procedural dark pixels leaking underneath the approved Bright Yard.
+  results.push(await verifyLocation('yard', '__SPLICEPIT_YARD_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell', false));
 
-  await moveAxis('y', 700, down, up);
-  await moveAxis('x', 1200, right, left);
-  await moveAxis('x', 1450, right, left);
-  await moveAxis('y', 655, down, up, 6);
-  await moveAxis('x', 1840, right, left);
+  await waitForPrompt('movement');
+  await holdKey('d', 'KeyD', 68, 1200);
+  await waitForPrompt('interact');
+  await key('e', 'KeyE', 69);
+  await waitForPrompt('bag');
+  await key('b', 'KeyB', 66);
+  await waitForPrompt('confirm-cancel');
+  await key('Enter', 'Enter', 13);
+  await key('Escape', 'Escape', 27);
+  await waitForPrompt('map');
+  await key('m', 'KeyM', 77);
+  await waitFor(async () => {
+    const value = await yardState();
+    return value?.openingSequenceComplete && value?.objectiveId === 'find-master' && value?.activeOpeningShell === 'map' ? value : null;
+  });
+  await key('Escape', 'Escape', 27);
+  await holdKey('a', 'KeyA', 65, 1000);
+  await holdKey('w', 'KeyW', 87, 2050);
+  await holdKey('d', 'KeyD', 68, 1200);
+  await holdKey('s', 'KeyS', 83, 500);
+  await holdKey('d', 'KeyD', 68, 1850);
+  await waitFor(async () => {
+    const value = await yardState();
+    return value?.sceneMode === 'master-lab-route' && value?.routeRendered ? value : null;
+  });
   results.push(await verifyLocation('route', '__SPLICEPIT_ROUTE_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell'));
 
   await openScenario('&labTest=1');
@@ -251,10 +250,10 @@ try {
       || Math.abs(mobile.stage.top - mobile.corruption.top) > 1
       || Math.abs(mobile.stage.width - mobile.corruption.width) > 1
       || Math.abs(mobile.stage.height - mobile.corruption.height) > 1) {
-    throw new Error(`WP0.6M mobile visual-stack integration failed: ${JSON.stringify(mobile)}`);
+    throw new Error(`Opening visual mobile stack integration failed: ${JSON.stringify(mobile)}`);
   }
 
-  console.log(`WP0.6M final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
+  console.log(`YSP-7 final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
   ws.close();
   cleanup();
 } catch (error) {

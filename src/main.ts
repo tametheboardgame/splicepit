@@ -143,6 +143,8 @@ const loadedSave = loadGame();
 let selectedAvatarId: ProtagonistId = gameState.avatarId ?? 'milo';
 let phase: GamePhase = 'select';
 let saved = Boolean(loadedSave && gameState.avatarId && gameState.playerName);
+let productionYardActive = false;
+let productionYardHandle: { stop(): void } | null = null;
 
 root.innerHTML = `
   <canvas id="visual-reset-stage" width="${SELECT_VIEW_WIDTH}" height="${SELECT_VIEW_HEIGHT}" aria-label="SplicePit apprentice selection and Yard"></canvas>
@@ -234,7 +236,8 @@ const debug: VisualResetDebug = {
   })),
 };
 
-(globalThis as typeof globalThis & { __SPLICEPIT_VISUAL_RESET__?: VisualResetDebug }).__SPLICEPIT_VISUAL_RESET__ = debug;
+const visualResetGlobal = globalThis as typeof globalThis & { __SPLICEPIT_VISUAL_RESET__?: VisualResetDebug };
+visualResetGlobal.__SPLICEPIT_VISUAL_RESET__ = debug;
 
 function syncTutorialDebug(prompt: TutorialPromptView | null): void {
   debug.tutorialPromptId = prompt?.id ?? null;
@@ -365,7 +368,9 @@ function progressOpeningObjectiveSequence(now: number): TutorialPromptView | nul
   return prompt;
 }
 
-function enterYard(): void {
+function enterLegacyYard(): void {
+  productionYardActive = false;
+  productionYardHandle = null;
   phase = 'confirmed';
   debug.phase = phase;
   debug.selectionRendered = false;
@@ -381,7 +386,52 @@ function enterYard(): void {
   playerNameInput.blur();
 }
 
+async function enterYard(): Promise<void> {
+  phase = 'confirmed';
+  debug.phase = phase;
+  debug.selectionRendered = false;
+  worldInput.setEnabled(false);
+  playerNameInput.blur();
+  productionYardActive = true;
+  stageCanvas.style.visibility = 'hidden';
+
+  try {
+    const { startProductionYardRuntime } = await import('./productionYardRuntime.js');
+    const handle = await startProductionYardRuntime({
+      canvas: stageCanvas,
+      context,
+      selectedAvatarId,
+      playerName: playerNameInput.value,
+      frames: frames[selectedAvatarId],
+      loadedFromSave: Boolean(loadedSave),
+      saved: true,
+      onExitToSelection: () => {
+        productionYardActive = false;
+        productionYardHandle = null;
+        visualResetGlobal.__SPLICEPIT_VISUAL_RESET__ = debug;
+        stageCanvas.style.visibility = 'visible';
+        exitYardToSelection();
+      },
+    });
+
+    if (handle) {
+      productionYardHandle = handle;
+      stageCanvas.style.visibility = 'visible';
+      return;
+    }
+  } catch (error) {
+    console.warn('YSP-7 authored Yard failed to start; using the legacy Yard fallback.', error);
+  }
+
+  stageCanvas.style.visibility = 'visible';
+  visualResetGlobal.__SPLICEPIT_VISUAL_RESET__ = debug;
+  enterLegacyYard();
+}
+
 function exitYardToSelection(): void {
+  productionYardHandle?.stop();
+  productionYardHandle = null;
+  productionYardActive = false;
   phase = 'select';
   debug.phase = phase;
   debug.yardRendered = false;
@@ -641,6 +691,11 @@ function renderSelection(now: number): void {
 }
 
 function render(now: number): void {
+  if (productionYardActive) {
+    lastRenderNow = now;
+    requestAnimationFrame(render);
+    return;
+  }
   if (phase === 'confirmed') renderYard(now);
   else renderSelection(now);
   requestAnimationFrame(render);
@@ -677,7 +732,7 @@ function commitIdentity(rawName: string): void {
   saved = true;
   debug.playerName = playerName;
   debug.saved = true;
-  enterYard();
+  void enterYard();
 }
 
 function confirmSelection(): void {

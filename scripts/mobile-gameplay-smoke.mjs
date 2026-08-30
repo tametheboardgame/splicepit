@@ -42,13 +42,11 @@ try {
     const list = await response.json();
     return list.length ? list : null;
   });
-
   const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
     ws.addEventListener('error', reject, { once: true });
   });
-
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
     if (!msg.id) return;
@@ -65,17 +63,14 @@ try {
       ws.send(JSON.stringify({ id, method, params }));
     });
   }
-
   async function evaluate(expression) {
     const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Browser evaluation failed');
     return result.result?.value;
   }
-
   async function state() {
     return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
-
   async function waitForSelection() {
     return waitFor(async () => {
       const current = await state();
@@ -83,7 +78,6 @@ try {
       return current?.ready && current?.phase === 'select' && current?.selectionRendered ? current : null;
     });
   }
-
   async function tapPoint(x, y, id = 1) {
     await cdp('Input.dispatchTouchEvent', {
       type: 'touchStart',
@@ -92,38 +86,25 @@ try {
     await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await sleep(90);
   }
-
   async function tapCanvasAt(sourceX, sourceY) {
     const point = await evaluate(`(() => {
       const canvas = document.querySelector('#visual-reset-stage');
       const rect = canvas?.getBoundingClientRect();
       if (!rect) return null;
-      return {
-        x: rect.left + (${sourceX} / 1280) * rect.width,
-        y: rect.top + (${sourceY} / 720) * rect.height,
-      };
+      return { x: rect.left + (${sourceX} / 1280) * rect.width, y: rect.top + (${sourceY} / 720) * rect.height };
     })()`);
     if (!point) throw new Error('Mobile selection canvas is unavailable.');
     await tapPoint(point.x, point.y);
   }
-
   async function controlPoint(control) {
     return evaluate(`(() => {
       const button = document.querySelector('[data-control="${control}"]');
       if (!(button instanceof HTMLElement)) return null;
       const rect = button.getBoundingClientRect();
       const styles = getComputedStyle(button);
-      return {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-        width: rect.width,
-        height: rect.height,
-        display: styles.display,
-        visibility: styles.visibility,
-      };
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, width: rect.width, height: rect.height, display: styles.display, visibility: styles.visibility };
     })()`);
   }
-
   async function tapControl(control, id = 2) {
     const point = await controlPoint(control);
     if (!point || point.width < 44 || point.height < 44 || point.display === 'none' || point.visibility === 'hidden') {
@@ -131,7 +112,6 @@ try {
     }
     await tapPoint(point.x, point.y, id);
   }
-
   async function holdControl(control, durationMs, id = 3) {
     const point = await controlPoint(control);
     if (!point || point.width < 44 || point.height < 44) {
@@ -143,16 +123,14 @@ try {
     });
     await sleep(durationMs);
     await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await sleep(50);
+    await sleep(70);
   }
-
   async function waitForPrompt(id) {
     return waitFor(async () => {
       const current = await state();
       return current?.tutorialPromptId === id && current.tutorialPromptVisible ? current : null;
     });
   }
-
   async function moveAxis(axis, target, positiveControl, negativeControl, tolerance = 18) {
     let previous = null;
     let stalled = 0;
@@ -161,12 +139,9 @@ try {
       const value = axis === 'x' ? current.playerX : current.playerY;
       const delta = target - value;
       if (Math.abs(delta) <= tolerance) return current;
-
       if (previous !== null && Math.abs(value - previous) < 1) stalled += 1;
       else stalled = 0;
-      if (stalled >= 8) {
-        throw new Error(`Mobile route movement stalled on ${axis} towards ${target}: ${JSON.stringify(current)}`);
-      }
+      if (stalled >= 8) throw new Error(`Mobile route movement stalled on ${axis} towards ${target}: ${JSON.stringify(current)}`);
       previous = value;
       await holdControl(delta > 0 ? positiveControl : negativeControl, 90, 10 + (attempt % 4));
     }
@@ -175,12 +150,7 @@ try {
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
-  await cdp('Emulation.setDeviceMetricsOverride', {
-    width: 412,
-    height: 915,
-    deviceScaleFactor: 2.75,
-    mobile: true,
-  });
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 412, height: 915, deviceScaleFactor: 2.75, mobile: true });
   await cdp('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1` });
   await waitForSelection();
@@ -191,16 +161,14 @@ try {
   const hiddenBeforeSelection = await evaluate(`document.querySelector('#mobile-gameplay-controls')?.classList.contains('is-active') ?? false`);
   if (hiddenBeforeSelection) throw new Error('Mobile gameplay controls should stay hidden during character selection.');
 
-  // Default Milo + USE button, entirely through touch.
   await tapCanvasAt(514, 683);
   let current = await waitFor(async () => {
     const value = await state();
     const active = await evaluate(`document.querySelector('#mobile-gameplay-controls')?.classList.contains('is-active') ?? false`);
-    return value?.phase === 'confirmed' && value?.yardRendered && active ? value : null;
+    return value?.phase === 'confirmed' && value?.yardRendered && value?.yardRenderer === 'scene-image' && active ? value : null;
   });
-
-  if (current.playerName !== 'Milo' || !current.saved) {
-    throw new Error(`Touch selection did not enter the Yard with the default identity: ${JSON.stringify(current)}`);
+  if (current.playerName !== 'Milo' || !current.saved || current.worldWidth !== 1280 || current.worldHeight !== 720) {
+    throw new Error(`Touch selection did not enter the production scene Yard correctly: ${JSON.stringify(current)}`);
   }
 
   current = await waitForPrompt('movement');
@@ -211,11 +179,8 @@ try {
   const startX = current.playerX;
   await holdControl('move-right', 420);
   current = await waitForPrompt('interact');
-  if (current.playerX <= startX + 20) {
-    throw new Error(`Touch D-pad did not move the protagonist: ${JSON.stringify(current)}`);
-  }
-  if (current.tutorialHintLabels[0] !== 'ACTION') {
-    throw new Error(`Interact tutorial did not switch to ACTION on touch: ${JSON.stringify(current.tutorialHintLabels)}`);
+  if (current.playerX <= startX + 20 || current.tutorialHintLabels[0] !== 'ACTION') {
+    throw new Error(`Touch movement/interact tutorial failed in the scene Yard: ${JSON.stringify(current)}`);
   }
 
   await tapControl('action');
@@ -225,12 +190,10 @@ try {
   if (current.activeOpeningShell !== 'bag' || current.tutorialHintLabels.join(',') !== 'ACTION,BACK') {
     throw new Error(`Touch Bag / confirm-back handoff failed: ${JSON.stringify(current)}`);
   }
-
   await tapControl('action');
   await tapControl('back');
   await waitForPrompt('map');
   await tapControl('map');
-
   current = await waitFor(async () => {
     const value = await state();
     return value?.openingSequenceComplete && value?.objectiveId === 'find-master' && value?.activeOpeningShell === 'map' ? value : null;
@@ -258,26 +221,39 @@ try {
     throw new Error(`Simultaneous movement + ACTION touch did not preserve movement: ${JSON.stringify(current)}`);
   }
 
-  // Traverse the authored WP0.6D route using only the on-screen D-pad.
-  await moveAxis('y', 700, 'move-down', 'move-up');
-  await moveAxis('x', 1200, 'move-right', 'move-left');
-  await moveAxis('x', 1450, 'move-right', 'move-left');
-  await moveAxis('y', 655, 'move-down', 'move-up');
-  await moveAxis('x', 1840, 'move-right', 'move-left');
+  // Establish the service-ring baseline, then take the same authored tunnel path
+  // proven by YSP-5/YSP-6. All movement remains through the visible touch D-pad.
+  await holdControl('move-right', 900, 20);
+  current = await state();
+  if (current.playerX < 700 || current.playerX > 750 || current.collisionCount < 1) {
+    throw new Error(`Touch movement did not meet the authored service-ring collision: ${JSON.stringify(current)}`);
+  }
+  await holdControl('move-left', 1000, 21);
+  await holdControl('move-up', 2050, 22);
+  await holdControl('move-right', 1200, 23);
+  await holdControl('move-down', 500, 24);
+  await holdControl('move-right', 1850, 25);
+
+  current = await waitFor(async () => {
+    const value = await state();
+    return value?.sceneMode === 'master-lab-route' && value?.routeRendered && value?.routeHandoffTarget === 'master-lab-route' ? value : null;
+  });
+  if (current.routeHandoffCount !== 1 || current.routeHandoffExitId !== 'master-lab-tunnel') {
+    throw new Error(`Touch-only authored tunnel handoff failed: ${JSON.stringify(current)}`);
+  }
+
+  // Continue through the existing route from its real handoff entry.
   await moveAxis('x', 2140, 'move-right', 'move-left');
   await moveAxis('y', 566, 'move-down', 'move-up');
   current = await moveAxis('x', 2460, 'move-right', 'move-left');
-
   if (Math.abs(current.playerX - 2460) > 40 || Math.abs(current.playerY - 566) > 40 || current.objectiveId !== 'find-master') {
     throw new Error(`Touch-only route did not reach the Master's Lab staging area: ${JSON.stringify(current)}`);
   }
 
   const overflow = await evaluate(`({ width: innerWidth, bodyWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight, height: innerHeight })`);
-  if (overflow.bodyWidth > overflow.width + 1) {
-    throw new Error(`Mobile gameplay controls introduced horizontal overflow: ${JSON.stringify(overflow)}`);
-  }
+  if (overflow.bodyWidth > overflow.width + 1) throw new Error(`Mobile gameplay controls introduced horizontal overflow: ${JSON.stringify(overflow)}`);
 
-  console.log('WP0.6D1 mobile touch controls complete onboarding and reach the Master Lab route staging area.');
+  console.log('YSP-7 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the Master Lab route staging area.');
   ws.close();
   cleanup();
 } catch (error) {

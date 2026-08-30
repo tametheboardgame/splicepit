@@ -7,7 +7,7 @@ let nextId = 0;
 const pending = new Map();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function waitFor(fn, timeoutMs = 15000, intervalMs = 100) {
+async function waitFor(fn, timeoutMs = 20000, intervalMs = 80) {
   const started = Date.now();
   let lastError;
   while (Date.now() - started < timeoutMs) {
@@ -42,13 +42,11 @@ try {
     const list = await response.json();
     return list.length ? list : null;
   });
-
   const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
     ws.addEventListener('error', reject, { once: true });
   });
-
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data);
     if (!msg.id) return;
@@ -65,13 +63,11 @@ try {
       ws.send(JSON.stringify({ id, method, params }));
     });
   }
-
   async function evaluate(expression) {
     const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Browser evaluation failed');
     return result.result?.value;
   }
-
   async function key(keyName, code, vk) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
@@ -80,48 +76,37 @@ try {
 
   await cdp('Page.enable');
   await cdp('Runtime.enable');
-  await cdp('Emulation.setDeviceMetricsOverride', {
-    width: 1280,
-    height: 720,
-    deviceScaleFactor: 1,
-    mobile: false,
-  });
+  await cdp('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
   await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1` });
-
-  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.ready === true`), 20000);
+  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.ready === true`));
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
-  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.ready === true`), 20000);
+  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.ready === true`));
   await cdp('Page.bringToFront');
   await key('Enter', 'Enter', 13);
 
   const brightState = await waitFor(async () => evaluate(`(() => {
     const yard = globalThis.__SPLICEPIT_VISUAL_RESET__;
-    const art = globalThis.__SPLICEPIT_YARD_ART__;
+    const image = globalThis.__SPLICEPIT_YARD_SCENE_IMAGE__;
     const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
-    if (!yard || !art || !env || yard.phase !== 'confirmed' || !art.active || !art.brightRendered) return null;
+    if (!yard || !image || !env || yard.phase !== 'confirmed' || !yard.yardRendered || !image.active || !image.baseRendered || !image.foregroundRendered) return null;
     return {
-      art: { ...art },
+      yard: { ...yard },
+      image: { ...image },
       environment: { ...env.state },
-      yard: { playerX: yard.playerX, playerY: yard.playerY, worldWidth: yard.worldWidth, worldHeight: yard.worldHeight },
-      overlayExists: Boolean(document.querySelector('#yard-production-art-stage')),
+      legacyOverlayExists: Boolean(document.querySelector('#yard-production-art-stage')),
     };
-  })()`), 20000);
+  })()`));
 
-  if (brightState.art.geometryId !== 'opening-world-v1' || brightState.art.collisionTopology !== 'unchanged') {
-    throw new Error(`WP0.6H geometry contract failed: ${JSON.stringify(brightState)}`);
+  if (brightState.yard.yardRenderer !== 'scene-image' || brightState.yard.scenePackId !== 'yard-bright-scene-ysp6-v1') {
+    throw new Error(`YSP-7 normal runtime did not select the authored Bright Yard: ${JSON.stringify(brightState.yard)}`);
   }
-  if (brightState.art.renderIntegration !== 'opening-world-render-loop' || brightState.art.depthModel !== 'base-before-player-foreground-after-player') {
-    throw new Error(`WP0.6H depth integration contract failed: ${JSON.stringify(brightState.art)}`);
+  if (brightState.image.assetPackId !== 'yard-bright-scene-v1' || brightState.image.fallback || brightState.image.legacyRendererRendered) {
+    throw new Error(`YSP-7 normal runtime mixed legacy Yard rendering into the scene: ${JSON.stringify(brightState.image)}`);
   }
-  if (brightState.overlayExists) {
-    throw new Error('WP0.6H must not use an independent Yard overlay canvas');
-  }
-  if (brightState.environment.visualState !== 'bright' || brightState.art.darkMix !== 0) {
-    throw new Error(`WP0.6H did not begin in authored bright state: ${JSON.stringify(brightState)}`);
-  }
-  if (brightState.art.brightDetailGroups.length < 7 || brightState.art.darkStoryGroups.length < 6) {
-    throw new Error(`WP0.6H art manifest is incomplete: ${JSON.stringify(brightState.art)}`);
+  if (brightState.legacyOverlayExists) throw new Error('YSP-7 must not use the old independent Yard production-art overlay.');
+  if (brightState.environment.visualState !== 'bright') {
+    throw new Error(`YSP-7 did not begin in bright environment state: ${JSON.stringify(brightState.environment)}`);
   }
 
   const brightStats = await evaluate(`(() => {
@@ -131,73 +116,56 @@ try {
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const colours = new Set();
     let warmWorkplace = 0;
-    for (let y = 120; y < 570; y += 4) {
-      for (let x = 80; x < 1120; x += 4) {
+    let vegetation = 0;
+    for (let y = 70; y < 650; y += 4) {
+      for (let x = 40; x < 1240; x += 4) {
         const i = (y * canvas.width + x) * 4;
         const r = data[i], g = data[i + 1], b = data[i + 2];
         colours.add((r << 16) | (g << 8) | b);
-        if (r > 120 && g > 80 && b < 115) warmWorkplace += 1;
+        if (r > 120 && g > 80 && b < 120) warmWorkplace += 1;
+        if (g > r + 8 && g > b + 8 && g > 80) vegetation += 1;
       }
     }
-    globalThis.__WP06H_BRIGHT_PIXELS__ = data.slice();
-    return { uniqueColours: colours.size, warmWorkplace };
+    globalThis.__YSP7_BRIGHT_PIXELS__ = data.slice();
+    return { uniqueColours: colours.size, warmWorkplace, vegetation };
   })()`);
-
-  if (!brightStats || brightStats.uniqueColours < 24 || brightStats.warmWorkplace < 60) {
-    throw new Error(`WP0.6H bright Yard production detail is too sparse: ${JSON.stringify(brightStats)}`);
+  if (!brightStats || brightStats.uniqueColours < 100 || brightStats.warmWorkplace < 100 || brightStats.vegetation < 100) {
+    throw new Error(`YSP-7 approved Yard raster appears missing or visually sparse: ${JSON.stringify(brightStats)}`);
   }
 
+  // YSP-8 owns the authored dark scene. During YSP-7, forcing the environment
+  // dark must never resurrect the retired Pass-D/procedural Yard underneath the
+  // approved Bright Yard. The main scene pixels therefore remain stable here.
   await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceDark()`);
-  const darkState = await waitFor(async () => evaluate(`(() => {
-    const art = globalThis.__SPLICEPIT_YARD_ART__;
+  const darkEnvironment = await waitFor(async () => evaluate(`(() => {
     const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
-    if (!art || !env || art.darkMix < 0.999 || !art.darkRendered) return null;
-    return { art: { ...art }, environment: { ...env.state } };
+    return env?.state?.visualState === 'dark' && env.state.darkMix >= 0.999 ? { ...env.state } : null;
   })()`), 10000);
 
-  if (darkState.environment.visualState !== 'dark' || darkState.art.visualState !== 'dark') {
-    throw new Error(`WP0.6H force-dark did not reach the authored dark Yard: ${JSON.stringify(darkState)}`);
-  }
-
-  const darkStats = await evaluate(`(() => {
+  const darkBoundary = await evaluate(`(() => {
     const canvas = document.querySelector('#visual-reset-stage');
     const ctx = canvas?.getContext('2d');
-    const bright = globalThis.__WP06H_BRIGHT_PIXELS__;
-    if (!canvas || !ctx || !bright) return null;
+    const bright = globalThis.__YSP7_BRIGHT_PIXELS__;
+    const image = globalThis.__SPLICEPIT_YARD_SCENE_IMAGE__;
+    if (!canvas || !ctx || !bright || !image) return null;
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    let changed = 0;
-    let darkPaint = 0;
-    let biological = 0;
-    for (let y = 120; y < 570; y += 4) {
-      for (let x = 80; x < 1120; x += 4) {
+    let materiallyChanged = 0;
+    for (let y = 70; y < 650; y += 5) {
+      for (let x = 40; x < 1240; x += 5) {
         const i = (y * canvas.width + x) * 4;
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        const br = bright[i], bg = bright[i + 1], bb = bright[i + 2];
-        if (Math.abs(r - br) + Math.abs(g - bg) + Math.abs(b - bb) > 45) changed += 1;
-        if (r < 105 && g < 105 && b < 100) darkPaint += 1;
-        if (r > g + 14 && r > b + 3 && r > 80) biological += 1;
+        if (Math.abs(data[i] - bright[i]) + Math.abs(data[i + 1] - bright[i + 1]) + Math.abs(data[i + 2] - bright[i + 2]) > 60) materiallyChanged += 1;
       }
     }
-    return { changed, darkPaint, biological };
+    return { materiallyChanged, image: { ...image } };
   })()`);
-
-  if (!darkStats || darkStats.changed < 220 || darkStats.darkPaint < 300 || darkStats.biological < 25) {
-    throw new Error(`WP0.6H dark Yard is not materially distinct enough: ${JSON.stringify(darkStats)}`);
+  if (!darkBoundary || darkBoundary.materiallyChanged > 8 || darkBoundary.image.legacyRendererRendered || darkBoundary.image.fallback) {
+    throw new Error(`YSP-7 force-dark leaked retired Yard art before YSP-8: ${JSON.stringify({ darkEnvironment, darkBoundary })}`);
   }
 
   await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceBright()`);
-  const restored = await waitFor(async () => evaluate(`(() => {
-    const art = globalThis.__SPLICEPIT_YARD_ART__;
-    const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
-    if (!art || !env || art.darkMix !== 0) return null;
-    return { art: { ...art }, environment: { ...env.state } };
-  })()`), 10000);
+  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.visualState === 'bright' && globalThis.__SPLICEPIT_ENVIRONMENT__.state.darkMix === 0`));
 
-  if (restored.environment.visualState !== 'bright' || restored.art.visualState !== 'bright') {
-    throw new Error(`WP0.6H did not restore the Yard to bright: ${JSON.stringify(restored)}`);
-  }
-
-  console.log(`WP0.6H Yard production art smoke passed: ${JSON.stringify({ brightStats, darkStats })}`);
+  console.log(`YSP-7 Bright Yard production-art replacement passed: ${JSON.stringify({ brightStats, darkBoundary: darkBoundary.materiallyChanged })}`);
   ws.close();
   cleanup();
 } catch (error) {
