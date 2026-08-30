@@ -1,7 +1,7 @@
 # YSP-3 — Game-Ready Asset Preparation
 
 Date: 30 August 2026
-Status: COMPLETE — merged via PR #73
+Status: REOPENED / BLOCKED — incomplete Bright Yard raster discovered during YSP-4 start
 
 ## Purpose
 
@@ -12,75 +12,79 @@ Convert the user-approved YSP-2 open-centre Bright Yard master into deterministi
 - selected direction: **open-centre Yard**
 - clean generation ID: `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`
 - selected raw generation: 1536 × 1024
-- production crop: **1280 × 720 WebP**
+- intended production crop: **1280 × 720 WebP**
 
-The production crop is the high-quality candidate. The earlier q20 experiment has been removed so there is only one authoritative Bright Yard source.
+## What PR #73 implemented
 
-## Production source transport
+PR #73 added the intended scene-pack plumbing:
 
-The WebP is stored as ordered base64 source chunks under `src/assets/ysp3/` because repository text writes are deterministic through the connected GitHub workflow.
+- deterministic base64-chunk materialisation;
+- 1280 × 720 production metadata;
+- aligned transparent foreground staging layer;
+- scene manifest and asset hashes;
+- atomic base/foreground preload contract;
+- build and CI integration;
+- independent emitted-pack checks.
 
-The chunks are not loaded by the browser directly.
+The old Pass D Yard remains the normal production renderer until YSP-7, so this integrity failure does not currently replace the live Yard with a broken image.
 
-`scripts/materialize-ysp3-yard.mjs`:
+## Integrity failure discovered at YSP-4 start
 
-- joins the seven authoritative chunks;
-- validates base64 content;
-- validates RIFF/WebP identity;
-- validates the VP8 key-frame header;
-- validates exact 1280 × 720 dimensions;
-- writes `/generated/ysp3/yard-bright-base.webp` into the build's public asset tree;
-- generates an exactly aligned 1280 × 720 transparent foreground PNG;
-- writes a versioned manifest containing SHA-256 identities and rendering requirements.
+YSP-4 began by exporting the materialised Bright Yard from CI as a workflow artifact so collision could be authored against the actual scene pixels rather than legacy coordinates.
 
-The script is part of both `npm run dev` and `npm run build`, so a build cannot silently use an incomplete or malformed Yard source.
+Independent inspection found that the committed high-quality source is truncated:
 
-## Scene-pack asset contract
+- RIFF header declares total WebP length: **214,308 bytes**;
+- committed source reconstructs to: **102,975 bytes**;
+- independent WebP decoders reject the payload;
+- therefore the file cannot be used as a visual or runtime source of truth.
 
-`src/environment/yardSceneAssetPack.ts` records:
+The preserved historical q20 candidate was also reconstructed and checked:
 
-- pack ID `yard-bright-scene-v1`;
-- generation provenance;
-- exact source dimensions;
-- production asset URLs;
-- no-smoothing requirement;
-- exact base/foreground alignment requirement;
-- atomic preload requirement.
+- RIFF header declares total WebP length: **95,908 bytes**;
+- historical source reconstructs to: **24,000 bytes**;
+- it is also truncated and unusable.
 
-`preloadYsp3BrightYardAssets()` decodes base and foreground together and rejects either image if its decoded dimensions differ from 1280 × 720. This prepares the pack for later runtime activation without allowing a half-loaded Yard.
+There is no complete Bright Yard raster preserved in Git history.
 
-## Foreground decision
+## Why the original gate missed this
 
-YSP-3 creates the final-size transparent foreground production layer but does **not** move visible pixels out of the approved base yet.
+The original YSP-3 validator checked:
 
-That is deliberate. YSP-4 and YSP-5 establish the new walkable geometry and interaction anchors against the authored scene. YSP-6 then owns the actual occlusion/depth extraction, allowing foreground choices to be made against proven player routes rather than guessing before traversal is authored.
+- RIFF/WebP signature;
+- VP8 key-frame marker;
+- encoded width and height;
+- deterministic hashes;
+- emitted file/hash consistency.
 
-Until YSP-6, base + transparent foreground reproduces the approved production crop exactly and cannot introduce edge duplication or layer drift.
+Those checks proved that the same bytes flowed through the build, but did not prove that the RIFF/VP8 payload was complete. Because width/height live near the beginning of a VP8 frame, the truncated file could still report 1280 × 720 and produce stable hashes.
 
-## Rendering rules locked by YSP-3
+The player-facing browser smoke also did not exercise the YSP-3 image in the production Yard path because YSP-7 has not activated that renderer yet.
 
-- production canvas is 1280 × 720;
-- browser canvas smoothing remains disabled for the scene image;
-- base and foreground must decode completely before activation;
-- base and foreground must always share identical dimensions;
-- the old Pass D Yard remains the normal production renderer until YSP-7;
-- YSP-3 does not change spawn, collision, exits, camera bounds or interaction coordinates.
+## Corrective validation
 
-## Removed ambiguity
+Draft PR #74 adds strict source-integrity checks before YSP-4 can proceed:
 
-The discarded q20 compression candidate has been deleted. Future packages must use the seven-part high-quality Bright Yard source only.
+- the RIFF-declared total length must exactly equal the actual buffer length;
+- the VP8 chunk length must exactly terminate at the end of the file;
+- truncated scene sources fail `validate:ysp3` immediately.
 
-## Gate result
+The new check correctly fails the current source with:
 
-YSP-3 passed its full gate on PR #73:
+`YSP-3 Yard base is truncated or malformed: RIFF declares 214308 bytes but source contains 102975`
 
-- TypeScript, content and RNG validation passed;
-- the authoritative Yard source validated as 1280 × 720;
-- base SHA-256: `c7a4de321971d53660fe42908ae1f14aa17510efbfdca1ad611368c7bcea3d7a`;
-- 177 / 177 unit, domain and save tests passed;
-- the production build emitted the base WebP, transparent foreground PNG and scene manifest;
-- the emitted `dist` scene pack independently revalidated at 1280 × 720 with matching hashes;
-- the full player-facing browser smoke suite passed;
-- PR #73 merged to `main` as merge commit `56589ac83f36b2bfa42e6f1d0fed1e70ff62aa1d`.
+This guard must remain when the complete raster is restored or replaced.
 
-The next package is **YSP-4 — Re-author Walkable Space / Collision to the Scene**.
+## Current gate state
+
+YSP-3 is **not complete** until a complete approved Bright Yard raster is available and passes:
+
+- full RIFF/VP8 payload integrity;
+- successful independent image decode;
+- exact 1280 × 720 production dimensions;
+- deterministic source and emitted-pack hashes;
+- production build;
+- player-facing browser regression;
+- by-eye confirmation that the restored/replacement image is the intended approved Yard.
+
+YSP-4 collision authoring is deliberately blocked until that happens. Collision will not be guessed from the written brief or copied from the legacy Yard.
