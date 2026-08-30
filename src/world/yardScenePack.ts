@@ -82,9 +82,9 @@ export const YSP4_YARD_SCENE_PACK = {
       { id: 'lower-left-containment', bounds: { x: 0, y: 414, width: 338, height: 306 } },
       { id: 'containment-fence-return', bounds: { x: 185, y: 390, width: 148, height: 70 } },
 
-      // Pit infrastructure. A deliberate horizontal service gap remains between
-      // the retaining wall and pit lip so the tunnel can be approached naturally.
-      { id: 'pit-west-machinery', bounds: { x: 690, y: 318, width: 112, height: 112 } },
+      // Pit infrastructure. A deliberate service gap remains between the west
+      // machinery, retaining wall and pit lip so the visible tunnel route is real.
+      { id: 'pit-west-machinery', bounds: { x: 690, y: 318, width: 72, height: 112 } },
       { id: 'pit-retaining-wall-west', bounds: { x: 812, y: 172, width: 198, height: 194 } },
       { id: 'pit-retaining-wall-north', bounds: { x: 1008, y: 172, width: 272, height: 134 } },
       { id: 'pit-retaining-wall-east', bounds: { x: 1162, y: 300, width: 118, height: 130 } },
