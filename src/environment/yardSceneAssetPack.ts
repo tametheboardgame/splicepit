@@ -3,9 +3,12 @@ export const YSP3_BRIGHT_YARD_ASSET_PACK = {
   workPackage: 'YSP-3',
   sourceGenerationId: '4e7d4d4d-fabd-4839-b155-15ca1b4053fe',
   sourceDirection: 'open-centre Yard',
+  sourceRecovery: 'user-supplied approved Bright Yard master, 30 August 2026',
   source: {
     width: 1280,
     height: 720,
+    bytes: 177808,
+    sha256: '6e525dd2a7e35a1beb3e397040982f750c2b2c0eac86df7264f6462830950beb',
     format: 'image/webp',
   },
   assets: {
