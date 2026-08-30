@@ -1,90 +1,79 @@
 # YSP-3 — Game-Ready Asset Preparation
 
 Date: 30 August 2026
-Status: REOPENED / BLOCKED — incomplete Bright Yard raster discovered during YSP-4 start
+Status: COMPLETE — approved Bright Yard master recovered and independently validated
 
 ## Purpose
 
 Convert the user-approved YSP-2 open-centre Bright Yard master into deterministic production inputs without changing gameplay geometry yet.
 
-## Approved source
+## Approved recovered source
+
+The original YSP-3 repository transport was discovered to be truncated when YSP-4 began inspecting the materialised scene for collision authoring. The user then supplied the approved Bright Yard image directly, allowing the intended scene to be recovered rather than regenerated.
+
+Production identity:
 
 - selected direction: **open-centre Yard**
-- clean generation ID: `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`
-- selected raw generation: 1536 × 1024
-- intended production crop: **1280 × 720 WebP**
+- original selected generation lineage: `4e7d4d4d-fabd-4839-b155-15ca1b4053fe`
+- recovery source: exact user-supplied approved Bright Yard image
+- production canvas: **1280 × 720**
+- runtime format: WebP
+- exact byte length: **177,808 bytes**
+- SHA-256: `6e525dd2a7e35a1beb3e397040982f750c2b2c0eac86df7264f6462830950beb`
+- RIFF declared total length: **177,808 bytes**
+- VP8 payload end: **177,808 bytes**
 
-## What PR #73 implemented
+## Original integrity failure
 
-PR #73 added the intended scene-pack plumbing:
+PR #73 created the intended scene-pack plumbing, but the stored raster source was incomplete. The failure was detected before YSP-4 collision authoring proceeded:
 
-- deterministic base64-chunk materialisation;
-- 1280 × 720 production metadata;
-- aligned transparent foreground staging layer;
-- scene manifest and asset hashes;
-- atomic base/foreground preload contract;
-- build and CI integration;
-- independent emitted-pack checks.
+- original high-quality transport contained 102,975 bytes while its RIFF header declared 214,308 bytes;
+- historical q20 transport contained 24,000 bytes while its RIFF header declared 95,908 bytes;
+- independent decoders rejected both files;
+- the live production Yard was unaffected because YSP-7 has not yet activated the new scene-image renderer.
 
-The old Pass D Yard remains the normal production renderer until YSP-7, so this integrity failure does not currently replace the live Yard with a broken image.
+Draft PR #74 was used to diagnose the issue and was abandoned once the correct recovery path was established.
 
-## Integrity failure discovered at YSP-4 start
+## Recovery implementation
 
-YSP-4 began by exporting the materialised Bright Yard from CI as a workflow artifact so collision could be authored against the actual scene pixels rather than legacy coordinates.
+PR #75 replaces the broken transport with the recovered approved asset and hardens the pipeline so the same class of failure cannot silently pass again.
 
-Independent inspection found that the committed high-quality source is truncated:
+Implemented:
 
-- RIFF header declares total WebP length: **214,308 bytes**;
-- committed source reconstructs to: **102,975 bytes**;
-- independent WebP decoders reject the payload;
-- therefore the file cannot be used as a visual or runtime source of truth.
+- deterministic repository transport for the exact recovered WebP;
+- segment 06 stored as two smaller exact fragments after the original single-segment transfer proved unreliable;
+- deterministic recovery wrapper before normal materialisation;
+- exact byte-length and SHA-256 validation;
+- RIFF declared-length validation;
+- VP8 payload-length validation;
+- VP8 key-frame and 1280 × 720 dimension validation;
+- independent `dist` verification after the production build;
+- exact manifest byte/hash identity;
+- aligned 1280 × 720 transparent foreground staging layer for YSP-6;
+- Chromium `image.decode()` smoke validation of the emitted WebP;
+- complete existing browser regression suite retained.
 
-The preserved historical q20 candidate was also reconstructed and checked:
+## Gate result
 
-- RIFF header declares total WebP length: **95,908 bytes**;
-- historical source reconstructs to: **24,000 bytes**;
-- it is also truncated and unusable.
+GitHub Actions run #1119 passed completely.
 
-There is no complete Bright Yard raster preserved in Git history.
+The verify job proved:
 
-## Why the original gate missed this
+- YSP-3 source reconstruction succeeds at exactly 177,808 bytes;
+- reconstructed SHA-256 is exactly `6e525dd2a7e35a1beb3e397040982f750c2b2c0eac86df7264f6462830950beb`;
+- source RIFF/VP8 structure is complete;
+- TypeScript, content and RNG validation pass;
+- unit/domain/save tests pass;
+- production build succeeds;
+- emitted production pack independently matches the same dimensions, byte length and SHA-256.
 
-The original YSP-3 validator checked:
+The browser job proved:
 
-- RIFF/WebP signature;
-- VP8 key-frame marker;
-- encoded width and height;
-- deterministic hashes;
-- emitted file/hash consistency.
+- Chromium successfully fetches and decodes the recovered Bright Yard at **1280 × 720 / 177,808 bytes**;
+- the full existing player-facing smoke suite remains green, including desktop/mobile opening flow, Yard, route, Master Lab, Local Pit, cutscenes and scene-image spike coverage.
 
-Those checks proved that the same bytes flowed through the build, but did not prove that the RIFF/VP8 payload was complete. Because width/height live near the beginning of a VP8 frame, the truncated file could still report 1280 × 720 and produce stable hashes.
+## Completion state
 
-The player-facing browser smoke also did not exercise the YSP-3 image in the production Yard path because YSP-7 has not activated that renderer yet.
+YSP-3 is complete again. The approved Bright Yard raster is now a trustworthy source of truth for gameplay authoring.
 
-## Corrective validation
-
-Draft PR #74 adds strict source-integrity checks before YSP-4 can proceed:
-
-- the RIFF-declared total length must exactly equal the actual buffer length;
-- the VP8 chunk length must exactly terminate at the end of the file;
-- truncated scene sources fail `validate:ysp3` immediately.
-
-The new check correctly fails the current source with:
-
-`YSP-3 Yard base is truncated or malformed: RIFF declares 214308 bytes but source contains 102975`
-
-This guard must remain when the complete raster is restored or replaced.
-
-## Current gate state
-
-YSP-3 is **not complete** until a complete approved Bright Yard raster is available and passes:
-
-- full RIFF/VP8 payload integrity;
-- successful independent image decode;
-- exact 1280 × 720 production dimensions;
-- deterministic source and emitted-pack hashes;
-- production build;
-- player-facing browser regression;
-- by-eye confirmation that the restored/replacement image is the intended approved Yard.
-
-YSP-4 collision authoring is deliberately blocked until that happens. Collision will not be guessed from the written brief or copied from the legacy Yard.
+YSP-4 may proceed by authoring collision and walkable space directly against these recovered scene pixels. Legacy Yard coordinates must not be treated as the geometry source of truth.
