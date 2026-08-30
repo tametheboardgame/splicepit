@@ -12,6 +12,7 @@ export interface YardSceneExit {
   readonly id: string;
   readonly bounds: YardSceneRect;
   readonly target: string;
+  readonly targetEntry?: YardScenePoint;
 }
 
 export interface YardSceneCollider {
@@ -108,14 +109,63 @@ export const YSP4_YARD_SCENE_PACK = {
   ],
 } as const satisfies YardScenePack;
 
-// Transitional alias retained so the isolated scene-image spike can consume the
-// new pack without coupling YSP-4 to the normal Yard path before YSP-7. Widen
-// it to the interface so the intentionally empty YSP-4 anchor tuple does not
-// collapse compatibility code to `never` before YSP-5 populates those anchors.
-export const YSP0_YARD_SCENE_PACK: YardScenePack = YSP4_YARD_SCENE_PACK;
+/**
+ * YSP-5 adds semantic gameplay locations to the exact YSP-4 geometry.
+ * Anchor coordinates were chosen from the approved scene pixels rather than
+ * inherited from the legacy Yard. The route target entry is deliberately in
+ * the existing authored opening-route space so the scene-image proof can hand
+ * off to the already implemented Lab approach without activating YSP-7 early.
+ */
+export const YSP5_YARD_SCENE_PACK = {
+  ...YSP4_YARD_SCENE_PACK,
+  id: 'yard-bright-scene-ysp5-v1',
+  anchors: [
+    {
+      id: 'geneco-workshop-door',
+      kind: 'door',
+      position: { x: 336, y: 342 },
+      radius: 76,
+    },
+    {
+      id: 'containment-inspection-point',
+      kind: 'interaction',
+      position: { x: 365, y: 540 },
+      radius: 78,
+    },
+    {
+      id: 'service-ring-inspection',
+      kind: 'interaction',
+      position: { x: 731, y: 642 },
+      radius: 78,
+    },
+    {
+      id: 'master-lab-tunnel',
+      kind: 'story',
+      position: { x: 1110, y: 382 },
+      radius: 88,
+    },
+  ],
+  exits: [
+    {
+      id: 'master-lab-tunnel',
+      bounds: { x: 1072, y: 318, width: 88, height: 82 },
+      target: 'master-lab-route',
+      targetEntry: { x: 1760, y: 655 },
+    },
+  ],
+} as const satisfies YardScenePack;
+
+// Transitional alias retained until YSP-7 switches the normal Yard renderer to
+// the scene pack. The isolated proof path should always exercise the newest
+// authored scene contract.
+export const YSP0_YARD_SCENE_PACK: YardScenePack = YSP5_YARD_SCENE_PACK;
 
 function overlaps(a: YardSceneRect, b: YardSceneRect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function containsPoint(bounds: YardSceneRect, x: number, y: number): boolean {
+  return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
 }
 
 export function isYardScenePositionBlocked(pack: YardScenePack, feetX: number, feetY: number): boolean {
@@ -144,4 +194,12 @@ export function yardSceneCameraLimits(pack: YardScenePack, viewportWidth: number
 
 export function yardSceneAnchor(pack: YardScenePack, id: string): YardSceneInteractionAnchor | null {
   return pack.anchors.find((anchor) => anchor.id === id) ?? null;
+}
+
+export function yardSceneExitAt(pack: YardScenePack, feetX: number, feetY: number): YardSceneExit | null {
+  return pack.exits.find((exit) => containsPoint(exit.bounds, feetX, feetY)) ?? null;
+}
+
+export function yardSceneExitForTarget(pack: YardScenePack, target: string): YardSceneExit | null {
+  return pack.exits.find((exit) => exit.target === target) ?? null;
 }
