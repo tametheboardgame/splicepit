@@ -26,8 +26,19 @@ function sha256(buffer) {
 function readVp8Dimensions(buffer) {
   invariant(buffer.length >= 30, 'YSP-3 Yard base is too small to be a valid WebP');
   invariant(buffer.subarray(0, 4).toString('ascii') === 'RIFF', 'YSP-3 Yard base is not RIFF');
+  const declaredLength = buffer.readUInt32LE(4) + 8;
+  invariant(
+    declaredLength === buffer.length,
+    `YSP-3 Yard base is truncated or malformed: RIFF declares ${declaredLength} bytes but source contains ${buffer.length}`,
+  );
   invariant(buffer.subarray(8, 12).toString('ascii') === 'WEBP', 'YSP-3 Yard base is not WebP');
   invariant(buffer.subarray(12, 16).toString('ascii') === 'VP8 ', 'YSP-3 Yard base must be a VP8 WebP');
+  const vp8Length = buffer.readUInt32LE(16);
+  const expectedVp8End = 20 + vp8Length + (vp8Length % 2);
+  invariant(
+    expectedVp8End === buffer.length,
+    `YSP-3 Yard VP8 payload is incomplete: chunk requires ${expectedVp8End} bytes but source contains ${buffer.length}`,
+  );
   invariant(buffer[23] === 0x9d && buffer[24] === 0x01 && buffer[25] === 0x2a, 'YSP-3 Yard base has an invalid VP8 key-frame header');
   return {
     width: buffer.readUInt16LE(26) & 0x3fff,
