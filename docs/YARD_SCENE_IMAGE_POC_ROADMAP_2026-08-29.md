@@ -10,7 +10,7 @@ For the Apprentice Splicer Yard proof of concept, the environment will be treate
 
 If this Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions are deliberately deferred until the Yard passes a human visual gate.
 
-**Status: ACTIVE — YSP-0 through YSP-3 complete; YSP-4 is next.**
+**Status: BLOCKED — YSP-0 through YSP-2 complete; YSP-3 reopened after a truncated Bright Yard raster was discovered at YSP-4 start. YSP-4 cannot proceed until the complete approved master is restored or a replacement master is visually approved.**
 
 ---
 
@@ -199,39 +199,46 @@ Gate result:
 - generated signage remains non-authoritative and may be repaired during YSP-3;
 - gameplay geometry remains intentionally unmodified until asset preparation is complete.
 
-## YSP-3 — Game-Ready Asset Preparation — COMPLETE
+## YSP-3 — Game-Ready Asset Preparation — REOPENED / BLOCKED
 
 Purpose: turn the selected generated master into deterministic production assets.
 
-Completed:
+PR #73 completed the scene-pack plumbing and originally passed the available automated gate:
 
-- locked the high-quality open-centre production crop at **1280 × 720**;
-- stored the authoritative WebP as seven deterministic source chunks under `src/assets/ysp3/`;
-- removed the discarded q20 compression experiment;
-- added a materialiser that validates RIFF/WebP identity, VP8 dimensions and source integrity before emitting runtime assets;
-- added a precisely aligned transparent 1280 × 720 foreground staging layer;
-- added a versioned scene manifest with provenance, dimensions, hashes and rendering requirements;
-- added an atomic base/foreground preloader that rejects mis-sized decoded assets;
-- wired source validation and asset materialisation into development, production build and CI;
-- added an independent `dist` verifier proving the emitted production pack matches its manifest;
-- kept live Yard gameplay geometry and rendering unchanged, as required before YSP-4 through YSP-7.
+- a 1280 × 720 WebP source transport was stored as seven deterministic base64 chunks;
+- a precisely aligned transparent foreground staging layer was generated;
+- a versioned scene manifest, hashes and atomic preloader were added;
+- materialisation was wired into development, build and CI;
+- 177 / 177 tests and the existing player-facing browser regression suite passed.
 
-Foreground note:
+However, YSP-4 began by exporting the actual materialised raster from CI for independent collision authoring. That exposed a source-integrity failure which the original checks did not detect:
 
-- YSP-3 intentionally leaves the visible occlusion layer transparent;
-- actual foreground-pixel extraction remains YSP-6 work, after YSP-4 collision and YSP-5 interactions establish proven player routes.
+- high-quality WebP RIFF header declares **214,308 bytes**;
+- committed source reconstructs to only **102,975 bytes**;
+- independent decoders reject the WebP payload;
+- historical q20 fallback declares **95,908 bytes** but reconstructs to only **24,000 bytes**;
+- therefore neither stored candidate is a complete image and no complete Bright Yard raster remains in Git history.
 
-Gate result:
+Corrective action already prepared on draft PR #74:
 
-- authoritative base source validates at 1280 × 720;
-- base SHA-256 is `c7a4de321971d53660fe42908ae1f14aa17510efbfdca1ad611368c7bcea3d7a`;
-- 177 / 177 unit, domain and save tests pass;
-- the production build emits base, foreground and manifest successfully;
-- the emitted `dist` pack revalidates at 1280 × 720 with matching hashes;
-- full player-facing browser smoke passes;
-- merged by PR #73.
+- RIFF-declared total length must equal actual source length;
+- VP8 chunk length must terminate exactly at the end of the source;
+- truncated image transports now fail `validate:ysp3` immediately;
+- the current source correctly fails with `RIFF declares 214308 bytes but source contains 102975`.
 
-## YSP-4 — Re-author Walkable Space / Collision to the Scene
+Gate required before YSP-3 can close again:
+
+- restore the complete approved Bright Yard master, or generate and visually approve a replacement master;
+- normalise it to the production canvas;
+- pass strict RIFF/VP8 payload integrity;
+- successfully decode the image independently;
+- preserve exact base/foreground alignment and deterministic hashes;
+- pass production build and player-facing browser regression;
+- confirm by eye that the final raster is the intended Yard.
+
+No collision, anchor or runtime-replacement work should use the truncated file.
+
+## YSP-4 — Re-author Walkable Space / Collision to the Scene — BLOCKED BY YSP-3 RASTER INTEGRITY
 
 Purpose: make movement fit the art rather than forcing the art to fit legacy colliders.
 
@@ -252,6 +259,8 @@ Gate:
 - no walking through visually solid architecture;
 - player can reach all required Yard tutorial/objective points and the Lab-route exit;
 - movement remains reliable with keyboard and touch controls.
+
+YSP-4 must be authored from the actual approved scene pixels. Do not guess geometry from the written brief and do not copy legacy Yard coordinates as a substitute for the missing raster.
 
 ## YSP-5 — Interaction Anchors / Tutorial and Objective Integration
 
@@ -377,9 +386,13 @@ No Route or Local Pit scene-image conversion begins before this human gate.
 
 # Implementation order
 
-Autonomous order is locked as:
+Autonomous order remains:
 
 `YSP-0 Technical Spike → YSP-1 Art Brief → YSP-2 Bright Master Generation → YSP-3 Asset Preparation → YSP-4 Collision/Walkability → YSP-5 Interactions → YSP-6 Foreground Depth → YSP-7 Bright Runtime Replacement → YSP-8 Dark Scene → YSP-9 Hardening → YSP-10 Human Gate`
+
+Current recovery insertion:
+
+`restore/regenerate complete Bright Yard raster → re-close YSP-3 with strict decode/integrity gate → resume YSP-4`
 
 The implementation should proceed autonomously between technical packages. Stop for user input only if a genuine visual choice cannot be made from the existing direction, or when YSP-10 is reached.
 
