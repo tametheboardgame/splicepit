@@ -2,7 +2,7 @@ import {
   preloadYsp3BrightYardAssets,
   YSP3_BRIGHT_YARD_ASSET_PACK,
 } from './yardSceneAssetPack.js';
-import { YSP4_YARD_SCENE_PACK } from '../world/yardScenePack.js';
+import { YSP5_YARD_SCENE_PACK } from '../world/yardScenePack.js';
 
 type YardSceneImageDebug = {
   requested: boolean;
@@ -32,12 +32,12 @@ const debug: YardSceneImageDebug = {
   active: false,
   fallback: false,
   error: null,
-  scenePackId: YSP4_YARD_SCENE_PACK.id,
+  scenePackId: YSP5_YARD_SCENE_PACK.id,
   assetPackId: YSP3_BRIGHT_YARD_ASSET_PACK.id,
-  sourceWidth: YSP4_YARD_SCENE_PACK.source.width,
-  sourceHeight: YSP4_YARD_SCENE_PACK.source.height,
-  worldWidth: YSP4_YARD_SCENE_PACK.world.width,
-  worldHeight: YSP4_YARD_SCENE_PACK.world.height,
+  sourceWidth: YSP5_YARD_SCENE_PACK.source.width,
+  sourceHeight: YSP5_YARD_SCENE_PACK.source.height,
+  worldWidth: YSP5_YARD_SCENE_PACK.world.width,
+  worldHeight: YSP5_YARD_SCENE_PACK.world.height,
   baseRendered: false,
   foregroundRendered: false,
   legacyRendererRendered: false,
@@ -77,12 +77,12 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D): void {
     baseImage,
     0,
     0,
-    YSP4_YARD_SCENE_PACK.source.width,
-    YSP4_YARD_SCENE_PACK.source.height,
+    YSP5_YARD_SCENE_PACK.source.width,
+    YSP5_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP4_YARD_SCENE_PACK.world.width,
-    YSP4_YARD_SCENE_PACK.world.height,
+    YSP5_YARD_SCENE_PACK.world.width,
+    YSP5_YARD_SCENE_PACK.world.height,
   );
   ctx.restore();
   debug.baseRendered = true;
@@ -97,12 +97,12 @@ export function drawYardSceneImageForeground(ctx: CanvasRenderingContext2D): voi
     foregroundImage,
     0,
     0,
-    YSP4_YARD_SCENE_PACK.source.width,
-    YSP4_YARD_SCENE_PACK.source.height,
+    YSP5_YARD_SCENE_PACK.source.width,
+    YSP5_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP4_YARD_SCENE_PACK.world.width,
-    YSP4_YARD_SCENE_PACK.world.height,
+    YSP5_YARD_SCENE_PACK.world.width,
+    YSP5_YARD_SCENE_PACK.world.height,
   );
   ctx.restore();
   debug.foregroundRendered = true;

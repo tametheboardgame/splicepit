@@ -22,6 +22,12 @@ export class OpeningObjectiveSequenceController {
     this.promptAvailableAt = now;
   }
 
+  complete(): void {
+    this.promptIndex = OPENING_ONBOARDING_PROMPTS.length;
+    this.awaitingActivation = false;
+    this.promptAvailableAt = 0;
+  }
+
   currentPromptId(): TutorialPromptId | null {
     return OPENING_ONBOARDING_PROMPTS[this.promptIndex] ?? null;
   }

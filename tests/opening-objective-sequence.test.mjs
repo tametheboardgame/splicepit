@@ -45,3 +45,17 @@ test('opening sequence ignores out-of-order or unactivated completion reports', 
   assert.equal(sequence.acknowledgeCompletedPrompt('interact', 20), false);
   assert.equal(sequence.currentPromptId(), 'movement');
 });
+
+test('YSP-5 can resume at the authored route after onboarding is already complete', () => {
+  const sequence = new OpeningObjectiveSequenceController();
+  sequence.complete();
+  assert.equal(sequence.currentPromptId(), null);
+  assert.equal(sequence.takeReadyPrompt(100), null);
+  assert.equal(sequence.isComplete(), true);
+  assert.equal(sequence.objectiveId(), 'find-master');
+  assert.deepEqual(sequence.completedPromptIds(), OPENING_ONBOARDING_PROMPTS);
+
+  sequence.reset(250);
+  assert.equal(sequence.currentPromptId(), 'movement');
+  assert.equal(sequence.objectiveId(), 'yard-orientation');
+});
