@@ -109,8 +109,10 @@ export const YSP4_YARD_SCENE_PACK = {
 } as const satisfies YardScenePack;
 
 // Transitional alias retained so the isolated scene-image spike can consume the
-// new pack without coupling YSP-4 to the normal Yard path before YSP-7.
-export const YSP0_YARD_SCENE_PACK = YSP4_YARD_SCENE_PACK;
+// new pack without coupling YSP-4 to the normal Yard path before YSP-7. Widen
+// it to the interface so the intentionally empty YSP-4 anchor tuple does not
+// collapse compatibility code to `never` before YSP-5 populates those anchors.
+export const YSP0_YARD_SCENE_PACK: YardScenePack = YSP4_YARD_SCENE_PACK;
 
 function overlaps(a: YardSceneRect, b: YardSceneRect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
