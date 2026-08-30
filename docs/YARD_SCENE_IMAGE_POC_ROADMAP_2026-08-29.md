@@ -10,7 +10,7 @@ For the Apprentice Splicer Yard proof of concept, the environment will be treate
 
 If this Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions are deliberately deferred until the Yard passes a human visual gate.
 
-**Status: ACTIVE — YSP-0, YSP-1 and YSP-2 complete; YSP-3 is next.**
+**Status: ACTIVE — YSP-0 through YSP-3 complete; YSP-4 is next.**
 
 ---
 
@@ -199,30 +199,37 @@ Gate result:
 - generated signage remains non-authoritative and may be repaired during YSP-3;
 - gameplay geometry remains intentionally unmodified until asset preparation is complete.
 
-## YSP-3 — Game-Ready Asset Preparation
+## YSP-3 — Game-Ready Asset Preparation — COMPLETE
 
 Purpose: turn the selected generated master into deterministic production assets.
 
-Build:
+Completed:
 
-- crop/extend the chosen scene to the final Yard world aspect and dimensions;
-- preserve crisp pixel presentation when resized/normalised;
-- repair obvious generation seams, malformed props and unreadable critical signage;
-- separate foreground-occluding elements into a transparent foreground image where required;
-- ensure base and foreground layers align exactly;
-- store scene metadata with explicit dimensions/versioning;
-- preload assets so the player never sees an empty/half-loaded Yard.
+- locked the high-quality open-centre production crop at **1280 × 720**;
+- stored the authoritative WebP as seven deterministic source chunks under `src/assets/ysp3/`;
+- removed the discarded q20 compression experiment;
+- added a materialiser that validates RIFF/WebP identity, VP8 dimensions and source integrity before emitting runtime assets;
+- added a precisely aligned transparent 1280 × 720 foreground staging layer;
+- added a versioned scene manifest with provenance, dimensions, hashes and rendering requirements;
+- added an atomic base/foreground preloader that rejects mis-sized decoded assets;
+- wired source validation and asset materialisation into development, production build and CI;
+- added an independent `dist` verifier proving the emitted production pack matches its manifest;
+- kept live Yard gameplay geometry and rendering unchanged, as required before YSP-4 through YSP-7.
 
-Suggested scene-pack shape:
+Foreground note:
 
-- bright base image;
-- bright foreground image;
-- metadata describing world dimensions and authored anchors;
-- later dark base/foreground counterparts.
+- YSP-3 intentionally leaves the visible occlusion layer transparent;
+- actual foreground-pixel extraction remains YSP-6 work, after YSP-4 collision and YSP-5 interactions establish proven player routes.
 
-Gate:
+Gate result:
 
-- base + foreground composite reproduces the approved master scene at game scale without blur, seams or offset drift.
+- authoritative base source validates at 1280 × 720;
+- base SHA-256 is `c7a4de321971d53660fe42908ae1f14aa17510efbfdca1ad611368c7bcea3d7a`;
+- 177 / 177 unit, domain and save tests pass;
+- the production build emits base, foreground and manifest successfully;
+- the emitted `dist` pack revalidates at 1280 × 720 with matching hashes;
+- full player-facing browser smoke passes;
+- merged by PR #73.
 
 ## YSP-4 — Re-author Walkable Space / Collision to the Scene
 
