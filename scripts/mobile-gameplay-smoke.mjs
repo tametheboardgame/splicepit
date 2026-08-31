@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { traverseAuthoredYardToMasterLabTunnel } from './yard-scene-navigation.mjs';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
 const chromePort = 9232;
@@ -221,18 +222,22 @@ try {
     throw new Error(`Simultaneous movement + ACTION touch did not preserve movement: ${JSON.stringify(current)}`);
   }
 
-  // Establish the service-ring baseline, then take the same authored tunnel path
-  // proven by YSP-5/YSP-6. All movement remains through the visible touch D-pad.
+  // Establish the service-ring collision baseline, then navigate the authored
+  // Yard adaptively through the same safe corridor used by desktop browser
+  // regressions. Every step still uses the visible touch D-pad.
   await holdControl('move-right', 900, 20);
   current = await state();
   if (current.playerX < 700 || current.playerX > 750 || current.collisionCount < 1) {
     throw new Error(`Touch movement did not meet the authored service-ring collision: ${JSON.stringify(current)}`);
   }
-  await holdControl('move-left', 1000, 21);
-  await holdControl('move-up', 2050, 22);
-  await holdControl('move-right', 1200, 23);
-  await holdControl('move-down', 500, 24);
-  await holdControl('move-right', 1850, 25);
+  await traverseAuthoredYardToMasterLabTunnel({
+    readState: state,
+    moveLeft: () => holdControl('move-left', 90, 21),
+    moveRight: () => holdControl('move-right', 90, 22),
+    moveUp: () => holdControl('move-up', 90, 23),
+    moveDown: () => holdControl('move-down', 90, 24),
+    label: 'YSP-8 mobile Yard navigation',
+  });
 
   current = await waitFor(async () => {
     const value = await state();
@@ -253,7 +258,7 @@ try {
   const overflow = await evaluate(`({ width: innerWidth, bodyWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight, height: innerHeight })`);
   if (overflow.bodyWidth > overflow.width + 1) throw new Error(`Mobile gameplay controls introduced horizontal overflow: ${JSON.stringify(overflow)}`);
 
-  console.log('YSP-7 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the Master Lab route staging area.');
+  console.log('YSP-8 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the Master Lab route staging area.');
   ws.close();
   cleanup();
 } catch (error) {

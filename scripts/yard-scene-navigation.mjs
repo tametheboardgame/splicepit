@@ -38,6 +38,9 @@ export async function traverseAuthoredYardToMasterLabTunnel({
   await moveAxis({ readState, axis: 'x', target: 600, positive: moveRight, negative: moveLeft, label });
   await moveAxis({ readState, axis: 'y', target: 290, positive: moveDown, negative: moveUp, label });
   await moveAxis({ readState, axis: 'x', target: 785, positive: moveRight, negative: moveLeft, label });
-  await moveAxis({ readState, axis: 'y', target: 385, positive: moveDown, negative: moveUp, label });
+  // Feet y must be >=379 to clear the retaining wall while remaining above the
+  // splice-pit collider. A 385±9 waypoint could legally stop at 377.x and then
+  // deadlock the final eastward leg, so use the centre of the safe corridor.
+  await moveAxis({ readState, axis: 'y', target: 392, positive: moveDown, negative: moveUp, tolerance: 4, label });
   return moveAxis({ readState, axis: 'x', target: 1110, positive: moveRight, negative: moveLeft, tolerance: 14, label });
 }

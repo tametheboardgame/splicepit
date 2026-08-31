@@ -90,6 +90,7 @@ try {
     const image = globalThis.__SPLICEPIT_YARD_SCENE_IMAGE__;
     const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
     if (!yard || !image || !env || yard.phase !== 'confirmed' || !yard.yardRendered || !image.active || !image.baseRendered || !image.foregroundRendered) return null;
+    if (image.darkMix !== 0 || image.darkBaseRendered) return null;
     return {
       yard: { ...yard },
       image: { ...image },
@@ -99,14 +100,19 @@ try {
   })()`));
 
   if (brightState.yard.yardRenderer !== 'scene-image' || brightState.yard.scenePackId !== 'yard-bright-scene-ysp6-v1') {
-    throw new Error(`YSP-7 normal runtime did not select the authored Bright Yard: ${JSON.stringify(brightState.yard)}`);
+    throw new Error(`YSP-8 normal runtime did not retain the authored Yard scene pack: ${JSON.stringify(brightState.yard)}`);
   }
-  if (brightState.image.assetPackId !== 'yard-bright-scene-v1' || brightState.image.fallback || brightState.image.legacyRendererRendered) {
-    throw new Error(`YSP-7 normal runtime mixed legacy Yard rendering into the scene: ${JSON.stringify(brightState.image)}`);
+  if (
+    brightState.image.assetPackId !== 'yard-bright-scene-v1' ||
+    brightState.image.darkAssetPackId !== 'yard-dark-scene-ysp8-v1' ||
+    brightState.image.fallback ||
+    brightState.image.legacyRendererRendered
+  ) {
+    throw new Error(`YSP-8 normal runtime mixed legacy or incomplete Yard rendering into the scene: ${JSON.stringify(brightState.image)}`);
   }
-  if (brightState.legacyOverlayExists) throw new Error('YSP-7 must not use the old independent Yard production-art overlay.');
+  if (brightState.legacyOverlayExists) throw new Error('YSP-8 must not use the old independent Yard production-art overlay.');
   if (brightState.environment.visualState !== 'bright') {
-    throw new Error(`YSP-7 did not begin in bright environment state: ${JSON.stringify(brightState.environment)}`);
+    throw new Error(`YSP-8 did not begin in bright environment state: ${JSON.stringify(brightState.environment)}`);
   }
 
   const brightStats = await evaluate(`(() => {
@@ -126,46 +132,79 @@ try {
         if (g > r + 8 && g > b + 8 && g > 80) vegetation += 1;
       }
     }
-    globalThis.__YSP7_BRIGHT_PIXELS__ = data.slice();
+    globalThis.__YSP8_BRIGHT_PIXELS__ = data.slice();
     return { uniqueColours: colours.size, warmWorkplace, vegetation };
   })()`);
   if (!brightStats || brightStats.uniqueColours < 100 || brightStats.warmWorkplace < 100 || brightStats.vegetation < 100) {
-    throw new Error(`YSP-7 approved Yard raster appears missing or visually sparse: ${JSON.stringify(brightStats)}`);
+    throw new Error(`YSP-8 approved Bright Yard appears missing or visually sparse: ${JSON.stringify(brightStats)}`);
   }
 
-  // YSP-8 owns the authored dark scene. During YSP-7, forcing the environment
-  // dark must never resurrect the retired Pass-D/procedural Yard underneath the
-  // approved Bright Yard. The main scene pixels therefore remain stable here.
+  const lockedPosition = {
+    playerX: brightState.yard.playerX,
+    playerY: brightState.yard.playerY,
+    cameraX: brightState.yard.cameraX,
+    cameraY: brightState.yard.cameraY,
+  };
+
   await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceDark()`);
-  const darkEnvironment = await waitFor(async () => evaluate(`(() => {
+  const darkState = await waitFor(async () => evaluate(`(() => {
     const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
-    return env?.state?.visualState === 'dark' && env.state.darkMix >= 0.999 ? { ...env.state } : null;
+    const image = globalThis.__SPLICEPIT_YARD_SCENE_IMAGE__;
+    const yard = globalThis.__SPLICEPIT_VISUAL_RESET__;
+    if (!env || !image || !yard) return null;
+    if (env.state.visualState !== 'dark' || env.state.darkMix < 0.999 || image.darkMix < 0.999 || !image.darkBaseRendered) return null;
+    return { environment: { ...env.state }, image: { ...image }, yard: { ...yard } };
   })()`), 10000);
 
-  const darkBoundary = await evaluate(`(() => {
+  const darkPixels = await evaluate(`(() => {
     const canvas = document.querySelector('#visual-reset-stage');
     const ctx = canvas?.getContext('2d');
-    const bright = globalThis.__YSP7_BRIGHT_PIXELS__;
-    const image = globalThis.__SPLICEPIT_YARD_SCENE_IMAGE__;
-    if (!canvas || !ctx || !bright || !image) return null;
+    const bright = globalThis.__YSP8_BRIGHT_PIXELS__;
+    if (!canvas || !ctx || !bright) return null;
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let materiallyChanged = 0;
+    let purpleCorruption = 0;
     for (let y = 70; y < 650; y += 5) {
       for (let x = 40; x < 1240; x += 5) {
         const i = (y * canvas.width + x) * 4;
-        if (Math.abs(data[i] - bright[i]) + Math.abs(data[i + 1] - bright[i + 1]) + Math.abs(data[i + 2] - bright[i + 2]) > 60) materiallyChanged += 1;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        if (Math.abs(r - bright[i]) + Math.abs(g - bright[i + 1]) + Math.abs(b - bright[i + 2]) > 60) materiallyChanged += 1;
+        if (r > g + 20 && b > g + 20 && (r + b) > 180) purpleCorruption += 1;
       }
     }
-    return { materiallyChanged, image: { ...image } };
+    return { materiallyChanged, purpleCorruption };
   })()`);
-  if (!darkBoundary || darkBoundary.materiallyChanged > 8 || darkBoundary.image.legacyRendererRendered || darkBoundary.image.fallback) {
-    throw new Error(`YSP-7 force-dark leaked retired Yard art before YSP-8: ${JSON.stringify({ darkEnvironment, darkBoundary })}`);
+
+  if (!darkPixels || darkPixels.materiallyChanged < 1500 || darkPixels.purpleCorruption < 40) {
+    throw new Error(`YSP-8 authored Dark Yard did not materially replace the Bright Yard: ${JSON.stringify(darkPixels)}`);
+  }
+  if (darkState.image.fallback || darkState.image.legacyRendererRendered || darkState.image.darkAssetPackId !== 'yard-dark-scene-ysp8-v1') {
+    throw new Error(`YSP-8 force-dark used a fallback or legacy renderer: ${JSON.stringify(darkState.image)}`);
+  }
+
+  for (const key of ['playerX', 'playerY', 'cameraX', 'cameraY']) {
+    if (Math.abs(darkState.yard[key] - lockedPosition[key]) > 0.2) {
+      throw new Error(`YSP-8 Bright→Dark transition moved ${key}: ${JSON.stringify({ lockedPosition, dark: darkState.yard })}`);
+    }
   }
 
   await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceBright()`);
-  await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.visualState === 'bright' && globalThis.__SPLICEPIT_ENVIRONMENT__.state.darkMix === 0`));
+  const recovered = await waitFor(async () => evaluate(`(() => {
+    const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
+    const image = globalThis.__SPLICEPIT_YARD_SCENE_IMAGE__;
+    const yard = globalThis.__SPLICEPIT_VISUAL_RESET__;
+    if (!env || !image || !yard) return null;
+    if (env.state.visualState !== 'bright' || env.state.darkMix !== 0 || image.darkMix !== 0 || image.darkBaseRendered) return null;
+    return { image: { ...image }, yard: { ...yard } };
+  })()`), 10000);
 
-  console.log(`YSP-7 Bright Yard production-art replacement passed: ${JSON.stringify({ brightStats, darkBoundary: darkBoundary.materiallyChanged })}`);
+  for (const key of ['playerX', 'playerY', 'cameraX', 'cameraY']) {
+    if (Math.abs(recovered.yard[key] - lockedPosition[key]) > 0.2) {
+      throw new Error(`YSP-8 Dark→Bright recovery moved ${key}: ${JSON.stringify({ lockedPosition, recovered: recovered.yard })}`);
+    }
+  }
+
+  console.log(`YSP-8 authored Bright/Dark Yard transition passed: ${JSON.stringify({ brightStats, darkPixels })}`);
   ws.close();
   cleanup();
 } catch (error) {
