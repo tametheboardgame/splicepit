@@ -11,6 +11,7 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 const EXPECTED_BYTES = 143796;
 const EXPECTED_SHA256 = 'f1b47165fa50ffa5c45ac0f65dfa2b70bdd43b9f7c034b35c84a4359ccfbeb8b';
+const EXPECTED_BASE64_CHARS = 191728;
 const SOURCE_CHUNKS = [
   'yard-dark-base.part00.txt',
   'yard-dark-base.part01.txt',
@@ -58,12 +59,26 @@ function validateWebp(buffer) {
     `YSP-8 Dark Yard dimensions are ${width}x${height}; expected ${WIDTH}x${HEIGHT}`);
 }
 
+async function loadSourcePart(name) {
+  const raw = (await readFile(path.join(SOURCE_DIR, name), 'utf8')).trim();
+  invariant(/^[A-Za-z0-9+/=]+$/.test(raw), `YSP-8 source ${name} contains invalid base64 characters`);
+
+  // The GitHub text transport appended an unrelated tail to part15 during authoring.
+  // The first 12,000 characters are the locked source segment; the final whole-file
+  // byte count + SHA-256 below remain the authority, so an incorrect prefix cannot pass.
+  if (name === 'yard-dark-base.part15.txt') {
+    invariant(raw.length >= 12000, `YSP-8 source ${name} is too short: ${raw.length}`);
+    return raw.slice(0, 12000);
+  }
+
+  return raw;
+}
+
 async function loadDarkBase() {
-  const encodedParts = await Promise.all(
-    SOURCE_CHUNKS.map(async (name) => (await readFile(path.join(SOURCE_DIR, name), 'utf8')).trim()),
-  );
+  const encodedParts = await Promise.all(SOURCE_CHUNKS.map(loadSourcePart));
   const encoded = encodedParts.join('');
-  invariant(/^[A-Za-z0-9+/=]+$/.test(encoded), 'YSP-8 Dark Yard source contains invalid base64 characters');
+  invariant(encoded.length === EXPECTED_BASE64_CHARS,
+    `YSP-8 Dark Yard base64 length is ${encoded.length}; expected ${EXPECTED_BASE64_CHARS}`);
   const buffer = Buffer.from(encoded, 'base64');
   invariant(buffer.length === EXPECTED_BYTES,
     `YSP-8 Dark Yard byte length is ${buffer.length}; expected ${EXPECTED_BYTES}`);
