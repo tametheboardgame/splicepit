@@ -187,12 +187,12 @@ try {
   await openScenario();
   const scene = await yardState();
   if (scene.yardRenderer !== 'scene-image' || scene.worldWidth !== 1280 || scene.worldHeight !== 720) {
-    throw new Error(`YSP-7 final visual integration did not begin in the scene Yard: ${JSON.stringify(scene)}`);
+    throw new Error(`YSP-8 final visual integration did not begin in the scene Yard: ${JSON.stringify(scene)}`);
   }
-  // YSP-8 owns the authored dark Yard scene. For YSP-7 the important contract
-  // is that dark-state signalling and UI suppression still work without the old
-  // procedural dark pixels leaking underneath the approved Bright Yard.
-  results.push(await verifyLocation('yard', '__SPLICEPIT_YARD_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell', false));
+  // YSP-8 owns an authored dark counterpart for the scene-image Yard, so the
+  // integration gate now requires the same material dark-state change already
+  // required of Route, Master Lab and Local Pit while preserving gameplay state.
+  results.push(await verifyLocation('yard', '__SPLICEPIT_YARD_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell'));
 
   await waitForPrompt('movement');
   await holdKey('d', 'KeyD', 68, 1200);
@@ -253,7 +253,7 @@ try {
     throw new Error(`Opening visual mobile stack integration failed: ${JSON.stringify(mobile)}`);
   }
 
-  console.log(`YSP-7 final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
+  console.log(`YSP-8 final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
   ws.close();
   cleanup();
 } catch (error) {
