@@ -194,15 +194,32 @@ try {
     }
   }
 
+  // Opening shells intentionally suppress corruption presentation. Preserve that
+  // established contract: forcedState remains dark, presentation becomes bright
+  // while Bag is open, then the authored Dark Yard resumes after the shell closes.
   await key('b', 'KeyB', 66);
   const bag = await waitFor(async () => {
     const value = await yardSnapshot();
-    return value?.yard?.activeOpeningShell === 'bag' ? value : null;
+    return value?.yard?.activeOpeningShell === 'bag' && value.environment.suppressed ? value : null;
   });
-  if (bag.image.darkMix < 0.999 || bag.environment.visualState !== 'dark') {
-    throw new Error(`YSP-9 Bag shell broke forced Dark Yard state: ${JSON.stringify(bag)}`);
+  if (
+    bag.environment.forcedState !== 'dark' || bag.environment.visualState !== 'bright' || bag.environment.darkMix !== 0 ||
+    bag.image.darkMix !== 0 || !bag.environment.suppressionReasons.includes('opening-shell')
+  ) {
+    throw new Error(`YSP-9 Bag shell did not preserve corruption suppression semantics: ${JSON.stringify(bag)}`);
   }
   await key('Escape', 'Escape', 27);
+  const resumedDark = await waitFor(async () => {
+    const value = await yardSnapshot();
+    return value?.yard?.activeOpeningShell === null && !value.environment.suppressed && value.image.darkMix >= 0.999
+      ? value
+      : null;
+  }, 10000);
+  for (const keyName of ['playerX', 'playerY', 'cameraX', 'cameraY']) {
+    if (Math.abs(resumedDark.yard[keyName] - locked[keyName]) > 0.2) {
+      throw new Error(`YSP-9 Bag suppression recovery moved ${keyName}: ${JSON.stringify({ locked, resumedDark: resumedDark.yard })}`);
+    }
+  }
 
   await cdp('Emulation.setDeviceMetricsOverride', { width: 915, height: 412, deviceScaleFactor: 2.75, mobile: true });
   await sleep(350);
