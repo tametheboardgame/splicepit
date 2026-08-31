@@ -81,7 +81,7 @@ Required:
 - scene image smoothing remains disabled after viewport changes;
 - forced Dark Yard remains coherent on mobile;
 - changing visual state or orientation does not move player/camera state;
-- Bag UI remains usable while the authored Dark state is active;
+- Bag UI remains usable under the existing corruption-suppression contract: opening the shell temporarily presents Bright while preserving the forced Dark state, and authored Dark resumes after the shell closes;
 - touch-only onboarding and Master Lab tunnel traversal continue to pass.
 
 ## Traversal regression hardening
