@@ -17,7 +17,8 @@ const SOURCE_CHUNKS = [
   'yard-dark-base.part01.txt',
   'yard-dark-base.part02.txt',
   ...Array.from({ length: 13 }, (_, index) => `yard-dark-base.part${String(index + 3).padStart(2, '0')}.txt`),
-  'yard-dark-base.part16a.txt',
+  'yard-dark-base.part16a0.txt',
+  'yard-dark-base.part16a1.txt',
   'yard-dark-base.part16b.txt',
   'yard-dark-base.part17.txt',
 ];
