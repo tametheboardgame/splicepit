@@ -1,3 +1,4 @@
+import { environmentVisualController } from './environmentVisualContract.js';
 import {
   preloadYsp8YardAssets,
   YSP3_BRIGHT_YARD_ASSET_PACK,
@@ -94,9 +95,9 @@ export async function prepareYardSceneImageRuntime(): Promise<boolean> {
   }
 }
 
-export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix = 0): void {
+export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix?: number): void {
   if (!baseImage || !darkBaseImage || !debug.active) return;
-  const mix = clampMix(darkMix);
+  const mix = clampMix(darkMix ?? environmentVisualController.sample('yard', performance.now()).darkMix);
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
@@ -139,10 +140,12 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix = 
 export function drawYardSceneImageForeground(
   ctx: CanvasRenderingContext2D,
   playerFeetY: number,
-  darkMix = 0,
+  darkMix?: number,
 ): void {
   if (!foregroundImage || !baseImage || !darkBaseImage || !debug.active) return;
-  const mix = clampMix(darkMix);
+  // With the normal production call order, reuse the exact mix sampled by the
+  // base pass so foreground pixels cannot drift by even one transition frame.
+  const mix = clampMix(darkMix ?? debug.darkMix);
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
