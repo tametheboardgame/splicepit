@@ -16,7 +16,11 @@ const SOURCE_CHUNKS = [
   'yard-dark-base.part00.txt',
   'yard-dark-base.part01.txt',
   'yard-dark-base.part02.txt',
-  ...Array.from({ length: 13 }, (_, index) => `yard-dark-base.part${String(index + 3).padStart(2, '0')}.txt`),
+  ...Array.from({ length: 12 }, (_, index) => `yard-dark-base.part${String(index + 3).padStart(2, '0')}.txt`),
+  'yard-dark-base.part15a0.txt',
+  'yard-dark-base.part15a1.txt',
+  'yard-dark-base.part15a2.txt',
+  'yard-dark-base.part15a3.txt',
   'yard-dark-base.part16a0.txt',
   'yard-dark-base.part16a1.txt',
   'yard-dark-base.part16b.txt',
@@ -63,15 +67,6 @@ function validateWebp(buffer) {
 async function loadSourcePart(name) {
   const raw = (await readFile(path.join(SOURCE_DIR, name), 'utf8')).trim();
   invariant(/^[A-Za-z0-9+/=]+$/.test(raw), `YSP-8 source ${name} contains invalid base64 characters`);
-
-  // The GitHub text transport appended an unrelated tail to part15 during authoring.
-  // The first 12,000 characters are the locked source segment; the final whole-file
-  // byte count + SHA-256 below remain the authority, so an incorrect prefix cannot pass.
-  if (name === 'yard-dark-base.part15.txt') {
-    invariant(raw.length >= 12000, `YSP-8 source ${name} is too short: ${raw.length}`);
-    return raw.slice(0, 12000);
-  }
-
   return raw;
 }
 
