@@ -38,15 +38,17 @@ export async function traverseAuthoredYardToMasterLabTunnel({
   moveDown,
   label = 'YSP-10 Yard navigation',
 }) {
-  // Drop below the splice-pit collider while remaining above the lower-right
-  // solid container base and service-ring footprint.
-  await moveAxis({ readState, axis: 'y', target: 580, positive: moveDown, negative: moveUp, tolerance: 5, label });
+  // Feet are safe between y=563 and y=600: above that band the hitbox can
+  // overlap the splice pit; below it the lower-right base can be hit. A ±16px
+  // target tolerance keeps both keyboard and coarser touch steps inside it.
+  await moveAxis({ readState, axis: 'y', target: 580, positive: moveDown, negative: moveUp, tolerance: 16, label });
 
-  // Cross the intentionally traversable foreground band. The cryo/container
-  // artwork occludes the protagonist here, but no giant invisible wall should.
-  await moveAxis({ readState, axis: 'x', target: 1115, positive: moveRight, negative: moveLeft, tolerance: 6, label });
+  // Cross the intentionally traversable foreground band. Centre the target
+  // inside the doorway trigger so larger touch steps cannot stop just outside
+  // its x=1104 boundary.
+  await moveAxis({ readState, axis: 'x', target: 1120, positive: moveRight, negative: moveLeft, tolerance: 12, label });
 
   // Enter the visible tunnel from below. The helper returns as soon as the
   // Yard runtime hands off to master-lab-route.
-  return moveAxis({ readState, axis: 'y', target: 340, positive: moveDown, negative: moveUp, tolerance: 8, label });
+  return moveAxis({ readState, axis: 'y', target: 340, positive: moveDown, negative: moveUp, tolerance: 12, label });
 }
