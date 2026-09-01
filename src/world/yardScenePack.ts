@@ -71,10 +71,6 @@ export interface YardScenePack {
 
 /**
  * YSP-4 collision authored from the recovered 1280 × 720 Bright Yard raster.
- *
- * The rectangles deliberately follow the large visual masses rather than the
- * previous procedural Yard topology. Small surface props remain traversable so
- * the central court keeps the generous movement rhythm locked in YSP-1.
  */
 export const YSP4_YARD_SCENE_PACK = {
   id: 'yard-bright-scene-ysp4-v1',
@@ -117,9 +113,7 @@ export const YSP4_YARD_SCENE_PACK = {
   ],
 } as const satisfies YardScenePack;
 
-/**
- * YSP-5 adds semantic gameplay locations to the exact YSP-4 geometry.
- */
+/** YSP-5 semantic gameplay locations on the YSP-4 geometry. */
 export const YSP5_YARD_SCENE_PACK = {
   ...YSP4_YARD_SCENE_PACK,
   id: 'yard-bright-scene-ysp5-v1',
@@ -139,14 +133,8 @@ export const YSP5_YARD_SCENE_PACK = {
   ],
 } as const satisfies YardScenePack;
 
-/**
- * YSP-6 adds depth without synthesising or repainting the approved Yard.
- * Each occluder redraws an exact crop from the already-decoded Bright Yard base
- * after the protagonist, and only while the protagonist's feet are behind that
- * feature. This guarantees pixel-perfect colour/alignment and avoids seams from
- * a separately generated foreground plate.
- */
-export const YSP6_YARD_SCENE_PACK = {
+/** YSP-6 exact-pixel foreground depth and contact grounding. */
+const YSP6_YARD_SCENE_PACK_BASE = {
   ...YSP5_YARD_SCENE_PACK,
   id: 'yard-bright-scene-ysp6-v1',
   foreground: {
@@ -171,19 +159,15 @@ export const YSP6_YARD_SCENE_PACK = {
 /**
  * YSP-10 human-gate revision.
  *
- * The first on-device review approved the authored-scene direction but exposed
- * four integration defects: the lower spawn sat under tutorial cards, the
- * narrow pit/wall seam allowed an impossible descent, the visible Lab tunnel
- * was itself covered by collision while its trigger sat below the doorway, and
- * the foreground cryo/container stack behaved as one huge solid rectangle.
- *
- * This revision keeps the approved pixels and movement feel while correcting
- * those authored gameplay layers. The lower-right stack now has a solid base
- * but a traversable behind-object band, with an exact-pixel foreground crop to
- * place the protagonist naturally behind it.
+ * On-device review approved the authored-scene direction but exposed four
+ * gameplay-layer defects: the lower spawn sat underneath tutorial cards; the
+ * narrow pit/wall seam allowed an impossible descent; the visible Lab tunnel
+ * was covered by wall collision while its transition trigger sat below the
+ * doorway; and the foreground cryo/container stack behaved as one huge solid
+ * rectangle instead of an object the player could pass behind.
  */
 export const YSP10_YARD_SCENE_PACK = {
-  ...YSP6_YARD_SCENE_PACK,
+  ...YSP6_YARD_SCENE_PACK_BASE,
   id: 'yard-bright-scene-ysp10-r1',
   spawn: { x: 575, y: 430 },
   collision: {
@@ -235,8 +219,12 @@ export const YSP10_YARD_SCENE_PACK = {
   },
 } as const satisfies YardScenePack;
 
-// The isolated scene-image contract and production runtime should always use the
-// newest human-reviewed authored gameplay layer.
+/**
+ * Compatibility export: existing production callers named this contract YSP-6.
+ * Route them through the human-reviewed YSP-10 revision without forcing a wide
+ * mechanical rename across the opening runtime.
+ */
+export const YSP6_YARD_SCENE_PACK: YardScenePack = YSP10_YARD_SCENE_PACK;
 export const YSP0_YARD_SCENE_PACK: YardScenePack = YSP10_YARD_SCENE_PACK;
 
 function overlaps(a: YardSceneRect, b: YardSceneRect): boolean {
