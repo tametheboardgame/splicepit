@@ -195,8 +195,8 @@ try {
     if (index === 0) {
       await holdKey('d', 'KeyD', 68, 1200);
       const collision = await state();
-      if (collision.collisionCount < 1 || collision.playerX < 700 || collision.playerX > 750 || collision.facing !== 'right') {
-        throw new Error(`YSP-10 production collision did not stop Milo at the authored splice-pit mass: ${JSON.stringify(collision)}`);
+      if (collision.collisionCount < 1 || collision.playerX < 650 || collision.playerX > 700 || collision.facing !== 'right') {
+        throw new Error(`YSP-10 production collision did not stop Milo at the authored pit-west machinery: ${JSON.stringify(collision)}`);
       }
 
       await holdKey('w', 'KeyW', 87, 150);
