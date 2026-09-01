@@ -93,6 +93,16 @@ try {
     }))()`);
   }
 
+  async function moveToLabExit() {
+    for (let attempt = 0; attempt < 24; attempt += 1) {
+      const current = await state();
+      if (current.lab?.nearExit) return current;
+      if (!current.lab?.active) throw new Error(`Lab became inactive before reaching its exit: ${JSON.stringify(current.lab)}`);
+      await holdKey('s', 'KeyS', 83, 90);
+    }
+    throw new Error(`Could not reach Master Lab exit zone: ${JSON.stringify((await state()).lab)}`);
+  }
+
   async function redAftermathPixels() {
     return evaluate(`(() => {
       const canvas = document.querySelector('#master-lab-stage');
@@ -163,7 +173,7 @@ try {
     throw new Error(`Master Lab did not visibly convert to aftermath art: ${JSON.stringify({ beforeRed, afterRed })}`);
   }
 
-  await holdKey('s', 'KeyS', 83, 220);
+  await moveToLabExit();
   await key('e', 'KeyE', 69);
   await waitFor(async () => !(await state()).lab?.active);
 
