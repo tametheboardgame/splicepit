@@ -129,11 +129,14 @@ try {
 
   const first = await waitForConfirmed();
   const lifecycle = first.image;
+  // YSP-10 deliberately starts the same memoised scene preload while apprentice
+  // selection is visible so the selection backdrop and production Yard share one
+  // decoded image set. Entering the Yard is therefore the first cache hit.
   if (
-    lifecycle.preloadRequests !== 1 || lifecycle.assetCacheHits !== 0 || lifecycle.decodeStarts !== 3 ||
+    lifecycle.preloadRequests !== 2 || lifecycle.assetCacheHits !== 1 || lifecycle.decodeStarts !== 3 ||
     lifecycle.successfulLoads !== 1 || lifecycle.failedLoads !== 0 || !lifecycle.imageSmoothingDisabled
   ) {
-    throw new Error(`YSP-9 first Yard asset lifecycle is not atomic: ${JSON.stringify(lifecycle)}`);
+    throw new Error(`YSP-9/YSP-10 first Yard asset lifecycle is not atomic: ${JSON.stringify(lifecycle)}`);
   }
   if (
     lifecycle.compressedAuthoredBasesBytes !== 321604 ||
@@ -147,17 +150,15 @@ try {
     throw new Error(`YSP-9 Yard preload exceeded the conservative local decode budget: ${JSON.stringify(lifecycle)}`);
   }
 
-  // Leave the production Yard and re-enter it without reloading the page. The
-  // decoded Bright, foreground and Dark surfaces must be reused exactly once.
   await key('Escape', 'Escape', 27);
   await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.phase === 'select' && globalThis.__SPLICEPIT_VISUAL_RESET__?.selectionRendered === true`));
   await key('Enter', 'Enter', 13);
   const second = await waitFor(async () => {
     const value = await yardSnapshot();
-    return value?.yard?.phase === 'confirmed' && value.image.preloadRequests >= 2 ? value : null;
+    return value?.yard?.phase === 'confirmed' && value.image.preloadRequests >= 3 ? value : null;
   });
   if (
-    second.image.preloadRequests !== 2 || second.image.assetCacheHits !== 1 ||
+    second.image.preloadRequests !== 3 || second.image.assetCacheHits !== 2 ||
     second.image.decodeStarts !== 3 || second.image.successfulLoads !== 1 || second.image.failedLoads !== 0
   ) {
     throw new Error(`YSP-9 Yard re-entry decoded duplicate full-size assets: ${JSON.stringify(second.image)}`);
@@ -194,9 +195,6 @@ try {
     }
   }
 
-  // Opening shells intentionally suppress corruption presentation. Preserve that
-  // established contract: forcedState remains dark, presentation becomes bright
-  // while Bag is open, then the authored Dark Yard resumes after the shell closes.
   await key('b', 'KeyB', 66);
   const bag = await waitFor(async () => {
     const value = await yardSnapshot();
