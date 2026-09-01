@@ -8,7 +8,7 @@ The correction is architectural. For the Apprentice Splicer Yard proof of concep
 
 If the Yard proof of concept succeeds visually and technically, the same architecture can then be considered for the opening route and Local Pit. Those conversions remain deferred until the Yard passes the YSP-10 human visual gate.
 
-**Status: ACTIVE — YSP-0 through YSP-6 complete. YSP-7 Bright Yard Runtime Replacement is next.**
+**Status: HUMAN GATE — YSP-0 through YSP-9 complete. YSP-10 Yard Scene-Image Human Gate is now required.**
 
 ---
 
@@ -66,7 +66,7 @@ YSP-6 implements this without generating a second painted scene: selected approv
 
 ## 4. Dark/corrupted counterpart
 
-The dark Yard will be a matching authored scene pack with physical environmental changes, not merely a colour filter. Navigation should remain recognisable unless a story beat deliberately changes it.
+The dark Yard is a matching authored scene pack with physical environmental changes, not merely a colour filter. Navigation remains aligned with the Bright Yard while the presentation becomes visibly wrong.
 
 ---
 
@@ -138,7 +138,7 @@ PR #75 restored the exact approved Bright Yard image supplied by the user and es
 - deterministic emitted-pack hashes;
 - aligned transparent foreground staging layer for YSP-6.
 
-The strengthened YSP-3 gate now prevents header-valid but truncated images from passing again.
+The strengthened YSP-3 gate prevents header-valid but truncated images from passing again.
 
 Merged by PR #75.
 
@@ -151,17 +151,16 @@ Purpose: make movement fit the approved scene rather than forcing the scene to f
 Completed:
 
 - authored geometry directly against the recovered 1280 × 720 Yard pixels;
-- scene/world/camera bounds now match the production raster;
+- scene/world/camera bounds match the production raster;
 - retained the established feet-based protagonist hitbox;
-- established a safe lower-centre spawn at `(575, 660)`;
-- made major visible structures solid, including GENECO, THE HUT, containment, vats, pit infrastructure, retaining walls and storage masses;
-- preserved the broad central court and usable movement rhythm;
-- authored the visible right-side Master Lab tunnel as the route exit footprint;
-- proved deterministic reachability from spawn to that tunnel;
-- wired the opt-in scene-image renderer to the exact recovered YSP-3 production raster rather than the YSP-0 placeholder;
-- verified touch movement, collision, onboarding UI and physical traversal in Chromium;
-- retained the current normal/live Yard renderer unchanged until YSP-7;
-- deliberately left interaction anchors empty for YSP-5 instead of copying legacy coordinates.
+- safe lower-centre spawn at `(575, 660)`;
+- major visible structures made solid, including GENECO, THE HUT, containment, vats, pit infrastructure, retaining walls and storage masses;
+- broad central court and movement rhythm preserved;
+- visible right-side Master Lab tunnel authored as the route exit footprint;
+- deterministic reachability from spawn to that tunnel;
+- opt-in scene-image renderer wired to the exact recovered YSP-3 production raster;
+- touch movement, collision, onboarding UI and physical traversal verified in Chromium;
+- interaction anchors deliberately deferred to YSP-5 rather than copying legacy coordinates.
 
 Gate result:
 
@@ -192,7 +191,7 @@ Gate result:
 
 - fresh onboarding completes in the image-backed Yard;
 - objective reaches `Find your Master`;
-- the visible tunnel performs the intended Master Lab route handoff;
+- visible tunnel performs the intended Master Lab route handoff;
 - full verify and browser suites pass.
 
 Merged by PR #77.
@@ -211,9 +210,8 @@ Completed:
 - retained the precisely aligned transparent foreground staging layer while avoiding a second lossy/colour-shifted painted source;
 - added a restrained scene-specific contact shadow tied to the protagonist feet;
 - verified deterministic depth sorting at multiple vertical positions;
-- verified in Chromium that the service-ring foreground actually activates after Milo moves behind it;
-- retained semantic interaction, onboarding, `Find your Master` and the Master Lab route handoff;
-- retained complete separation from the normal/live Yard path until YSP-7.
+- verified in Chromium that the service-ring foreground activates after Milo moves behind it;
+- retained semantic interaction, onboarding, `Find your Master` and the Master Lab route handoff.
 
 Gate result:
 
@@ -224,63 +222,87 @@ Gate result:
 
 PR #78 is the YSP-6 delivery PR.
 
-## YSP-7 — Bright Yard Runtime Replacement — NEXT
+## YSP-7 — Bright Yard Runtime Replacement — COMPLETE
 
 Purpose: make the image-backed Yard the normal production path.
 
-Build:
+Completed:
 
-- switch normal Yard rendering to the scene pack;
-- stop drawing Pass D Yard scenery in the active path;
-- retain an explicit temporary development fallback only if useful for rollback;
-- fail/fallback atomically if scene assets cannot load;
-- update runtime/smoke contracts to assert the image-backed production path.
+- normal Yard rendering now uses the authored scene-image pack after identity confirmation;
+- old Pass D Yard scenery is absent from the active production path;
+- Bright Yard assets preload before activation so a half-loaded scene cannot flash over the legacy Yard;
+- legacy Yard remains only as an atomic failure fallback;
+- all four approved protagonists retain their animated movement and save/selection flow;
+- YSP-6 collision, foreground depth, interactions and visible tunnel route handoff are authoritative in production;
+- runtime and browser contracts assert `yardRenderer = scene-image` on the normal path.
 
-Gate:
+Gate result:
 
-- deployed Bright Yard contains no visible old-board scenery underneath or around the authored scene;
-- onboarding and route handoff work on the production scene-image renderer.
+- production Bright Yard renders without old-board scenery underneath it;
+- onboarding, Bag/Map/objective flow and Master Lab route handoff pass on the production scene renderer;
+- all four protagonists pass the production Yard visual smoke.
 
-## YSP-8 — Authored Dark Yard Scene Pack
+Merged by PR #79.
+
+## YSP-8 — Authored Dark Yard Scene Pack — COMPLETE
 
 Purpose: prove the architecture supports SplicePit’s bright/dark story language.
 
-Process:
+Completed:
 
-- use the approved bright Yard as the layout reference;
-- author a matching dark counterpart with physical environmental changes;
-- keep dimensions and anchors aligned with the bright scene;
-- keep collision stable unless a story beat explicitly requires a movement change;
-- transition between coherent scene states rather than procedural overlays.
+- exact approved 1280 × 720 Dark Yard counterpart packaged deterministically;
+- Dark production identity: **143,796 bytes**, SHA-256 `f1b47165fa50ffa5c45ac0f65dfa2b70bdd43b9f7c034b35c84a4359ccfbeb8b`;
+- structural source/dist validation and Chromium image decode gate;
+- Bright base, foreground staging layer and Dark base preload atomically;
+- existing Yard `darkMix` drives the authored Dark scene rather than a procedural Yard overlay;
+- Bright and Dark foreground occlusion use the same transition mix, avoiding Bright seams around the protagonist;
+- collision, semantic anchors, player position and camera remain stable through Bright ↔ Dark transitions;
+- cross-location opening visual integration now requires authored Dark Yard pixels alongside Route, Master Lab and Local Pit dark-state behaviour.
 
-Gate:
+The final YSP-8 pass also hardened authored-Yard browser navigation where loose timing could stop just outside a narrow safe corridor.
 
-- bright/dark transitions preserve player position and camera correctly;
-- dark state is recognisably the same Yard but physically wrong;
-- no scene-pack alignment jump.
+Gate result:
 
-## YSP-9 — Mobile / Performance / Regression Hardening
+- Bright → Dark → Bright transitions preserve gameplay state and alignment;
+- Dark Yard is materially different while remaining the same navigable place;
+- no legacy procedural Yard leaks into the transition;
+- full verify and player-facing browser suites pass.
 
-Validate:
+Merged by replacement PR #81 after the connector could not mark draft PR #80 ready for review.
 
-- 1280 × 720 desktop composition;
-- portrait and landscape mobile layout;
-- touch movement and run controls;
-- image decode/preload time and memory footprint;
-- canvas smoothing/blur behaviour;
-- Bag/Map/Action/objective UI;
-- route handoff;
-- save/story compatibility;
-- title/narration/selection/Yard integration.
+## YSP-9 — Mobile / Performance / Regression Hardening — COMPLETE
 
-Gate:
+Source of truth: `docs/YSP9_MOBILE_PERFORMANCE_REGRESSION_HARDENING_2026-08-31.md`.
 
-- smooth target-browser performance on mobile and desktop;
-- no new soft lock, traversal or presentation regression.
+Purpose: harden the production Bright/Dark scene-image Yard before human visual sign-off.
 
-## YSP-10 — Yard Scene-Image Human Gate
+Completed:
 
-This is the hard visual decision point.
+- memoised the atomic Bright + foreground + Dark decode for page lifetime;
+- failed atomic preload remains retryable rather than caching rejection forever;
+- runtime exposes preload, cache-hit, decode, successful/failed-load and decode-duration evidence;
+- repeated selector → Yard → selector → Yard entry proves **2 preload requests, 1 cache hit and only 3 total image decodes**;
+- conservative three-surface decoded RGBA footprint is **11,059,200 bytes**, below the locked **12 MiB** guardrail;
+- authored compressed Bright + Dark bases total **321,604 bytes**;
+- image smoothing remains disabled through desktop, portrait and landscape viewport changes;
+- forced Dark state preserves player/camera state on mobile;
+- existing Bag corruption-suppression semantics are preserved: shell presentation temporarily returns Bright while forced Dark remains armed, then Dark resumes after close;
+- ACTION/RUN touch targets and portrait/landscape containment remain valid;
+- touch-only onboarding and tunnel traversal remain valid;
+- brittle fixed-duration Yard and post-death Master Lab test movement was replaced with geometry/state-driven movement, without changing gameplay geometry.
+
+Gate result:
+
+- GitHub Actions run #1216 passes typecheck, content validation, RNG boundary, unit/domain/save tests, exact asset validation, production build and the complete player-facing browser suite;
+- targeted YSP-9 lifecycle/mobile smoke passes with a hosted-Chromium first atomic load of 55.2 ms on that run;
+- post-death Lab leave/re-enter/splice-bench persistence also passes after regression-test hardening;
+- final cross-location opening visual integration passes.
+
+PR #82 is the YSP-9 delivery PR.
+
+## YSP-10 — Yard Scene-Image Human Gate — NEXT / REQUIRED
+
+This is the hard visual decision point. Automated tests cannot pass it.
 
 User review should answer:
 
@@ -308,9 +330,9 @@ Autonomous order:
 
 Current position:
 
-`YSP-0 ✓ → YSP-1 ✓ → YSP-2 ✓ → YSP-3 ✓ → YSP-4 ✓ → YSP-5 ✓ → YSP-6 ✓ → YSP-7 NEXT`
+`YSP-0 ✓ → YSP-1 ✓ → YSP-2 ✓ → YSP-3 ✓ → YSP-4 ✓ → YSP-5 ✓ → YSP-6 ✓ → YSP-7 ✓ → YSP-8 ✓ → YSP-9 ✓ → YSP-10 HUMAN GATE`
 
-Proceed autonomously between technical packages. Stop for user input only if a genuine visual choice cannot be resolved from the approved direction, or when YSP-10 is reached.
+Autonomous technical implementation is complete through YSP-9. Stop here for the explicit YSP-10 visual decision before converting the Opening Route or Local Pit to scene images.
 
 ---
 
