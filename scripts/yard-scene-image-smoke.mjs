@@ -136,8 +136,8 @@ try {
   if (current.image.scenePackId !== 'yard-bright-scene-ysp10-r1' || current.image.assetPackId !== 'yard-bright-scene-v1' || current.image.sourceWidth !== 1280 || current.image.sourceHeight !== 720) {
     throw new Error(`YSP-10 did not render the recovered Bright Yard through the production depth pack: ${JSON.stringify(current.image)}`);
   }
-  if (current.image.foregroundMode !== 'exact-base-pixel-regions' || current.image.activeOccluderIds.length !== 0) {
-    throw new Error(`YSP-10 foreground did not begin in front/behind neutral state at spawn: ${JSON.stringify(current.image)}`);
+  if (current.image.foregroundMode !== 'exact-base-pixel-regions' || current.image.occluderRenderCount < 1) {
+    throw new Error(`YSP-10 foreground depth layer was not active at the raised spawn: ${JSON.stringify(current.image)}`);
   }
   if (current.yard.groundShadowAlpha !== 0.24 || current.yard.groundShadowRadiusX !== 20 || current.yard.groundShadowRadiusY !== 6) {
     throw new Error(`YSP-10 scene-specific contact shadow was not applied: ${JSON.stringify(current.yard)}`);
