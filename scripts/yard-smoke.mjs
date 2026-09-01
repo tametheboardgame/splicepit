@@ -166,14 +166,14 @@ try {
     if (current.selectedAvatarId !== avatar.id || current.playerName !== avatar.name || !current.saved) {
       throw new Error(`YSP-7 production Yard lost selected identity ${avatar.id}: ${JSON.stringify(current)}`);
     }
-    if (current.scenePackId !== 'yard-bright-scene-ysp6-v1' || current.sceneMode !== 'yard') {
-      throw new Error(`YSP-7 did not activate the authored Bright Yard scene pack: ${JSON.stringify(current)}`);
+    if (current.scenePackId !== 'yard-bright-scene-ysp10-r1' || current.sceneMode !== 'yard') {
+      throw new Error(`YSP-10 did not activate the human-reviewed Bright Yard scene pack: ${JSON.stringify(current)}`);
     }
     if (current.viewportWidth !== 1280 || current.viewportHeight !== 720 || current.worldWidth !== 1280 || current.worldHeight !== 720) {
       throw new Error(`YSP-7 production Yard dimensions are wrong: ${JSON.stringify(current)}`);
     }
-    if (Math.abs(current.playerX - 575) > 1 || Math.abs(current.playerY - 660) > 1 || current.cameraX !== 0 || current.cameraY !== 0) {
-      throw new Error(`YSP-7 did not use the authored spawn/camera contract: ${JSON.stringify(current)}`);
+    if (Math.abs(current.playerX - 575) > 1 || Math.abs(current.playerY - 430) > 1 || current.cameraX !== 0 || current.cameraY !== 0) {
+      throw new Error(`YSP-10 did not use the raised human-reviewed spawn/camera contract: ${JSON.stringify(current)}`);
     }
     if (image.assetPackId !== 'yard-bright-scene-v1' || image.sourceWidth !== 1280 || image.sourceHeight !== 720 || image.fallback || image.legacyRendererRendered) {
       throw new Error(`YSP-7 production Yard mixed with or fell back to legacy scenery: ${JSON.stringify(image)}`);
@@ -195,17 +195,17 @@ try {
     if (index === 0) {
       await holdKey('d', 'KeyD', 68, 1200);
       const collision = await state();
-      if (collision.collisionCount < 1 || collision.playerX < 700 || collision.playerX > 750 || collision.facing !== 'right') {
-        throw new Error(`YSP-7 production collision did not match the authored service ring: ${JSON.stringify(collision)}`);
+      if (collision.collisionCount < 1 || collision.playerX < 650 || collision.playerX > 700 || collision.facing !== 'right') {
+        throw new Error(`YSP-10 production collision did not stop Milo at the authored pit-west machinery: ${JSON.stringify(collision)}`);
       }
 
       await holdKey('w', 'KeyW', 87, 150);
       const depth = await waitFor(async () => {
         const value = await imageState();
-        return value?.activeOccluderIds?.includes('service-ring-front-rim') ? value : null;
+        return value?.activeOccluderIds?.includes('pit-front-rail-west') ? value : null;
       });
       if (depth.occluderRenderCount < 1 || depth.legacyRendererRendered) {
-        throw new Error(`YSP-7 production foreground depth did not activate cleanly: ${JSON.stringify(depth)}`);
+        throw new Error(`YSP-10 production foreground depth did not activate cleanly: ${JSON.stringify(depth)}`);
       }
     }
 
@@ -231,9 +231,9 @@ try {
     document.querySelector('.character-select-shell, .character-tab, #identity-form, #character-preview') ||
     globalThis.__SPLICEPIT_CHARACTER_SELECT__
   )`);
-  if (rejectedUiPresent) throw new Error('Rejected legacy character-selection presentation returned during YSP-7.');
+  if (rejectedUiPresent) throw new Error('Rejected legacy character-selection presentation returned during YSP-10.');
 
-  console.log(`YSP-7 production Bright Yard passed for all protagonists: ${JSON.stringify({ avatars: expected.map((entry) => entry.id), signatures })}`);
+  console.log(`YSP-10 production Bright Yard passed for all protagonists: ${JSON.stringify({ avatars: expected.map((entry) => entry.id), signatures })}`);
   ws.close();
   cleanup();
 } catch (error) {

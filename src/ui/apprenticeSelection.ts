@@ -1,30 +1,31 @@
+import { preloadYsp8YardAssets } from '../environment/yardSceneAssetPack.js';
 import { PROTAGONIST_IDS, PROTAGONIST_SPRITES, type ProtagonistId } from '../player/protagonists.js';
-import {
-  drawApprenticeSplicerYardBase,
-  drawApprenticeSplicerYardForeground,
-  YARD_VIEW_HEIGHT,
-  YARD_VIEW_WIDTH,
-  type YardFacing,
-} from '../world/yard.js';
+import type { YardFacing } from '../world/yard.js';
 import { drawSelectionPolish } from './frontDoorArt.js';
 
-export const SELECT_VIEW_WIDTH = YARD_VIEW_WIDTH;
-export const SELECT_VIEW_HEIGHT = YARD_VIEW_HEIGHT;
+export const SELECT_VIEW_WIDTH = 1280;
+export const SELECT_VIEW_HEIGHT = 720;
 
 export const SELECT_USE_BUTTON = { x: 404, y: 662, width: 220, height: 42 } as const;
 export const SELECT_RENAME_BUTTON = { x: 656, y: 662, width: 220, height: 42 } as const;
 export const RENAME_INPUT_BOX = { x: 460, y: 646, width: 360, height: 34 } as const;
 
-const CAMERA_X = 240;
-const CAMERA_Y = 80;
-const FEET_Y = 690;
-
-const CHARACTER_WORLD_X: Record<ProtagonistId, number> = {
-  milo: 580,
-  theo: 760,
-  ada: 950,
-  pip: 1140,
+const FEET_Y = 610;
+const CHARACTER_SCREEN_X: Record<ProtagonistId, number> = {
+  milo: 340,
+  theo: 520,
+  ada: 710,
+  pip: 900,
 };
+
+let authoredBackdrop: HTMLImageElement | null = null;
+void preloadYsp8YardAssets()
+  .then((assets) => {
+    authoredBackdrop = assets.base;
+  })
+  .catch(() => {
+    authoredBackdrop = null;
+  });
 
 export type SelectionPhase = 'select' | 'name';
 
@@ -163,27 +164,39 @@ function drawRenameBoard(ctx: CanvasRenderingContext2D, selectedName: string): v
   ctx.fillText(`Enter: use name · Esc: keep ${selectedName}`, 640, 693);
 }
 
+function drawAuthoredSelectionBackdrop(ctx: CanvasRenderingContext2D): void {
+  ctx.fillStyle = '#20382e';
+  ctx.fillRect(0, 0, SELECT_VIEW_WIDTH, SELECT_VIEW_HEIGHT);
+  if (!authoredBackdrop) return;
+  ctx.drawImage(authoredBackdrop, 0, 0, SELECT_VIEW_WIDTH, SELECT_VIEW_HEIGHT);
+
+  // Selection controls occupy the lower edge. A restrained transparent wash
+  // preserves the authored scene while giving the four sprites/nameplates a
+  // consistent readable stage without reviving the old procedural backdrop.
+  const gradient = ctx.createLinearGradient(0, 430, 0, SELECT_VIEW_HEIGHT);
+  gradient.addColorStop(0, 'rgba(25, 44, 36, 0)');
+  gradient.addColorStop(1, 'rgba(25, 44, 36, 0.34)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 430, SELECT_VIEW_WIDTH, SELECT_VIEW_HEIGHT - 430);
+}
+
 export function drawApprenticeSelection(
   ctx: CanvasRenderingContext2D,
   options: SelectionOptions,
 ): void {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  ctx.save();
-  ctx.translate(-CAMERA_X, -CAMERA_Y);
-
-  drawApprenticeSplicerYardBase(ctx, options.now, FEET_Y);
+  drawAuthoredSelectionBackdrop(ctx);
 
   for (const id of PROTAGONIST_IDS) {
     const selected = id === options.selectedAvatarId;
-    const feetX = CHARACTER_WORLD_X[id];
+    const feetX = CHARACTER_SCREEN_X[id];
     const feetY = FEET_Y + (selected ? 8 : 0);
     const image = options.frames[id].down;
 
     ctx.save();
     if (options.phase === 'name' && !selected) ctx.globalAlpha = 0.4;
-
-    ctx.fillStyle = 'rgba(38,56,47,0.26)';
+    ctx.fillStyle = 'rgba(38,56,47,0.34)';
     ctx.beginPath();
     ctx.ellipse(feetX, feetY - 4, 22, 7, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -191,16 +204,13 @@ export function drawApprenticeSelection(
     ctx.restore();
   }
 
-  drawApprenticeSplicerYardForeground(ctx, FEET_Y);
-  ctx.restore();
-
   drawSelectionPolish(ctx, options.now);
   drawHangingSign(ctx);
 
   for (const id of PROTAGONIST_IDS) {
     const selected = id === options.selectedAvatarId;
-    const screenX = CHARACTER_WORLD_X[id] - CAMERA_X;
-    const screenFeetY = FEET_Y - CAMERA_Y + (selected ? 8 : 0);
+    const screenX = CHARACTER_SCREEN_X[id];
+    const screenFeetY = FEET_Y + (selected ? 8 : 0);
     if (selected) drawSelectionMarker(ctx, screenX, screenFeetY, options.now);
     const label = selected ? options.playerName : PROTAGONIST_SPRITES[id].name;
     drawNameTag(ctx, screenX, 623, label, selected);
@@ -217,8 +227,7 @@ export function drawApprenticeSelection(
 export function selectionCharacterAt(screenX: number, screenY: number): ProtagonistId | null {
   if (screenY < 500 || screenY > 646) return null;
   for (const id of PROTAGONIST_IDS) {
-    const x = CHARACTER_WORLD_X[id] - CAMERA_X;
-    if (Math.abs(screenX - x) <= 54) return id;
+    if (Math.abs(screenX - CHARACTER_SCREEN_X[id]) <= 54) return id;
   }
   return null;
 }

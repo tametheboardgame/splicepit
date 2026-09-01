@@ -71,10 +71,6 @@ export interface YardScenePack {
 
 /**
  * YSP-4 collision authored from the recovered 1280 × 720 Bright Yard raster.
- *
- * The rectangles deliberately follow the large visual masses rather than the
- * previous procedural Yard topology. Small surface props remain traversable so
- * the central court keeps the generous movement rhythm locked in YSP-1.
  */
 export const YSP4_YARD_SCENE_PACK = {
   id: 'yard-bright-scene-ysp4-v1',
@@ -117,9 +113,7 @@ export const YSP4_YARD_SCENE_PACK = {
   ],
 } as const satisfies YardScenePack;
 
-/**
- * YSP-5 adds semantic gameplay locations to the exact YSP-4 geometry.
- */
+/** YSP-5 semantic gameplay locations on the YSP-4 geometry. */
 export const YSP5_YARD_SCENE_PACK = {
   ...YSP4_YARD_SCENE_PACK,
   id: 'yard-bright-scene-ysp5-v1',
@@ -139,14 +133,8 @@ export const YSP5_YARD_SCENE_PACK = {
   ],
 } as const satisfies YardScenePack;
 
-/**
- * YSP-6 adds depth without synthesising or repainting the approved Yard.
- * Each occluder redraws an exact crop from the already-decoded Bright Yard base
- * after the protagonist, and only while the protagonist's feet are behind that
- * feature. This guarantees pixel-perfect colour/alignment and avoids seams from
- * a separately generated foreground plate.
- */
-export const YSP6_YARD_SCENE_PACK = {
+/** YSP-6 exact-pixel foreground depth and contact grounding. */
+const YSP6_YARD_SCENE_PACK_BASE = {
   ...YSP5_YARD_SCENE_PACK,
   id: 'yard-bright-scene-ysp6-v1',
   foreground: {
@@ -168,10 +156,76 @@ export const YSP6_YARD_SCENE_PACK = {
   },
 } as const satisfies YardScenePack;
 
-// Transitional alias retained until YSP-7 switches the normal Yard renderer to
-// the scene pack. The isolated proof path should always exercise the newest
-// authored scene contract.
-export const YSP0_YARD_SCENE_PACK: YardScenePack = YSP6_YARD_SCENE_PACK;
+/**
+ * YSP-10 human-gate revision.
+ *
+ * On-device review approved the authored-scene direction but exposed four
+ * gameplay-layer defects: the lower spawn sat underneath tutorial cards; the
+ * narrow pit/wall seam allowed an impossible descent; the visible Lab tunnel
+ * was covered by wall collision while its transition trigger sat below the
+ * doorway; and the foreground cryo/container stack behaved as one huge solid
+ * rectangle instead of an object the player could pass behind.
+ */
+export const YSP10_YARD_SCENE_PACK = {
+  ...YSP6_YARD_SCENE_PACK_BASE,
+  id: 'yard-bright-scene-ysp10-r1',
+  spawn: { x: 575, y: 430 },
+  collision: {
+    mode: 'blocked-rectangles',
+    colliders: [
+      { id: 'geneco-workshop', bounds: { x: 0, y: 0, width: 465, height: 315 } },
+      { id: 'workshop-service-stack', bounds: { x: 420, y: 78, width: 118, height: 188 } },
+      { id: 'north-wall-west', bounds: { x: 465, y: 0, width: 92, height: 118 } },
+      { id: 'the-hut', bounds: { x: 552, y: 28, width: 282, height: 222 } },
+      { id: 'north-wall-services', bounds: { x: 834, y: 0, width: 226, height: 150 } },
+      { id: 'north-vats', bounds: { x: 1050, y: 0, width: 230, height: 252 } },
+      { id: 'west-storage', bounds: { x: 0, y: 250, width: 178, height: 162 } },
+      { id: 'lower-left-containment', bounds: { x: 0, y: 414, width: 338, height: 306 } },
+      { id: 'containment-fence-return', bounds: { x: 185, y: 390, width: 148, height: 70 } },
+      { id: 'pit-west-machinery', bounds: { x: 690, y: 318, width: 72, height: 112 } },
+      { id: 'pit-gap-upper-guard', bounds: { x: 758, y: 286, width: 56, height: 80 } },
+      { id: 'pit-retaining-wall-west', bounds: { x: 812, y: 172, width: 198, height: 194 } },
+      { id: 'pit-retaining-wall-north-west', bounds: { x: 1008, y: 172, width: 96, height: 134 } },
+      { id: 'pit-retaining-wall-north-east', bounds: { x: 1188, y: 172, width: 92, height: 134 } },
+      { id: 'pit-retaining-wall-east', bounds: { x: 1188, y: 300, width: 92, height: 130 } },
+      { id: 'splice-pit', bounds: { x: 730, y: 408, width: 302, height: 142 } },
+      { id: 'lower-right-container-base', bounds: { x: 900, y: 602, width: 380, height: 118 } },
+      { id: 'service-ring', bounds: { x: 754, y: 603, width: 70, height: 69 } },
+    ],
+  },
+  anchors: [
+    { id: 'geneco-workshop-door', kind: 'door', position: { x: 336, y: 342 }, radius: 76 },
+    { id: 'containment-inspection-point', kind: 'interaction', position: { x: 365, y: 540 }, radius: 78 },
+    { id: 'service-ring-inspection', kind: 'interaction', position: { x: 731, y: 642 }, radius: 78 },
+    { id: 'master-lab-tunnel', kind: 'story', position: { x: 1147, y: 340 }, radius: 92 },
+  ],
+  exits: [
+    {
+      id: 'master-lab-tunnel',
+      bounds: { x: 1104, y: 248, width: 84, height: 148 },
+      target: 'master-lab-route',
+      targetEntry: { x: 1760, y: 655 },
+    },
+  ],
+  foreground: {
+    mode: 'exact-base-pixel-regions',
+    occluders: [
+      { id: 'service-ring-front-rim', bounds: { x: 746, y: 632, width: 88, height: 44 }, sortY: 655 },
+      { id: 'pit-front-rail-west', bounds: { x: 724, y: 486, width: 166, height: 48 }, sortY: 558 },
+      { id: 'pit-front-rail-east', bounds: { x: 874, y: 488, width: 174, height: 50 }, sortY: 558 },
+      { id: 'lab-tunnel-rail-and-threshold', bounds: { x: 1032, y: 300, width: 164, height: 108 }, sortY: 402 },
+      { id: 'cryo-container-upper-stack', bounds: { x: 950, y: 468, width: 330, height: 252 }, sortY: 620 },
+    ],
+  },
+} as const satisfies YardScenePack;
+
+/**
+ * Compatibility export: existing production callers named this contract YSP-6.
+ * Route them through the human-reviewed YSP-10 revision without forcing a wide
+ * mechanical rename across the opening runtime.
+ */
+export const YSP6_YARD_SCENE_PACK: YardScenePack = YSP10_YARD_SCENE_PACK;
+export const YSP0_YARD_SCENE_PACK: YardScenePack = YSP10_YARD_SCENE_PACK;
 
 function overlaps(a: YardSceneRect, b: YardSceneRect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;

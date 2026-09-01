@@ -7,7 +7,7 @@ import {
 } from './yardSceneAssetPack.js';
 import {
   yardSceneForegroundOccluders,
-  YSP6_YARD_SCENE_PACK,
+  YSP10_YARD_SCENE_PACK,
 } from '../world/yardScenePack.js';
 
 type YardSceneImageDebug = {
@@ -56,18 +56,18 @@ const debug: YardSceneImageDebug = {
   active: false,
   fallback: false,
   error: null,
-  scenePackId: YSP6_YARD_SCENE_PACK.id,
+  scenePackId: YSP10_YARD_SCENE_PACK.id,
   assetPackId: YSP3_BRIGHT_YARD_ASSET_PACK.id,
   darkAssetPackId: YSP8_DARK_YARD_ASSET_PACK.id,
-  sourceWidth: YSP6_YARD_SCENE_PACK.source.width,
-  sourceHeight: YSP6_YARD_SCENE_PACK.source.height,
-  worldWidth: YSP6_YARD_SCENE_PACK.world.width,
-  worldHeight: YSP6_YARD_SCENE_PACK.world.height,
+  sourceWidth: YSP10_YARD_SCENE_PACK.source.width,
+  sourceHeight: YSP10_YARD_SCENE_PACK.source.height,
+  worldWidth: YSP10_YARD_SCENE_PACK.world.width,
+  worldHeight: YSP10_YARD_SCENE_PACK.world.height,
   baseRendered: false,
   darkBaseRendered: false,
   darkMix: 0,
   foregroundRendered: false,
-  foregroundMode: YSP6_YARD_SCENE_PACK.foreground?.mode ?? 'none',
+  foregroundMode: YSP10_YARD_SCENE_PACK.foreground?.mode ?? 'none',
   activeOccluderIds: [],
   occluderRenderCount: 0,
   darkOccluderRenderCount: 0,
@@ -141,12 +141,12 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix?: 
     baseImage,
     0,
     0,
-    YSP6_YARD_SCENE_PACK.source.width,
-    YSP6_YARD_SCENE_PACK.source.height,
+    YSP10_YARD_SCENE_PACK.source.width,
+    YSP10_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP6_YARD_SCENE_PACK.world.width,
-    YSP6_YARD_SCENE_PACK.world.height,
+    YSP10_YARD_SCENE_PACK.world.width,
+    YSP10_YARD_SCENE_PACK.world.height,
   );
   if (mix > 0) {
     ctx.globalAlpha = mix;
@@ -154,12 +154,12 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix?: 
       darkBaseImage,
       0,
       0,
-      YSP6_YARD_SCENE_PACK.source.width,
-      YSP6_YARD_SCENE_PACK.source.height,
+      YSP10_YARD_SCENE_PACK.source.width,
+      YSP10_YARD_SCENE_PACK.source.height,
       0,
       0,
-      YSP6_YARD_SCENE_PACK.world.width,
-      YSP6_YARD_SCENE_PACK.world.height,
+      YSP10_YARD_SCENE_PACK.world.width,
+      YSP10_YARD_SCENE_PACK.world.height,
     );
   }
   ctx.restore();
@@ -173,7 +173,7 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix?: 
 /**
  * Redraw authored occluder crops from the same Bright/Dark bases used below the
  * protagonist. Using the identical blend removes bright seams during corruption
- * while preserving the YSP-6 feet-based depth contract.
+ * while preserving the feet-based depth contract.
  */
 export function drawYardSceneImageForeground(
   ctx: CanvasRenderingContext2D,
@@ -181,8 +181,6 @@ export function drawYardSceneImageForeground(
   darkMix?: number,
 ): void {
   if (!foregroundImage || !baseImage || !darkBaseImage || !debug.active) return;
-  // With the normal production call order, reuse the exact mix sampled by the
-  // base pass so foreground pixels cannot drift by even one transition frame.
   const mix = clampMix(darkMix ?? debug.darkMix);
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -190,15 +188,15 @@ export function drawYardSceneImageForeground(
     foregroundImage,
     0,
     0,
-    YSP6_YARD_SCENE_PACK.source.width,
-    YSP6_YARD_SCENE_PACK.source.height,
+    YSP10_YARD_SCENE_PACK.source.width,
+    YSP10_YARD_SCENE_PACK.source.height,
     0,
     0,
-    YSP6_YARD_SCENE_PACK.world.width,
-    YSP6_YARD_SCENE_PACK.world.height,
+    YSP10_YARD_SCENE_PACK.world.width,
+    YSP10_YARD_SCENE_PACK.world.height,
   );
 
-  const activeOccluders = yardSceneForegroundOccluders(YSP6_YARD_SCENE_PACK, playerFeetY);
+  const activeOccluders = yardSceneForegroundOccluders(YSP10_YARD_SCENE_PACK, playerFeetY);
   for (const occluder of activeOccluders) {
     const bounds = occluder.bounds;
     ctx.globalAlpha = 1;

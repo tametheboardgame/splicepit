@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { traverseAuthoredYardToMasterLabTunnel } from './yard-scene-navigation.mjs';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
 const port = 9239;
@@ -153,7 +154,7 @@ try {
   await openScenario();
   const productionYard = await yardState();
   if (productionYard.yardRenderer !== 'scene-image' || productionYard.worldWidth !== 1280 || productionYard.worldHeight !== 720) {
-    throw new Error(`YSP-7 ambient test did not begin in the production Yard: ${JSON.stringify(productionYard)}`);
+    throw new Error(`YSP-10 ambient test did not begin in the production Yard: ${JSON.stringify(productionYard)}`);
   }
   await verifyCurrentLocation('yard', '__SPLICEPIT_YARD_ART__', '__SPLICEPIT_VISUAL_RESET__');
 
@@ -170,7 +171,9 @@ try {
   })()`));
   await key('b', 'KeyB', 66);
 
-  // Complete onboarding and enter the existing route through the authored tunnel.
+  // Complete onboarding and enter the existing route through the reviewed
+  // YSP-10 tunnel path. Keep this smoke focused on corruption semantics rather
+  // than duplicating obsolete timed movement coordinates.
   await waitForPrompt('movement');
   await holdKey('d', 'KeyD', 68, 1200);
   await waitForPrompt('interact');
@@ -187,11 +190,14 @@ try {
     return value?.openingSequenceComplete && value?.objectiveId === 'find-master' && value?.activeOpeningShell === 'map' ? value : null;
   });
   await key('Escape', 'Escape', 27);
-  await holdKey('a', 'KeyA', 65, 1000);
-  await holdKey('w', 'KeyW', 87, 2050);
-  await holdKey('d', 'KeyD', 68, 1200);
-  await holdKey('s', 'KeyS', 83, 500);
-  await holdKey('d', 'KeyD', 68, 1850);
+  await traverseAuthoredYardToMasterLabTunnel({
+    readState: yardState,
+    moveLeft: () => holdKey('a', 'KeyA', 65, 90),
+    moveRight: () => holdKey('d', 'KeyD', 68, 90),
+    moveUp: () => holdKey('w', 'KeyW', 87, 90),
+    moveDown: () => holdKey('s', 'KeyS', 83, 90),
+    label: 'YSP-10 ambient corruption Yard navigation',
+  });
   await waitFor(async () => {
     const value = await yardState();
     return value?.sceneMode === 'master-lab-route' && value?.routeRendered && value?.routeHandoffTarget === 'master-lab-route' ? value : null;
@@ -220,7 +226,7 @@ try {
   }
   await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.resume('story-test')`);
 
-  console.log('YSP-7 ambient world corruption smoke passed across scene Yard, tunnel route, Master Lab and Local Pit.');
+  console.log('YSP-10 ambient world corruption smoke passed across scene Yard, tunnel route, Master Lab and Local Pit.');
   ws.close();
   cleanup();
 } catch (error) {
