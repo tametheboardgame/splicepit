@@ -22,10 +22,13 @@ async function moveAxis({ readState, axis, target, positive, negative, tolerance
 }
 
 /**
- * Navigate the authored Bright Yard through visible open corridors rather than
- * relying on frame-duration dead reckoning. These waypoints correspond to the
- * open path west of the service ring, north of the pit-west machinery, down the
- * service gap, then east along the corridor into the visible Master Lab tunnel.
+ * Navigate the human-reviewed YSP-10 Bright Yard through visible open ground.
+ *
+ * The earlier helper deliberately used the narrow upper pit seam. YSP-10 closes
+ * that impossible route, so traversal now follows the readable player route:
+ * south of the splice pit, east through the open foreground/container depth
+ * band, then north into the visible Master Lab tunnel. This keeps automated
+ * route tests aligned with the collision and depth contract seen by players.
  */
 export async function traverseAuthoredYardToMasterLabTunnel({
   readState,
@@ -33,14 +36,17 @@ export async function traverseAuthoredYardToMasterLabTunnel({
   moveRight,
   moveUp,
   moveDown,
-  label = 'YSP-7 Yard navigation',
+  label = 'YSP-10 Yard navigation',
 }) {
-  await moveAxis({ readState, axis: 'x', target: 600, positive: moveRight, negative: moveLeft, label });
-  await moveAxis({ readState, axis: 'y', target: 290, positive: moveDown, negative: moveUp, label });
-  await moveAxis({ readState, axis: 'x', target: 785, positive: moveRight, negative: moveLeft, label });
-  // Feet y must be >=379 to clear the retaining wall while remaining above the
-  // splice-pit collider. A 385±9 waypoint could legally stop at 377.x and then
-  // deadlock the final eastward leg, so use the centre of the safe corridor.
-  await moveAxis({ readState, axis: 'y', target: 392, positive: moveDown, negative: moveUp, tolerance: 4, label });
-  return moveAxis({ readState, axis: 'x', target: 1110, positive: moveRight, negative: moveLeft, tolerance: 14, label });
+  // Drop below the splice-pit collider while remaining above the lower-right
+  // solid container base and service-ring footprint.
+  await moveAxis({ readState, axis: 'y', target: 580, positive: moveDown, negative: moveUp, tolerance: 5, label });
+
+  // Cross the intentionally traversable foreground band. The cryo/container
+  // artwork occludes the protagonist here, but no giant invisible wall should.
+  await moveAxis({ readState, axis: 'x', target: 1115, positive: moveRight, negative: moveLeft, tolerance: 6, label });
+
+  // Enter the visible tunnel from below. The helper returns as soon as the
+  // Yard runtime hands off to master-lab-route.
+  return moveAxis({ readState, axis: 'y', target: 340, positive: moveDown, negative: moveUp, tolerance: 8, label });
 }
