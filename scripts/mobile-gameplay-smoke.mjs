@@ -222,13 +222,13 @@ try {
     throw new Error(`Simultaneous movement + ACTION touch did not preserve movement: ${JSON.stringify(current)}`);
   }
 
-  // Establish the service-ring collision baseline, then navigate the authored
-  // Yard adaptively through the same safe corridor used by desktop browser
-  // regressions. Every step still uses the visible touch D-pad.
+  // From the raised YSP-10 spawn, Right meets the west pit machinery first.
+  // Prove touch collision against that reviewed geometry, then navigate the
+  // authored Yard through the same safe corridor used by desktop regressions.
   await holdControl('move-right', 900, 20);
   current = await state();
-  if (current.playerX < 700 || current.playerX > 750 || current.collisionCount < 1) {
-    throw new Error(`Touch movement did not meet the authored service-ring collision: ${JSON.stringify(current)}`);
+  if (current.playerX < 650 || current.playerX > 700 || current.collisionCount < 1) {
+    throw new Error(`Touch movement did not meet the authored west pit machinery collision: ${JSON.stringify(current)}`);
   }
   await traverseAuthoredYardToMasterLabTunnel({
     readState: state,
@@ -236,7 +236,7 @@ try {
     moveRight: () => holdControl('move-right', 90, 22),
     moveUp: () => holdControl('move-up', 90, 23),
     moveDown: () => holdControl('move-down', 90, 24),
-    label: 'YSP-8 mobile Yard navigation',
+    label: 'YSP-10 mobile Yard navigation',
   });
 
   current = await waitFor(async () => {
@@ -258,7 +258,7 @@ try {
   const overflow = await evaluate(`({ width: innerWidth, bodyWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight, height: innerHeight })`);
   if (overflow.bodyWidth > overflow.width + 1) throw new Error(`Mobile gameplay controls introduced horizontal overflow: ${JSON.stringify(overflow)}`);
 
-  console.log('YSP-8 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the Master Lab route staging area.');
+  console.log('YSP-10 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the Master Lab route staging area.');
   ws.close();
   cleanup();
 } catch (error) {
