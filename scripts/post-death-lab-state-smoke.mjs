@@ -93,6 +93,44 @@ try {
     }))()`);
   }
 
+  async function moveToLabExit() {
+    for (let attempt = 0; attempt < 24; attempt += 1) {
+      const current = await state();
+      if (current.lab?.nearExit) return current;
+      if (!current.lab?.active) throw new Error(`Lab became inactive before reaching its exit: ${JSON.stringify(current.lab)}`);
+      await holdKey('s', 'KeyS', 83, 90);
+    }
+    throw new Error(`Could not reach Master Lab exit zone: ${JSON.stringify((await state()).lab)}`);
+  }
+
+  async function moveLabAxis(axis, target, positive, negative, tolerance = 10) {
+    let previous = null;
+    let stalled = 0;
+    for (let attempt = 0; attempt < 80; attempt += 1) {
+      const current = await state();
+      if (!current.lab?.active) throw new Error(`Lab became inactive while moving towards ${axis}=${target}: ${JSON.stringify(current.lab)}`);
+      const value = axis === 'x' ? current.lab.playerX : current.lab.playerY;
+      const delta = target - value;
+      if (Math.abs(delta) <= tolerance) return current;
+      if (previous !== null && Math.abs(value - previous) < 0.8) stalled += 1;
+      else stalled = 0;
+      if (stalled >= 8) throw new Error(`Master Lab movement stalled on ${axis} towards ${target}: ${JSON.stringify(current.lab)}`);
+      previous = value;
+      const control = delta > 0 ? positive : negative;
+      await holdKey(control.key, control.code, control.vk, 90);
+    }
+    throw new Error(`Master Lab movement failed to reach ${axis}=${target}: ${JSON.stringify((await state()).lab)}`);
+  }
+
+  async function moveToSpliceBench() {
+    await moveLabAxis('y', 745, { key: 's', code: 'KeyS', vk: 83 }, { key: 'w', code: 'KeyW', vk: 87 }, 8);
+    await moveLabAxis('x', 650, { key: 'd', code: 'KeyD', vk: 68 }, { key: 'a', code: 'KeyA', vk: 65 }, 8);
+    return waitFor(async () => {
+      const current = await state();
+      return current.lab?.nearSpliceBench ? current : null;
+    }, 5000);
+  }
+
   async function redAftermathPixels() {
     return evaluate(`(() => {
       const canvas = document.querySelector('#master-lab-stage');
@@ -163,7 +201,7 @@ try {
     throw new Error(`Master Lab did not visibly convert to aftermath art: ${JSON.stringify({ beforeRed, afterRed })}`);
   }
 
-  await holdKey('s', 'KeyS', 83, 220);
+  await moveToLabExit();
   await key('e', 'KeyE', 69);
   await waitFor(async () => !(await state()).lab?.active);
 
@@ -188,12 +226,7 @@ try {
     throw new Error(`Post-death objective did not persist through lab re-entry: ${JSON.stringify(reentered.yard)}`);
   }
 
-  await holdKey('w', 'KeyW', 87, 1600);
-  await holdKey('a', 'KeyA', 65, 1600);
-  const atBench = await waitFor(async () => {
-    const current = await state();
-    return current.lab?.nearSpliceBench ? current : null;
-  }, 8000);
+  const atBench = await moveToSpliceBench();
   await key('e', 'KeyE', 69);
   const benchUsed = await waitFor(async () => {
     const current = await state();

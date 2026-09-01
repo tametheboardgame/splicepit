@@ -1,6 +1,7 @@
 import { environmentVisualController } from './environmentVisualContract.js';
 import {
   preloadYsp8YardAssets,
+  ysp9YardAssetLifecycleDebug,
   YSP3_BRIGHT_YARD_ASSET_PACK,
   YSP8_DARK_YARD_ASSET_PACK,
 } from './yardSceneAssetPack.js';
@@ -32,12 +33,23 @@ type YardSceneImageDebug = {
   darkOccluderRenderCount: number;
   legacyRendererRendered: boolean;
   renderCount: number;
+  imageSmoothingDisabled: boolean;
+  preloadRequests: number;
+  assetCacheHits: number;
+  decodeStarts: number;
+  successfulLoads: number;
+  failedLoads: number;
+  lastLoadDurationMs: number | null;
+  compressedAuthoredBasesBytes: number;
+  decodedRgbaBytes: number;
+  decodedRgbaBudgetBytes: number;
 };
 
 type YardSceneImageGlobal = typeof globalThis & {
   __SPLICEPIT_YARD_SCENE_IMAGE__?: YardSceneImageDebug;
 };
 
+const initialLifecycle = ysp9YardAssetLifecycleDebug();
 const debug: YardSceneImageDebug = {
   requested: true,
   ready: false,
@@ -61,6 +73,16 @@ const debug: YardSceneImageDebug = {
   darkOccluderRenderCount: 0,
   legacyRendererRendered: false,
   renderCount: 0,
+  imageSmoothingDisabled: false,
+  preloadRequests: initialLifecycle.preloadRequests,
+  assetCacheHits: initialLifecycle.cacheHits,
+  decodeStarts: initialLifecycle.decodeStarts,
+  successfulLoads: initialLifecycle.successfulLoads,
+  failedLoads: initialLifecycle.failedLoads,
+  lastLoadDurationMs: initialLifecycle.lastLoadDurationMs,
+  compressedAuthoredBasesBytes: initialLifecycle.compressedAuthoredBasesBytes,
+  decodedRgbaBytes: initialLifecycle.decodedRgbaBytes,
+  decodedRgbaBudgetBytes: initialLifecycle.decodedRgbaBudgetBytes,
 };
 
 (globalThis as YardSceneImageGlobal).__SPLICEPIT_YARD_SCENE_IMAGE__ = debug;
@@ -73,12 +95,26 @@ function clampMix(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+function syncLifecycleDebug(): void {
+  const lifecycle = ysp9YardAssetLifecycleDebug();
+  debug.preloadRequests = lifecycle.preloadRequests;
+  debug.assetCacheHits = lifecycle.cacheHits;
+  debug.decodeStarts = lifecycle.decodeStarts;
+  debug.successfulLoads = lifecycle.successfulLoads;
+  debug.failedLoads = lifecycle.failedLoads;
+  debug.lastLoadDurationMs = lifecycle.lastLoadDurationMs;
+  debug.compressedAuthoredBasesBytes = lifecycle.compressedAuthoredBasesBytes;
+  debug.decodedRgbaBytes = lifecycle.decodedRgbaBytes;
+  debug.decodedRgbaBudgetBytes = lifecycle.decodedRgbaBudgetBytes;
+}
+
 export async function prepareYardSceneImageRuntime(): Promise<boolean> {
   try {
     const prepared = await preloadYsp8YardAssets();
     baseImage = prepared.base;
     foregroundImage = prepared.foreground;
     darkBaseImage = prepared.darkBase;
+    syncLifecycleDebug();
     debug.ready = true;
     debug.active = true;
     debug.fallback = false;
@@ -88,6 +124,7 @@ export async function prepareYardSceneImageRuntime(): Promise<boolean> {
     baseImage = null;
     foregroundImage = null;
     darkBaseImage = null;
+    syncLifecycleDebug();
     debug.error = error instanceof Error ? error.message : String(error);
     debug.fallback = true;
     debug.active = false;
@@ -129,6 +166,7 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix?: 
   debug.baseRendered = true;
   debug.darkBaseRendered = mix > 0;
   debug.darkMix = mix;
+  debug.imageSmoothingDisabled = true;
   debug.renderCount += 1;
 }
 
@@ -197,6 +235,7 @@ export function drawYardSceneImageForeground(
   debug.occluderRenderCount += activeOccluders.length;
   if (mix > 0) debug.darkOccluderRenderCount += activeOccluders.length;
   debug.darkMix = mix;
+  debug.imageSmoothingDisabled = true;
 }
 
 export function markYardSceneImageFallback(): void {
