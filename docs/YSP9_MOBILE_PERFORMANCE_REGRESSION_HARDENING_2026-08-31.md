@@ -104,10 +104,10 @@ YSP-8/YSP-9 exposed pre-existing browser-test weaknesses where several tests use
 
 Hardened during this pass:
 
-- the shared authored-Yard helper now targets the safe centre of the narrow pit-retaining-wall corridor (`y = 392`, tolerance 4) before moving east to the visible Master Lab tunnel;
+- the shared authored-Yard helper targets the safe centre of the narrow pit-retaining-wall corridor (`y = 392`, tolerance 4) before moving east to the visible Master Lab tunnel;
 - mobile Yard traversal uses the same adaptive geometry-safe path while still generating movement through the visible touch D-pad;
-- the post-death Master Lab smoke now advances until the runtime reports `nearExit` rather than assuming one fixed-duration movement reaches the exit zone;
-- the post-death splice-bench approach now uses state-driven axis movement to a safe interior interaction position instead of landing within roughly two pixels of the interaction-radius edge.
+- the post-death Master Lab smoke advances until the runtime reports `nearExit` rather than assuming one fixed-duration movement reaches the exit zone;
+- the post-death splice-bench approach uses state-driven axis movement to a safe interior interaction position instead of landing within roughly two pixels of the interaction-radius edge.
 
 These are test hardening changes, not gameplay-geometry changes.
 
@@ -150,7 +150,7 @@ GitHub Actions run #1216 passed:
 8. post-death Lab re-entry and splice-bench persistence after the timing-hardening changes;
 9. the final cross-location opening visual integration smoke.
 
-YSP-9 is therefore technically complete.
+YSP-9 is therefore technically complete. The documentation-only closeout head is re-run through the same CI gates before PR #82 merges.
 
 The next package is **YSP-10 — Yard Scene-Image Human Gate**. Automated tests cannot pass that gate.
 
