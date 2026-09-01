@@ -1,7 +1,7 @@
 # YSP-9 — Mobile / Performance / Regression Hardening
 
 Date: 31 August 2026
-Status: ACTIVE — implementation and full browser gate in progress
+Status: COMPLETE — technical gate passed; YSP-10 human visual review is next
 
 ## Purpose
 
@@ -27,7 +27,7 @@ YSP-9 inherits without visual redesign:
 
 The Bright base, transparent foreground staging layer and Dark base form one atomic production dependency.
 
-YSP-9 memoises their decoded `HTMLImageElement` set for the lifetime of the page. Returning from the Yard to character selection and re-entering the Yard must reuse those decoded surfaces rather than allocating and decoding another three full-size images.
+YSP-9 memoises their decoded `HTMLImageElement` set for the lifetime of the page. Returning from the Yard to character selection and re-entering the Yard reuses those decoded surfaces rather than allocating and decoding another three full-size images.
 
 Failure behaviour remains recoverable: a failed atomic preload clears the memoised promise so a later production attempt can retry rather than permanently caching rejection.
 
@@ -40,6 +40,16 @@ The runtime exposes explicit lifecycle evidence:
 - failed-load count;
 - last local decode duration;
 - decoded-memory budget information.
+
+GitHub Actions run #1216 proved a selector → Yard → selector → Yard lifecycle of:
+
+- preload requests: **2**;
+- cache hits: **1**;
+- decode starts: **3** total;
+- therefore no second full three-image decode on Yard re-entry;
+- observed hosted-Chromium first atomic load: **55.2 ms** on that run.
+
+The timing value is diagnostic evidence only, not a fixed performance SLA.
 
 ## Memory / source budget
 
@@ -55,11 +65,13 @@ For conservative decoded-surface accounting, YSP-9 treats all three 1280 × 720 
 
 The locked conservative decoded budget is **12 MiB / 12,582,912 bytes** for those three surfaces.
 
+Run #1216 remained within that budget at **11,059,200 bytes**.
+
 This is a guardrail, not a claim that every browser uses exactly that amount of internal memory.
 
 ## Rendering hardening
 
-Requirements:
+Verified:
 
 - scene-image rendering remains nearest/un-smoothed (`imageSmoothingEnabled = false`);
 - Bright and Dark bases retain exact alignment;
@@ -67,13 +79,13 @@ Requirements:
 - no legacy Pass-D/procedural Yard appears during normal rendering or transitions;
 - Bright ↔ Dark transitions do not change player position or camera;
 - repeated Yard entry does not trigger another full asset decode;
-- local decode time is recorded, while CI only uses a generous catastrophic-regression ceiling rather than pretending a hosted runner is a stable FPS benchmark.
+- local decode time is recorded while CI uses only a generous catastrophic-regression ceiling rather than pretending a hosted runner is a stable FPS benchmark.
 
 ## Mobile acceptance
 
-YSP-9 retains existing detailed mobile layout and touch suites and adds targeted scene-image checks for both portrait and landscape orientations.
+YSP-9 retains the existing detailed mobile layout and touch suites and adds targeted scene-image checks for both portrait and landscape orientations.
 
-Required:
+Verified:
 
 - no horizontal page overflow;
 - scene canvas stays horizontally contained by the viewport;
@@ -82,15 +94,22 @@ Required:
 - forced Dark Yard remains coherent on mobile;
 - changing visual state or orientation does not move player/camera state;
 - Bag UI remains usable under the existing corruption-suppression contract: opening the shell temporarily presents Bright while preserving the forced Dark state, and authored Dark resumes after the shell closes;
-- touch-only onboarding and Master Lab tunnel traversal continue to pass.
+- touch-only onboarding and Master Lab tunnel traversal pass.
+
+Run #1216 exercised both portrait `412 × 915` and landscape `915 × 412` mobile viewports in the targeted YSP-9 smoke.
 
 ## Traversal regression hardening
 
-YSP-8 exposed a pre-existing browser-test weakness: several tests used fixed-duration or overly loose axis waypoints through the narrow corridor beside the pit retaining wall.
+YSP-8/YSP-9 exposed pre-existing browser-test weaknesses where several tests used fixed-duration or overly loose movement around authored geometry.
 
-The shared authored-Yard browser helper now targets the actual safe centre of that corridor (`y = 392`, tolerance 4) before moving east to the visible Master Lab tunnel. Mobile traversal uses the same adaptive geometry-safe helper while still generating movement exclusively through the visible touch D-pad.
+Hardened during this pass:
 
-This is test hardening, not a gameplay geometry change.
+- the shared authored-Yard helper now targets the safe centre of the narrow pit-retaining-wall corridor (`y = 392`, tolerance 4) before moving east to the visible Master Lab tunnel;
+- mobile Yard traversal uses the same adaptive geometry-safe path while still generating movement through the visible touch D-pad;
+- the post-death Master Lab smoke now advances until the runtime reports `nearExit` rather than assuming one fixed-duration movement reaches the exit zone;
+- the post-death splice-bench approach now uses state-driven axis movement to a safe interior interaction position instead of landing within roughly two pixels of the interaction-radius edge.
+
+These are test hardening changes, not gameplay-geometry changes.
 
 ## Existing regression coverage retained
 
@@ -117,19 +136,22 @@ The full player-facing suite still covers:
 - cross-location opening visual integration;
 - isolated scene-image contract smoke.
 
-## Gate
+## Gate result
 
-YSP-9 is complete only when:
+GitHub Actions run #1216 passed:
 
-1. typecheck/content/RNG/unit/build gates pass;
-2. exact Bright and Dark asset validation still passes;
-3. the complete player-facing browser suite passes;
-4. the targeted YSP-9 lifecycle/mobile hardening smoke passes;
-5. repeated Yard entry proves cache reuse with no additional image decodes;
-6. decoded-surface budget remains within 12 MiB;
-7. portrait and landscape checks remain presentation-safe;
-8. no new soft lock, traversal regression, visual fallback or story/UI regression is present.
+1. typecheck/content/RNG/unit/build gates;
+2. exact Bright and Dark asset validation;
+3. the complete player-facing browser suite;
+4. the targeted YSP-9 lifecycle/mobile hardening smoke;
+5. repeated Yard entry with cache reuse and no additional image decodes;
+6. the 12 MiB decoded-surface budget;
+7. portrait and landscape presentation checks;
+8. post-death Lab re-entry and splice-bench persistence after the timing-hardening changes;
+9. the final cross-location opening visual integration smoke.
 
-Once complete, the roadmap must advance to **YSP-10 — Yard Scene-Image Human Gate**.
+YSP-9 is therefore technically complete.
+
+The next package is **YSP-10 — Yard Scene-Image Human Gate**. Automated tests cannot pass that gate.
 
 No Opening Route or Local Pit scene-image conversion begins before the user explicitly passes YSP-10.
