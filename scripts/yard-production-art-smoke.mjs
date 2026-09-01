@@ -99,8 +99,8 @@ try {
     };
   })()`));
 
-  if (brightState.yard.yardRenderer !== 'scene-image' || brightState.yard.scenePackId !== 'yard-bright-scene-ysp6-v1') {
-    throw new Error(`YSP-8 normal runtime did not retain the authored Yard scene pack: ${JSON.stringify(brightState.yard)}`);
+  if (brightState.yard.yardRenderer !== 'scene-image' || brightState.yard.scenePackId !== 'yard-bright-scene-ysp10-r1') {
+    throw new Error(`YSP-10 normal runtime did not retain the human-reviewed Yard scene pack: ${JSON.stringify(brightState.yard)}`);
   }
   if (
     brightState.image.assetPackId !== 'yard-bright-scene-v1' ||
@@ -204,7 +204,7 @@ try {
     }
   }
 
-  console.log(`YSP-8 authored Bright/Dark Yard transition passed: ${JSON.stringify({ brightStats, darkPixels })}`);
+  console.log(`YSP-10 authored Bright/Dark Yard transition passed: ${JSON.stringify({ brightStats, darkPixels })}`);
   ws.close();
   cleanup();
 } catch (error) {
