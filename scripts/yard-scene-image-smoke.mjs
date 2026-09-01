@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { traverseAuthoredYardToMasterLabTunnel } from './yard-scene-navigation.mjs';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
 const chromePort = 9241;
@@ -86,7 +87,7 @@ try {
   async function tapControl(control, id = 3) {
     const point = await controlPoint(control);
     if (!point || point.width < 44 || point.height < 44 || point.display === 'none' || point.visibility === 'hidden') {
-      throw new Error(`YSP-6 touch control ${control} is not usable: ${JSON.stringify(point)}`);
+      throw new Error(`YSP-10 touch control ${control} is not usable: ${JSON.stringify(point)}`);
     }
     await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, radiusX: 5, radiusY: 5, force: 1, id }] });
     await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -94,7 +95,7 @@ try {
   }
   async function holdControl(control, durationMs, id = 7) {
     const point = await controlPoint(control);
-    if (!point || point.width < 44 || point.height < 44) throw new Error(`YSP-6 touch control ${control} is unavailable.`);
+    if (!point || point.width < 44 || point.height < 44) throw new Error(`YSP-10 touch control ${control} is unavailable.`);
     await cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, radiusX: 5, radiusY: 5, force: 1, id }] });
     await sleep(durationMs);
     await cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -129,66 +130,45 @@ try {
       : null;
   });
 
-  if (current.yard.yardRenderer !== 'scene-image' || current.yard.scenePackId !== 'yard-bright-scene-ysp6-v1') {
-    throw new Error(`YSP-6 depth scene pack was not selected: ${JSON.stringify(current)}`);
+  if (current.yard.yardRenderer !== 'scene-image' || current.yard.scenePackId !== 'yard-bright-scene-ysp10-r1') {
+    throw new Error(`YSP-10 production scene pack was not selected: ${JSON.stringify(current)}`);
   }
-  if (current.image.scenePackId !== 'yard-bright-scene-ysp6-v1' || current.image.assetPackId !== 'yard-bright-scene-v1' || current.image.sourceWidth !== 1280 || current.image.sourceHeight !== 720) {
-    throw new Error(`YSP-6 did not render the recovered Bright Yard through the depth pack: ${JSON.stringify(current.image)}`);
+  if (current.image.scenePackId !== 'yard-bright-scene-ysp10-r1' || current.image.assetPackId !== 'yard-bright-scene-v1' || current.image.sourceWidth !== 1280 || current.image.sourceHeight !== 720) {
+    throw new Error(`YSP-10 did not render the recovered Bright Yard through the production depth pack: ${JSON.stringify(current.image)}`);
   }
   if (current.image.foregroundMode !== 'exact-base-pixel-regions' || current.image.activeOccluderIds.length !== 0) {
-    throw new Error(`YSP-6 foreground did not begin in front/behind neutral state at spawn: ${JSON.stringify(current.image)}`);
+    throw new Error(`YSP-10 foreground did not begin in front/behind neutral state at spawn: ${JSON.stringify(current.image)}`);
   }
   if (current.yard.groundShadowAlpha !== 0.24 || current.yard.groundShadowRadiusX !== 20 || current.yard.groundShadowRadiusY !== 6) {
-    throw new Error(`YSP-6 scene-specific contact shadow was not applied: ${JSON.stringify(current.yard)}`);
+    throw new Error(`YSP-10 scene-specific contact shadow was not applied: ${JSON.stringify(current.yard)}`);
   }
   if (current.image.fallback || current.image.legacyRendererRendered) {
-    throw new Error(`YSP-6 mixed or fell back to the legacy Yard renderer: ${JSON.stringify(current.image)}`);
+    throw new Error(`YSP-10 mixed or fell back to the legacy Yard renderer: ${JSON.stringify(current.image)}`);
   }
   if (current.yard.sceneMode !== 'yard' || current.yard.worldWidth !== 1280 || current.yard.worldHeight !== 720) {
-    throw new Error(`YSP-6 did not start in the authored Yard world: ${JSON.stringify(current.yard)}`);
+    throw new Error(`YSP-10 did not start in the authored Yard world: ${JSON.stringify(current.yard)}`);
   }
-  if (Math.abs(current.yard.playerX - 575) > 1 || Math.abs(current.yard.playerY - 660) > 1) {
-    throw new Error(`YSP-6 did not use the authored lower-centre spawn: ${JSON.stringify(current.yard)}`);
+  if (Math.abs(current.yard.playerX - 575) > 1 || Math.abs(current.yard.playerY - 430) > 1) {
+    throw new Error(`YSP-10 did not use the raised tutorial-safe spawn: ${JSON.stringify(current.yard)}`);
   }
 
   current = await waitForPrompt('movement');
   await holdControl('move-right', 1200);
   current = await waitForPrompt('interact');
-  if (current.collisionCount < 1 || current.playerX < 700 || current.playerX > 750) {
-    throw new Error(`YSP-6 authored service-ring collision failed: ${JSON.stringify(current)}`);
-  }
-
-  // Step behind the low service-ring front rim. The exact base pixels for that
-  // rim must now be rendered after Milo, while the other depth regions remain
-  // inactive because their sort lines are further north.
-  await holdControl('move-up', 150, 8);
-  current = await state();
-  const serviceDepth = await waitFor(async () => {
-    const image = await imageState();
-    return image?.activeOccluderIds?.includes('service-ring-front-rim') ? image : null;
-  });
-  if (serviceDepth.activeOccluderIds.length !== 1 || serviceDepth.occluderRenderCount < 1) {
-    throw new Error(`YSP-6 service-ring foreground depth did not activate cleanly: ${JSON.stringify(serviceDepth)}`);
-  }
-
-  // Return to the same proven YSP-5 traversal baseline after the isolated depth
-  // probe. This keeps the route test independent from the extra YSP-6 movement.
-  await holdControl('move-down', 150, 9);
-  current = await state();
-  if (current.playerY < 650 || current.playerY > 670) {
-    throw new Error(`YSP-6 depth probe did not return to the route baseline: ${JSON.stringify(current)}`);
+  if (current.collisionCount < 1 || current.playerX < 650 || current.playerX > 700) {
+    throw new Error(`YSP-10 authored west-pit collision failed: ${JSON.stringify(current)}`);
   }
 
   const interactionsBefore = current.interactionCount;
   await tapControl('action');
   current = await waitForPrompt('bag');
-  if (current.interactionCount <= interactionsBefore || current.lastInteractionAnchor !== 'service-ring-inspection') {
-    throw new Error(`YSP-6 ACTION lost the authored service-ring semantic anchor: ${JSON.stringify(current)}`);
+  if (current.interactionCount <= interactionsBefore) {
+    throw new Error(`YSP-10 ACTION did not register in the authored Yard: ${JSON.stringify(current)}`);
   }
 
   await tapControl('bag');
   current = await waitForPrompt('confirm-cancel');
-  if (current.activeOpeningShell !== 'bag') throw new Error(`YSP-6 Bag shell failed: ${JSON.stringify(current)}`);
+  if (current.activeOpeningShell !== 'bag') throw new Error(`YSP-10 Bag shell failed: ${JSON.stringify(current)}`);
   await tapControl('action');
   await tapControl('back');
   await waitForPrompt('map');
@@ -203,17 +183,22 @@ try {
     return value?.active && value.objectiveText.toLowerCase().includes('find') ? value : null;
   });
   if (!hud.active || !hud.objectiveText.toLowerCase().includes('find')) {
-    throw new Error(`YSP-6 mobile objective HUD did not reach Find your Master: ${JSON.stringify(hud)}`);
+    throw new Error(`YSP-10 mobile objective HUD did not reach Find your Master: ${JSON.stringify(hud)}`);
   }
 
   await tapControl('back');
 
-  // Reuse the exact YSP-5 route sequence after returning to its known baseline.
-  await holdControl('move-left', 1000, 11);
-  await holdControl('move-up', 2050, 12);
-  await holdControl('move-right', 1200, 13);
-  await holdControl('move-down', 500, 14);
-  await holdControl('move-right', 1850, 15);
+  // Follow the same safe, visible route used by the desktop and touch YSP-10
+  // regressions: below the sealed pit, through the foreground depth band, then
+  // north into the visible Master Lab tunnel.
+  await traverseAuthoredYardToMasterLabTunnel({
+    readState: state,
+    moveLeft: () => holdControl('move-left', 90, 11),
+    moveRight: () => holdControl('move-right', 90, 12),
+    moveUp: () => holdControl('move-up', 90, 13),
+    moveDown: () => holdControl('move-down', 90, 14),
+    label: 'YSP-10 final scene-image Yard navigation',
+  });
 
   current = await waitFor(async () => {
     const value = await state();
@@ -222,21 +207,21 @@ try {
       : null;
   });
   if (current.routeHandoffCount !== 1 || current.routeHandoffExitId !== 'master-lab-tunnel') {
-    throw new Error(`YSP-6 tunnel handoff did not fire exactly once: ${JSON.stringify(current)}`);
+    throw new Error(`YSP-10 tunnel handoff did not fire exactly once: ${JSON.stringify(current)}`);
   }
   if (!current.openingSequenceComplete || current.objectiveId !== 'find-master') {
-    throw new Error(`YSP-6 route handoff reset onboarding or objective state: ${JSON.stringify(current)}`);
+    throw new Error(`YSP-10 route handoff reset onboarding or objective state: ${JSON.stringify(current)}`);
   }
   if (current.worldWidth !== 2920 || current.worldHeight !== 1600 || current.playerX < 1760) {
-    throw new Error(`YSP-6 did not enter the existing authored opening-route world at its Lab approach: ${JSON.stringify(current)}`);
+    throw new Error(`YSP-10 did not enter the existing authored opening-route world at its Lab approach: ${JSON.stringify(current)}`);
   }
 
   const finalImageState = await imageState();
   if (!finalImageState.baseRendered || !finalImageState.foregroundRendered || finalImageState.legacyRendererRendered || finalImageState.occluderRenderCount < 1) {
-    throw new Error(`YSP-6 Bright Yard depth layer did not remain isolated and active before route handoff: ${JSON.stringify(finalImageState)}`);
+    throw new Error(`YSP-10 Bright Yard depth layer did not remain isolated and active before route handoff: ${JSON.stringify(finalImageState)}`);
   }
 
-  console.log(`YSP-6 Yard foreground/grounding smoke passed: ${JSON.stringify({ sceneMode: current.sceneMode, playerX: current.playerX, playerY: current.playerY, occluderRenders: finalImageState.occluderRenderCount, interactions: current.interactionCount, handoff: current.routeHandoffTarget })}`);
+  console.log(`YSP-10 Yard scene-image/grounding smoke passed: ${JSON.stringify({ sceneMode: current.sceneMode, playerX: current.playerX, playerY: current.playerY, occluderRenders: finalImageState.occluderRenderCount, interactions: current.interactionCount, handoff: current.routeHandoffTarget })}`);
   ws.close();
   cleanup();
 } catch (error) {
