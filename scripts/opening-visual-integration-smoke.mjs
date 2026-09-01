@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { traverseAuthoredYardToMasterLabTunnel } from './yard-scene-navigation.mjs';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
 const port = 9240;
@@ -186,12 +187,9 @@ try {
   const results = [];
   await openScenario();
   const scene = await yardState();
-  if (scene.yardRenderer !== 'scene-image' || scene.worldWidth !== 1280 || scene.worldHeight !== 720) {
-    throw new Error(`YSP-8 final visual integration did not begin in the scene Yard: ${JSON.stringify(scene)}`);
+  if (scene.yardRenderer !== 'scene-image' || scene.worldWidth !== 1280 || scene.worldHeight !== 720 || scene.scenePackId !== 'yard-bright-scene-ysp10-r1') {
+    throw new Error(`YSP-10 final visual integration did not begin in the reviewed scene Yard: ${JSON.stringify(scene)}`);
   }
-  // YSP-8 owns an authored dark counterpart for the scene-image Yard, so the
-  // integration gate now requires the same material dark-state change already
-  // required of Route, Master Lab and Local Pit while preserving gameplay state.
   results.push(await verifyLocation('yard', '__SPLICEPIT_YARD_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell'));
 
   await waitForPrompt('movement');
@@ -210,14 +208,17 @@ try {
     return value?.openingSequenceComplete && value?.objectiveId === 'find-master' && value?.activeOpeningShell === 'map' ? value : null;
   });
   await key('Escape', 'Escape', 27);
-  await holdKey('a', 'KeyA', 65, 1000);
-  await holdKey('w', 'KeyW', 87, 2050);
-  await holdKey('d', 'KeyD', 68, 1200);
-  await holdKey('s', 'KeyS', 83, 500);
-  await holdKey('d', 'KeyD', 68, 1850);
+  await traverseAuthoredYardToMasterLabTunnel({
+    readState: yardState,
+    moveLeft: () => holdKey('a', 'KeyA', 65, 90),
+    moveRight: () => holdKey('d', 'KeyD', 68, 90),
+    moveUp: () => holdKey('w', 'KeyW', 87, 90),
+    moveDown: () => holdKey('s', 'KeyS', 83, 90),
+    label: 'YSP-10 final opening visual Yard navigation',
+  });
   await waitFor(async () => {
     const value = await yardState();
-    return value?.sceneMode === 'master-lab-route' && value?.routeRendered ? value : null;
+    return value?.sceneMode === 'master-lab-route' && value?.routeRendered && value?.routeHandoffTarget === 'master-lab-route' ? value : null;
   });
   results.push(await verifyLocation('route', '__SPLICEPIT_ROUTE_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell'));
 
@@ -253,7 +254,7 @@ try {
     throw new Error(`Opening visual mobile stack integration failed: ${JSON.stringify(mobile)}`);
   }
 
-  console.log(`YSP-8 final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
+  console.log(`YSP-10 final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
   ws.close();
   cleanup();
 } catch (error) {
