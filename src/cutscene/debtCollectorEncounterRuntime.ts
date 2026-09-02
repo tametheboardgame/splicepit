@@ -14,7 +14,7 @@ import {
   debtEncounterState,
   type DebtEncounterSnapshot,
 } from '../story/debtEncounterState.js';
-import { OPENING_ROUTE_LANDMARKS } from '../world/yard.js';
+import { routeDebtEncounterPlacementForRuntime } from '../world/routeStoryIntegration.js';
 
 const VIEW_WIDTH = 1280;
 const VIEW_HEIGHT = 720;
@@ -23,15 +23,6 @@ const DIALOGUE_ID = 'debt-collector-dialogue';
 const STYLE_ID = 'wp07e-debt-collector-style';
 const ACTIVE_BODY_CLASS = 'wp07e-debt-encounter-active';
 
-function requireDebtLandmark() {
-  const landmark = OPENING_ROUTE_LANDMARKS.find((entry) => entry.id === 'debt-encounter');
-  if (!landmark) throw new Error('WP0.7E requires the authored debt-encounter route landmark.');
-  return landmark;
-}
-
-const DEBT_LANDMARK = requireDebtLandmark();
-const TRIGGER_RADIUS = Math.min(150, DEBT_LANDMARK.radius);
-
 type YardDebug = {
   ready?: boolean;
   phase?: string;
@@ -39,6 +30,7 @@ type YardDebug = {
   playerY?: number;
   cameraX?: number;
   cameraY?: number;
+  routeRenderer?: 'legacy' | 'scene-image';
 };
 
 type LayerDebug = {
@@ -75,14 +67,15 @@ type DebtEncounterGlobal = typeof globalThis & {
   __SPLICEPIT_DEBT_ENCOUNTER__?: DebtEncounterDebugControl;
 };
 
+const initialPlacement = routeDebtEncounterPlacementForRuntime(false);
 const debugState: DebtEncounterDebugState = {
   ready: true,
   ...debtEncounterState.snapshot(),
   status: 'locked',
   error: null,
   landmarkId: 'debt-encounter',
-  landmarkLabel: DEBT_LANDMARK.label,
-  triggerRadius: TRIGGER_RADIUS,
+  landmarkLabel: initialPlacement.label,
+  triggerRadius: initialPlacement.triggerRadius,
   distanceToPlayer: null,
   representativeVisible: false,
   currentCueId: null,
@@ -111,6 +104,17 @@ function yardDebug(): YardDebug | undefined {
   return runtimeGlobal().__SPLICEPIT_VISUAL_RESET__;
 }
 
+function routeUsesAuthoredScene(): boolean {
+  return yardDebug()?.routeRenderer === 'scene-image';
+}
+
+function currentPlacement() {
+  const placement = routeDebtEncounterPlacementForRuntime(routeUsesAuthoredScene());
+  debugState.landmarkLabel = placement.label;
+  debugState.triggerRadius = placement.triggerRadius;
+  return placement;
+}
+
 function routeGameplayVisible(): boolean {
   const global = runtimeGlobal();
   const yard = global.__SPLICEPIT_VISUAL_RESET__;
@@ -125,7 +129,8 @@ function routeGameplayVisible(): boolean {
 function distanceToPlayer(): number | null {
   const yard = yardDebug();
   if (typeof yard?.playerX !== 'number' || typeof yard.playerY !== 'number') return null;
-  return Math.hypot(yard.playerX - DEBT_LANDMARK.x, yard.playerY - DEBT_LANDMARK.y);
+  const placement = currentPlacement();
+  return Math.hypot(yard.playerX - placement.triggerPosition.x, yard.playerY - placement.triggerPosition.y);
 }
 
 function ensureStyles(): void {
@@ -315,7 +320,12 @@ function render(): void {
       const yard = yardDebug();
       const cameraX = yard?.cameraX ?? 0;
       const cameraY = yard?.cameraY ?? 0;
-      drawRepresentative(ctx, DEBT_LANDMARK.x - cameraX, DEBT_LANDMARK.y - cameraY);
+      const placement = currentPlacement();
+      drawRepresentative(
+        ctx,
+        placement.representativePosition.x - cameraX,
+        placement.representativePosition.y - cameraY,
+      );
     }
   }
   requestAnimationFrame(render);
@@ -352,12 +362,13 @@ async function startEncounter(): Promise<boolean> {
 
 function checkTrigger(): void {
   const distance = distanceToPlayer();
+  const placement = currentPlacement();
   debugState.distanceToPlayer = distance === null ? null : Math.round(distance * 10) / 10;
   const story = debtEncounterState.snapshot();
   if (
     story.armed
     && distance !== null
-    && distance <= TRIGGER_RADIUS
+    && distance <= placement.triggerRadius
     && routeGameplayVisible()
     && !browserCutsceneRuntime.isRunning()
   ) {
