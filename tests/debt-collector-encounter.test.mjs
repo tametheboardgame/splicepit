@@ -9,7 +9,10 @@ import {
   DebtEncounterStateController,
   shouldArmDebtEncounter,
 } from '../src/story/debtEncounterState.js';
-import { OPENING_ROUTE_LANDMARKS } from '../src/world/yard.js';
+import {
+  RSP5_ROUTE_STORY_CONTRACT,
+  routeDebtEncounterPlacement,
+} from '../src/world/routeStoryIntegration.js';
 
 function stepIndex(predicate) {
   return DEBT_COLLECTOR_CUTSCENE.steps.findIndex(predicate);
@@ -49,11 +52,14 @@ test('WP0.7E cancelled confrontation can safely retry without duplicating comple
   assert.equal(state.snapshot().encounterCount, 2);
 });
 
-test('WP0.7E uses the authored Old Toll Lay-by debt landmark', () => {
-  const landmark = OPENING_ROUTE_LANDMARKS.find((entry) => entry.id === 'debt-encounter');
-  assert.ok(landmark);
-  assert.equal(landmark.label, 'Old Toll Lay-by');
-  assert.ok(landmark.radius >= 150);
+test('RSP-5 stages WP0.7E at the authored biosecurity weighbridge instead of the retired Old Toll', () => {
+  const placement = routeDebtEncounterPlacement();
+  assert.equal(placement.anchorId, 'debt-encounter');
+  assert.equal(placement.label, 'Decommissioned Biosecurity Weighbridge');
+  assert.equal(placement.triggerRadius, RSP5_ROUTE_STORY_CONTRACT.debtEncounter.triggerRadius);
+  assert.equal(placement.requiresPostDeathLab, true);
+  assert.equal(placement.requiresSpliceBenchHandoff, true);
+  assert.equal(placement.normalWorldOnly, true);
 });
 
 test('debt confrontation explicitly transfers pressure without locking open economy or faction decisions', () => {
