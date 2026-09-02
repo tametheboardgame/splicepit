@@ -5,4 +5,5 @@ dist/
 .test-dist/
 .content-dist/
 public/generated/ysp3/
+public/generated/rsp3/
 *.log
