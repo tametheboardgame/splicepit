@@ -8,7 +8,9 @@ import {
 import {
   yardSceneForegroundOccluders,
   YSP10_YARD_SCENE_PACK,
+  type YardSceneRect,
 } from '../world/yardScenePack.js';
+import type { ProtagonistId } from '../player/protagonists.js';
 
 type YardSceneImageDebug = {
   requested: boolean;
@@ -31,6 +33,11 @@ type YardSceneImageDebug = {
   activeOccluderIds: string[];
   occluderRenderCount: number;
   darkOccluderRenderCount: number;
+  locatorVisible: boolean;
+  locatorColour: string | null;
+  locatorOccluderIds: string[];
+  exitGuidanceVisible: boolean;
+  exitGuidanceExitId: string | null;
   legacyRendererRendered: boolean;
   renderCount: number;
   imageSmoothingDisabled: boolean;
@@ -45,9 +52,26 @@ type YardSceneImageDebug = {
   decodedRgbaBudgetBytes: number;
 };
 
+type YardGameplayDebug = {
+  selectedAvatarId?: ProtagonistId;
+  playerX?: number;
+  playerY?: number;
+  objectiveId?: string;
+  sceneMode?: string;
+};
+
 type YardSceneImageGlobal = typeof globalThis & {
   __SPLICEPIT_YARD_SCENE_IMAGE__?: YardSceneImageDebug;
+  __SPLICEPIT_VISUAL_RESET__?: YardGameplayDebug;
 };
+
+const PROTAGONIST_LOCATOR_COLOURS: Record<ProtagonistId, string> = {
+  milo: '#db634b',
+  theo: '#e2a64d',
+  ada: '#8b63cf',
+  pip: '#d84f82',
+};
+const MIN_LOCATOR_OCCLUSION_AREA = 64 * 18;
 
 const initialLifecycle = ysp9YardAssetLifecycleDebug();
 const debug: YardSceneImageDebug = {
@@ -71,6 +95,11 @@ const debug: YardSceneImageDebug = {
   activeOccluderIds: [],
   occluderRenderCount: 0,
   darkOccluderRenderCount: 0,
+  locatorVisible: false,
+  locatorColour: null,
+  locatorOccluderIds: [],
+  exitGuidanceVisible: false,
+  exitGuidanceExitId: null,
   legacyRendererRendered: false,
   renderCount: 0,
   imageSmoothingDisabled: false,
@@ -93,6 +122,76 @@ let darkBaseImage: HTMLImageElement | null = null;
 
 function clampMix(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+function overlapArea(a: YardSceneRect, b: YardSceneRect): number {
+  const left = Math.max(a.x, b.x);
+  const top = Math.max(a.y, b.y);
+  const right = Math.min(a.x + a.width, b.x + b.width);
+  const bottom = Math.min(a.y + a.height, b.y + b.height);
+  if (right <= left || bottom <= top) return 0;
+  return (right - left) * (bottom - top);
+}
+
+function currentGameplayDebug(): YardGameplayDebug | null {
+  return (globalThis as YardSceneImageGlobal).__SPLICEPIT_VISUAL_RESET__ ?? null;
+}
+
+function currentLocatorColour(gameplay: YardGameplayDebug | null): string {
+  const id = gameplay?.selectedAvatarId ?? 'milo';
+  return PROTAGONIST_LOCATOR_COLOURS[id];
+}
+
+function drawPlayerLocator(ctx: CanvasRenderingContext2D, x: number, feetY: number, colour: string): void {
+  const now = performance.now();
+  const bob = Math.round(Math.sin(now / 150) * 3);
+  const markerY = Math.max(24, Math.round(feetY - 112 + bob));
+  const markerX = Math.round(x);
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(24, 31, 28, 0.9)';
+  ctx.fillStyle = colour;
+  ctx.beginPath();
+  ctx.moveTo(markerX - 11, markerY - 7);
+  ctx.lineTo(markerX + 11, markerY - 7);
+  ctx.lineTo(markerX, markerY + 8);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSouthLabGuidance(ctx: CanvasRenderingContext2D, colour: string): boolean {
+  const exit = YSP10_YARD_SCENE_PACK.exits.find((candidate) => candidate.id === 'master-lab-south-path');
+  if (!exit) return false;
+  const now = performance.now();
+  const pulse = 0.82 + ((Math.sin(now / 220) + 1) * 0.09);
+  const x = Math.round(exit.bounds.x + exit.bounds.width / 2);
+  const y = Math.round(exit.bounds.y - 18);
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = pulse;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.font = '800 16px "Trebuchet MS", "Segoe UI", sans-serif';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(24, 31, 28, 0.92)';
+  ctx.fillStyle = colour;
+  ctx.strokeText('LAB', x, y - 8);
+  ctx.fillText('LAB', x, y - 8);
+  ctx.beginPath();
+  ctx.moveTo(x - 12, y - 3);
+  ctx.lineTo(x + 12, y - 3);
+  ctx.lineTo(x, y + 12);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+  ctx.restore();
+  return true;
 }
 
 function syncLifecycleDebug(): void {
@@ -172,8 +271,8 @@ export function drawYardSceneImageBase(ctx: CanvasRenderingContext2D, darkMix?: 
 
 /**
  * Redraw authored occluder crops from the same Bright/Dark bases used below the
- * protagonist. Using the identical blend removes bright seams during corruption
- * while preserving the feet-based depth contract.
+ * protagonist. YSP-10B keeps those crops tight to actual object surfaces so a
+ * walk-behind region never redraws ordinary ground over the character.
  */
 export function drawYardSceneImageForeground(
   ctx: CanvasRenderingContext2D,
@@ -228,10 +327,34 @@ export function drawYardSceneImageForeground(
   }
   ctx.restore();
 
+  const gameplay = currentGameplayDebug();
+  const playerX = typeof gameplay?.playerX === 'number' ? gameplay.playerX : null;
+  const spriteBounds: YardSceneRect | null = playerX === null ? null : {
+    x: playerX - 32,
+    y: playerFeetY - 88,
+    width: 64,
+    height: 96,
+  };
+  const locatorOccluders = spriteBounds
+    ? activeOccluders.filter((occluder) => overlapArea(spriteBounds, occluder.bounds) >= MIN_LOCATOR_OCCLUSION_AREA)
+    : [];
+  const colour = currentLocatorColour(gameplay);
+  if (playerX !== null && locatorOccluders.length > 0) {
+    drawPlayerLocator(ctx, playerX, playerFeetY, colour);
+  }
+
+  const shouldGuideExit = gameplay?.sceneMode === 'yard' && gameplay.objectiveId === 'find-master';
+  const exitGuidanceVisible = shouldGuideExit ? drawSouthLabGuidance(ctx, colour) : false;
+
   debug.foregroundRendered = true;
   debug.activeOccluderIds = activeOccluders.map((occluder) => occluder.id);
   debug.occluderRenderCount += activeOccluders.length;
   if (mix > 0) debug.darkOccluderRenderCount += activeOccluders.length;
+  debug.locatorVisible = locatorOccluders.length > 0;
+  debug.locatorColour = locatorOccluders.length > 0 ? colour : null;
+  debug.locatorOccluderIds = locatorOccluders.map((occluder) => occluder.id);
+  debug.exitGuidanceVisible = exitGuidanceVisible;
+  debug.exitGuidanceExitId = exitGuidanceVisible ? 'master-lab-south-path' : null;
   debug.darkMix = mix;
   debug.imageSmoothingDisabled = true;
 }
