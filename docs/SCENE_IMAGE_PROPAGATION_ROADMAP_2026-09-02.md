@@ -77,13 +77,24 @@ Selected:
 
 Output: `docs/RSP2_BRIGHT_OPENING_ROUTE_MASTER_2026-09-02.md`.
 
-Exact production scale, raster preparation, deterministic packaging and camera/world dimensions remain deliberately owned by RSP-3.
+Exact production scale, raster preparation, deterministic packaging and camera/world dimensions remained deliberately owned by RSP-3.
 
-## RSP-3 — Game-Ready Route Asset Preparation — NEXT
+## RSP-3 — Game-Ready Route Asset Preparation — COMPLETE ✓
 
-Prepare exact production assets, deterministic hashes, decode validation and aligned foreground staging data. Preserve the selected RSP-2 composition while establishing a world footprint that supports at least three distinct 1280 × 720 camera-scale traversal beats.
+Prepared a deterministic production derivative of the selected RSP-2 scene:
 
-## RSP-4 — Re-author Route Walkability / Collision / Exits
+- `1024 × 683` JPEG, `120,561` bytes;
+- SHA-256 `b1a1a0bb2553eb674a3043a9a1e5a19be7f2c7b09bf52956124503c13eec482c`;
+- repository-owned canonical Base64 source fragments;
+- deterministic materialisation, JPEG identity/dimension checks, dist verification and browser decode smoke;
+- transparent exact-size foreground staging layer for later RSP-6 depth work;
+- integer `3×` source-pixel mapping to a `3072 × 2049` route world, preserving the whole selected composition and supporting at least three 1280 × 720 camera-scale traversal beats.
+
+Output: `docs/RSP3_GAME_READY_ROUTE_ASSET_PREPARATION_2026-09-02.md`.
+
+Gameplay geometry and semantic anchors remain deliberately untouched until RSP-4.
+
+## RSP-4 — Re-author Route Walkability / Collision / Exits — NEXT
 
 Author collision directly against the approved raster. Connect visible exits to Yard, Master Lab and onward progression semantics as required by the opening flow.
 
@@ -149,8 +160,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 NEXT → RSP-4 → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 NEXT → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-3 — Game-Ready Route Asset Preparation.**
+**Start RSP-4 — Re-author Route Walkability / Collision / Exits.**
