@@ -125,11 +125,25 @@ Reconnected Route gameplay meaning to the authored scene geometry without activa
 
 Output: `docs/RSP5_ROUTE_STORY_INTERACTION_DEBT_INTEGRATION_2026-09-02.md`.
 
-## RSP-6 — Route Foreground Depth / Character Grounding — NEXT
+## RSP-6 — Route Foreground Depth / Character Grounding — COMPLETE ✓
 
-Add only meaningful occlusion regions and contact grounding. Avoid broad foreground masks over ordinary traversable ground.
+Added selective Bright Route depth and protagonist grounding without changing RSP-5 gameplay geometry or semantics:
 
-## RSP-7 — Authored Dark Route + Production Replacement
+- versioned the depth scene contract as `opening-route-bright-rsp6-v1`;
+- authored four tight exact-base foreground crops for the Master Lab entry frame, west weighbridge rail, weighbridge booth front and Local Pit gate front;
+- deliberately excluded ordinary dirt road, grass, the central junction and the weighbridge deck from foreground redraw;
+- kept total foreground crop coverage below five per cent of the Route world;
+- added deterministic feet-based `sortY` activation for every authored occluder;
+- added one restrained feet contact shadow at 0.22 alpha;
+- added renderer-agnostic Bright foreground/shadow helpers for RSP-7 to consume;
+- preserved all RSP-5 source, world, camera, collision, anchor, exit, objective and debt contracts unchanged;
+- added regression tests that fail if broad foreground masking is reintroduced.
+
+The Yard-side chain-link gate remains deliberately outside the exact-base foreground set because a rectangular crop would incorrectly make the open mesh opaque over the protagonist.
+
+Output: `docs/RSP6_ROUTE_FOREGROUND_DEPTH_GROUNDING_2026-09-02.md`.
+
+## RSP-7 — Authored Dark Route + Production Replacement — NEXT
 
 Create the matching corrupted route state and move the normal production route to the scene-image path with atomic fallback behaviour.
 
@@ -183,8 +197,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 NEXT → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 NEXT → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-6 — Route Foreground Depth / Character Grounding.**
+**Start RSP-7 — Authored Dark Route + Production Replacement.**
