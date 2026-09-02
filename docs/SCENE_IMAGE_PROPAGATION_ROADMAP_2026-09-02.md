@@ -44,13 +44,23 @@ Output: `docs/work-packages/RSP-0_OPENING_ROUTE_SCENE_CONTRACT.md`.
 
 The audit explicitly separates semantic requirements from disposable `opening-world-v1` geometry, raw landmark coordinates, legacy waypoints, Old Toll geometry and the old collision-topology constraint.
 
-## RSP-1 — Holistic Opening Route Art Brief / Composition Lock — NEXT
+## RSP-1 — Holistic Opening Route Art Brief / Composition Lock — COMPLETE ✓
 
 Design the opening route as one believable authored place rather than a connector strip between game rooms.
 
-The composition must visually explain where the player came from and where they are going, provide readable traversal on mobile, and include natural staging space for the debt encounter.
+Locked:
 
-## RSP-2 — Generate and Select Bright Opening Route Master
+- one continuous warm semi-rural biotech service corridor;
+- hooked / broken-S flow from Yard-side arrival to Viktor’s Lab, then through an inspection/weighbridge pull-in towards the Local Pit;
+- Viktor’s Lab as the first dominant destination during `find-master`;
+- a decommissioned livestock/biosecurity inspection pull-in as the physical debt-encounter staging concept;
+- broad mobile-safe movement lanes, generous approach aprons and at least three distinct camera-scale traversal beats;
+- Bright-world rural/biotech material storytelling with coherent Dark-state transformation hooks;
+- the old toll booth, procedural road layout, Pass D geometry and legacy coordinates remain disposable.
+
+Output: `docs/RSP1_HOLISTIC_OPENING_ROUTE_ART_BRIEF_2026-09-02.md`.
+
+## RSP-2 — Generate and Select Bright Opening Route Master — NEXT
 
 Produce candidate authored route scenes and select the strongest composition against the locked RSP-1 brief.
 
@@ -124,8 +134,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 NEXT → RSP-2 → RSP-3 → RSP-4 → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 NEXT → RSP-3 → RSP-4 → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-1 — Holistic Opening Route Art Brief / Composition Lock.**
+**Start RSP-2 — Generate and Select Bright Opening Route Master.**
