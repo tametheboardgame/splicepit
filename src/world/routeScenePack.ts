@@ -150,7 +150,7 @@ export const RSP4_ROUTE_SCENE_PACK = {
   anchors: [
     { id: 'yard-arrival', role: 'arrival', position: point(258, 493), radius: 132 },
     { id: 'master-lab-entrance', role: 'door', position: point(594, 227), radius: 126 },
-    { id: 'master-lab-return', role: 'return', position: point(548, 268), radius: 108 },
+    { id: 'master-lab-return', role: 'return', position: point(575, 275), radius: 108 },
     { id: 'debt-encounter', role: 'story', position: point(651, 424), radius: 162 },
     { id: 'local-pit-entrance', role: 'door', position: point(753, 660), radius: 135 },
     { id: 'local-pit-return', role: 'return', position: point(749, 608), radius: 114 },
