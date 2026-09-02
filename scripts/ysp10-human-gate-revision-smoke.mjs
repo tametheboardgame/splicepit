@@ -1,5 +1,4 @@
 import { spawn } from 'node:child_process';
-import { traverseAuthoredYardToMasterLabTunnel } from './yard-scene-navigation.mjs';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
 const chromePort = 9264;
@@ -101,7 +100,7 @@ try {
   async function moveAxis(axis, target, tolerance = 7, maxSteps = 45) {
     for (let step = 0; step < maxSteps; step += 1) {
       const current = (await snapshot()).yard;
-      if (!current) throw new Error('YSP-10 lost Yard debug state while moving.');
+      if (!current) throw new Error('YSP-10B lost Yard debug state while moving.');
       if (current.sceneMode !== 'yard') return current;
       const value = axis === 'x' ? current.playerX : current.playerY;
       const delta = target - value;
@@ -113,7 +112,7 @@ try {
       const duration = Math.min(130, Math.max(45, Math.abs(delta) * 2.2));
       await holdKey(control[0], control[1], control[2], duration);
     }
-    throw new Error(`YSP-10 could not reach ${axis}=${target}: ${JSON.stringify((await snapshot()).yard)}`);
+    throw new Error(`YSP-10B could not reach ${axis}=${target}: ${JSON.stringify((await snapshot()).yard)}`);
   }
 
   async function selectionVisualStats() {
@@ -162,9 +161,6 @@ try {
   }
 
   await waitForPrompt('movement');
-  // Give the movement tutorial comfortable timing margin without reaching the
-  // west pit collider. The previous 180 ms sat too close to the completion
-  // threshold and could miss on a busy hosted runner.
   await holdKey('d', 'KeyD', 68, 280);
   await waitForPrompt('interact');
   await key('e', 'KeyE', 69);
@@ -182,61 +178,77 @@ try {
   await key('Escape', 'Escape', 27);
   await waitFor(async () => (await snapshot()).yard?.activeOpeningShell === null);
 
-  // Reproduce the human-gate collision bug: approach the old 50px seam from
-  // above and try to descend. The new upper guard must stop the feet before the
-  // visually impossible pit/wall overlap seen on the phone screenshot.
-  await moveAxis('x', 650);
-  await moveAxis('y', 270);
-  await moveAxis('x', 785);
-  const beforePit = (await snapshot()).yard;
-  await holdKey('s', 'KeyS', 83, 900);
-  const afterPit = (await snapshot()).yard;
-  if (afterPit.playerY >= 288 || afterPit.collisionCount <= beforePit.collisionCount) {
-    throw new Error(`YSP-10 pit seam can still be descended through: ${JSON.stringify({ beforePit, afterPit })}`);
+  const guidance = await waitFor(async () => {
+    const value = await snapshot();
+    return value.image?.exitGuidanceVisible && value.image.exitGuidanceExitId === 'master-lab-south-path' ? value : null;
+  }, 5000);
+  if (guidance.image.locatorColour !== null) {
+    throw new Error(`YSP-10B player locator should not be visible in the open central court: ${JSON.stringify(guidance.image)}`);
   }
 
-  // Move back into the central court, then behind the right foreground cryo /
-  // shipping-container stack. The upper stack is no longer a giant collider;
-  // its exact approved pixels should redraw in front of the protagonist.
+  // Phone review found that the character could stand directly on the tall
+  // DON'T LOOK DOWN sign above the pit. Approach its west edge from open ground;
+  // collision must stop before the player's feet enter the sign/wall surface.
+  await moveAxis('x', 650);
+  await moveAxis('y', 270);
+  const beforeSign = (await snapshot()).yard;
+  await holdKey('d', 'KeyD', 68, 900);
+  const afterSign = (await snapshot()).yard;
+  if (afterSign.playerX > 750 || afterSign.collisionCount <= beforeSign.collisionCount) {
+    throw new Error(`YSP-10B warning sign is still standable: ${JSON.stringify({ beforeSign, afterSign })}`);
+  }
+
+  // Move into the walk-behind lane. Ordinary ground immediately left of the
+  // container silhouette must not be redrawn over the player and therefore must
+  // not trigger the locator.
   await moveAxis('x', 650);
   await moveAxis('y', 570);
+  await moveAxis('x', 940);
+  const clearGround = await waitFor(async () => {
+    const value = await snapshot();
+    return value.yard?.playerX > 915 && value.yard?.playerX < 975 && value.yard?.playerY > 545 && value.yard?.playerY < 595 ? value : null;
+  }, 5000);
+  if (clearGround.image.locatorVisible) {
+    throw new Error(`YSP-10B ordinary ground beside the cryo stack still hides the player: ${JSON.stringify(clearGround.image)}`);
+  }
+
+  // Behind the actual upper container silhouette the scene pixels should cover
+  // the protagonist, and the apprentice-colour locator should appear above it.
   await moveAxis('x', 1050);
   const behindCrates = await waitFor(async () => {
     const value = await snapshot();
     return value.yard?.playerX > 1000 && value.yard?.playerY > 545 && value.yard?.playerY < 595 &&
-      value.image?.activeOccluderIds?.includes('cryo-container-upper-stack') ? value : null;
+      value.image?.locatorVisible && value.image?.locatorOccluderIds?.includes('cryo-container-upper-stack') ? value : null;
   }, 5000);
-  if (!behindCrates.image.activeOccluderIds.includes('cryo-container-upper-stack')) {
-    throw new Error(`YSP-10 foreground container depth did not activate: ${JSON.stringify(behindCrates)}`);
+  if (behindCrates.image.locatorColour !== '#db634b') {
+    throw new Error(`YSP-10B Milo locator did not use his authored accent colour: ${JSON.stringify(behindCrates.image)}`);
   }
 
-  // The human review also found that the Yard appeared to link nowhere. Follow
-  // the same visible, collision-aware route used by the production desktop and
-  // touch regressions: under the pit, through the foreground band, then north
-  // through the actual Master Lab doorway.
-  await traverseAuthoredYardToMasterLabTunnel({
-    readState: async () => (await snapshot()).yard,
-    moveLeft: () => holdKey('a', 'KeyA', 65, 90),
-    moveRight: () => holdKey('d', 'KeyD', 68, 90),
-    moveUp: () => holdKey('w', 'KeyW', 87, 90),
-    moveDown: () => holdKey('s', 'KeyS', 83, 90),
-    label: 'YSP-10 human-gate visible tunnel navigation',
-  });
+  // The obvious central dirt path at the south edge is now the primary readable
+  // way out. Move back into the open court and follow it down; this must hand off
+  // to the existing Master Lab route without requiring the hidden side tunnel.
+  await moveAxis('x', 575);
+  for (let step = 0; step < 30; step += 1) {
+    const current = (await snapshot()).yard;
+    if (current.sceneMode === 'master-lab-route') break;
+    await holdKey('s', 'KeyS', 83, 90);
+  }
   const linked = await waitFor(async () => {
     const value = (await snapshot()).yard;
     return value?.sceneMode === 'master-lab-route' ? value : null;
   }, 5000);
-  if (linked.routeHandoffTarget !== 'master-lab-route' || linked.routeHandoffExitId !== 'master-lab-tunnel') {
-    throw new Error(`YSP-10 visible Lab tunnel did not link to the opening route: ${JSON.stringify(linked)}`);
+  if (linked.routeHandoffTarget !== 'master-lab-route' || linked.routeHandoffExitId !== 'master-lab-south-path') {
+    throw new Error(`YSP-10B south dirt path did not link to the opening route: ${JSON.stringify(linked)}`);
   }
 
-  console.log(`YSP-10 human-gate revision smoke passed: ${JSON.stringify({
+  console.log(`YSP-10B spatial/depth human-gate smoke passed: ${JSON.stringify({
     selectionUniqueColours: selection.uniqueColours,
     spawn: { x: entered.yard.playerX, y: entered.yard.playerY },
-    pitBlockedAtY: afterPit.playerY,
+    signBlockedAtX: afterSign.playerX,
+    clearGround: { x: clearGround.yard.playerX, y: clearGround.yard.playerY },
     cratePosition: { x: behindCrates.yard.playerX, y: behindCrates.yard.playerY },
-    crateOccluder: 'cryo-container-upper-stack',
-    handoff: linked.routeHandoffTarget,
+    locatorColour: behindCrates.image.locatorColour,
+    handoffExit: linked.routeHandoffExitId,
   })}`);
   ws.close();
   cleanup();

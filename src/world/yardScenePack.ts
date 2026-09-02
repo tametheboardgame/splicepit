@@ -157,14 +157,19 @@ const YSP6_YARD_SCENE_PACK_BASE = {
 } as const satisfies YardScenePack;
 
 /**
- * YSP-10 human-gate revision.
+ * YSP-10 human-gate revision plus YSP-10B spatial/depth audit.
  *
- * On-device review approved the authored-scene direction but exposed four
- * gameplay-layer defects: the lower spawn sat underneath tutorial cards; the
- * narrow pit/wall seam allowed an impossible descent; the visible Lab tunnel
- * was covered by wall collision while its transition trigger sat below the
- * doorway; and the foreground cryo/container stack behaved as one huge solid
- * rectangle instead of an object the player could pass behind.
+ * The first phone review approved the authored-scene direction and moved the
+ * spawn, closed the pit seam, opened the visible Lab tunnel and created the
+ * right-hand container walk-behind band. The follow-up phone review exposed a
+ * second layer of world-reading defects: the DON'T LOOK DOWN sign was still
+ * walkable, the container foreground rectangle included ordinary ground, and
+ * the only obvious path out of the Yard was not an exit at all.
+ *
+ * The perimeter wall remains physical collision. The raster does not contain a
+ * visible gate or lane behind it, so allowing the player to phase through solid
+ * concrete would make the depth model less coherent. Future art can add a
+ * visible service gap before that area becomes traversable.
  */
 export const YSP10_YARD_SCENE_PACK = {
   ...YSP6_YARD_SCENE_PACK_BASE,
@@ -183,7 +188,7 @@ export const YSP10_YARD_SCENE_PACK = {
       { id: 'lower-left-containment', bounds: { x: 0, y: 414, width: 338, height: 306 } },
       { id: 'containment-fence-return', bounds: { x: 185, y: 390, width: 148, height: 70 } },
       { id: 'pit-west-machinery', bounds: { x: 690, y: 318, width: 72, height: 112 } },
-      { id: 'pit-gap-upper-guard', bounds: { x: 758, y: 286, width: 56, height: 80 } },
+      { id: 'pit-warning-sign', bounds: { x: 758, y: 184, width: 112, height: 180 } },
       { id: 'pit-retaining-wall-west', bounds: { x: 812, y: 172, width: 198, height: 194 } },
       { id: 'pit-retaining-wall-north-west', bounds: { x: 1008, y: 172, width: 96, height: 134 } },
       { id: 'pit-retaining-wall-north-east', bounds: { x: 1188, y: 172, width: 92, height: 134 } },
@@ -206,6 +211,12 @@ export const YSP10_YARD_SCENE_PACK = {
       target: 'master-lab-route',
       targetEntry: { x: 1760, y: 655 },
     },
+    {
+      id: 'master-lab-south-path',
+      bounds: { x: 390, y: 664, width: 390, height: 44 },
+      target: 'master-lab-route',
+      targetEntry: { x: 1760, y: 655 },
+    },
   ],
   foreground: {
     mode: 'exact-base-pixel-regions',
@@ -214,7 +225,8 @@ export const YSP10_YARD_SCENE_PACK = {
       { id: 'pit-front-rail-west', bounds: { x: 724, y: 486, width: 166, height: 48 }, sortY: 558 },
       { id: 'pit-front-rail-east', bounds: { x: 874, y: 488, width: 174, height: 50 }, sortY: 558 },
       { id: 'lab-tunnel-rail-and-threshold', bounds: { x: 1032, y: 300, width: 164, height: 108 }, sortY: 402 },
-      { id: 'cryo-container-upper-stack', bounds: { x: 950, y: 468, width: 330, height: 252 }, sortY: 620 },
+      { id: 'cryo-container-upper-stack', bounds: { x: 988, y: 468, width: 292, height: 154 }, sortY: 620 },
+      { id: 'cryo-container-lower-stack', bounds: { x: 900, y: 590, width: 380, height: 130 }, sortY: 700 },
     ],
   },
 } as const satisfies YardScenePack;

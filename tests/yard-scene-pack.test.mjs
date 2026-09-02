@@ -129,7 +129,7 @@ test('YSP-10 compatibility export activates the human-reviewed Yard revision', (
   assert.deepEqual(pack.source, YSP5_YARD_SCENE_PACK.source);
   assert.deepEqual(pack.world, YSP5_YARD_SCENE_PACK.world);
   assert.equal(pack.foreground?.mode, 'exact-base-pixel-regions');
-  assert.equal(pack.foreground?.occluders.length, 5);
+  assert.equal(pack.foreground?.occluders.length, 6);
   assert.deepEqual(pack.spawn, { x: 575, y: 430 });
 
   for (const occluder of pack.foreground?.occluders ?? []) {
@@ -140,27 +140,36 @@ test('YSP-10 compatibility export activates the human-reviewed Yard revision', (
   }
 });
 
-test('YSP-10 closes the pit seam while opening behind-container depth space', () => {
+test('YSP-10B blocks the pit warning sign and preserves the container walk-behind lane', () => {
   const pack = YSP10_YARD_SCENE_PACK;
-  assert.equal(isYardScenePositionBlocked(pack, 785, 320), true, 'old pit descent seam must be blocked');
+  assert.equal(isYardScenePositionBlocked(pack, 805, 250), true, 'DON’T LOOK DOWN sign face must not be standable');
+  assert.equal(isYardScenePositionBlocked(pack, 785, 320), true, 'old pit descent seam must remain blocked');
   assert.equal(isYardScenePositionBlocked(pack, 785, 392), false, 'lower horizontal pit approach remains walkable');
+  assert.equal(isYardScenePositionBlocked(pack, 940, 565), false, 'ground left of the cryo silhouette remains genuinely walkable');
   assert.equal(isYardScenePositionBlocked(pack, 1050, 570), false, 'player can move behind upper cryo/container stack');
   assert.equal(isYardScenePositionBlocked(pack, 1050, 640), true, 'physical lower container base remains solid');
 });
 
-test('YSP-10 foreground sorting adds the right-hand container stack without losing existing depth', () => {
+test('YSP-10B keeps object-only foreground crops instead of one ground-covering cryo rectangle', () => {
   const pack = YSP10_YARD_SCENE_PACK;
-  assert.deepEqual(yardSceneForegroundOccluders(pack, 660).map((entry) => entry.id), []);
-  assert.deepEqual(yardSceneForegroundOccluders(pack, 640).map((entry) => entry.id), ['service-ring-front-rim']);
+  assert.deepEqual(yardSceneForegroundOccluders(pack, 660).map((entry) => entry.id), [
+    'cryo-container-lower-stack',
+  ]);
+  assert.deepEqual(yardSceneForegroundOccluders(pack, 640).map((entry) => entry.id), [
+    'service-ring-front-rim',
+    'cryo-container-lower-stack',
+  ]);
   assert.deepEqual(yardSceneForegroundOccluders(pack, 570).map((entry) => entry.id), [
     'service-ring-front-rim',
     'cryo-container-upper-stack',
+    'cryo-container-lower-stack',
   ]);
   assert.deepEqual(yardSceneForegroundOccluders(pack, 520).map((entry) => entry.id), [
     'service-ring-front-rim',
     'pit-front-rail-west',
     'pit-front-rail-east',
     'cryo-container-upper-stack',
+    'cryo-container-lower-stack',
   ]);
   assert.deepEqual(yardSceneForegroundOccluders(pack, 380).map((entry) => entry.id), [
     'service-ring-front-rim',
@@ -168,17 +177,31 @@ test('YSP-10 foreground sorting adds the right-hand container stack without losi
     'pit-front-rail-east',
     'lab-tunnel-rail-and-threshold',
     'cryo-container-upper-stack',
+    'cryo-container-lower-stack',
   ]);
 });
 
-test('YSP-10 moves the Master Lab exit into the visible carved tunnel and keeps it reachable', () => {
+test('YSP-10B keeps the tunnel but makes the obvious south dirt path a real Lab exit', () => {
   const pack = YSP10_YARD_SCENE_PACK;
-  const exit = yardSceneExitForTarget(pack, 'master-lab-route');
-  assert.ok(exit);
-  assert.deepEqual(exit.targetEntry, { x: 1760, y: 655 });
+  const tunnel = yardSceneExitForTarget(pack, 'master-lab-route');
+  assert.ok(tunnel);
+  assert.equal(tunnel.id, 'master-lab-tunnel');
+  assert.deepEqual(tunnel.targetEntry, { x: 1760, y: 655 });
   assert.equal(yardSceneExitAt(pack, 1147, 340)?.id, 'master-lab-tunnel');
   assert.equal(isYardScenePositionBlocked(pack, 1147, 340), false, 'visible tunnel threshold must not be collision-filled');
-  assert.equal(canReach(pack, pack.spawn, exit.bounds), true);
+  assert.equal(canReach(pack, pack.spawn, tunnel.bounds), true);
+
+  const southPath = pack.exits.find((exit) => exit.id === 'master-lab-south-path');
+  assert.ok(southPath);
+  assert.deepEqual(southPath.targetEntry, { x: 1760, y: 655 });
+  assert.equal(yardSceneExitAt(pack, 575, 690)?.id, 'master-lab-south-path');
+  assert.equal(canReach(pack, pack.spawn, southPath.bounds), true);
+});
+
+test('YSP-10B keeps the continuous north perimeter wall physical until art provides a visible access gap', () => {
+  const pack = YSP10_YARD_SCENE_PACK;
+  assert.equal(isYardScenePositionBlocked(pack, 500, 90), true);
+  assert.equal(isYardScenePositionBlocked(pack, 900, 90), true);
 });
 
 test('YSP-10 retains the restrained scene-specific contact shadow', () => {
