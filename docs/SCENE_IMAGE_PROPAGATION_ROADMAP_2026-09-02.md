@@ -92,13 +92,24 @@ Prepared a deterministic production derivative of the selected RSP-2 scene:
 
 Output: `docs/RSP3_GAME_READY_ROUTE_ASSET_PREPARATION_2026-09-02.md`.
 
-Gameplay geometry and semantic anchors remain deliberately untouched until RSP-4.
+Gameplay geometry and semantic anchors remained deliberately untouched until RSP-4.
 
-## RSP-4 — Re-author Route Walkability / Collision / Exits — NEXT
+## RSP-4 — Re-author Route Walkability / Collision / Exits — COMPLETE ✓
 
-Author collision directly against the approved raster. Connect visible exits to Yard, Master Lab and onward progression semantics as required by the opening flow.
+Authored the replacement Route gameplay geometry directly against the approved RSP-3 raster:
 
-## RSP-5 — Route Story / Interaction / Debt Encounter Integration
+- scene-owned `3072 × 2049` world and 1280 × 720 camera limits;
+- feet-based collision around visible buildings, cliffs, machinery, fenced masses and environmental boundaries;
+- broad visible roads, Lab approach, weighbridge/debt staging ground and Pit approach retained as forgiving traversable space;
+- stable semantic anchors for `yard-arrival`, `master-lab-entrance`, `master-lab-return`, `debt-encounter`, `local-pit-entrance` and `local-pit-return`;
+- explicit Action/interact exits to Yard, Master Lab and Local Pit with safe route-side returns;
+- deterministic reachability and approach-clearance tests replacing legacy raw-coordinate, waypoint and Old Toll assertions.
+
+Output: `docs/RSP4_AUTHORED_ROUTE_COLLISION_EXITS_2026-09-02.md`.
+
+Production rendering and story/runtime consumers remain deliberately unchanged until the integration packages below.
+
+## RSP-5 — Route Story / Interaction / Debt Encounter Integration — NEXT
 
 Reconnect all route-specific objective, dialogue, encounter and semantic anchors to visible authored locations.
 
@@ -160,8 +171,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 NEXT → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 NEXT → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-4 — Re-author Route Walkability / Collision / Exits.**
+**Start RSP-5 — Route Story / Interaction / Debt Encounter Integration.**
