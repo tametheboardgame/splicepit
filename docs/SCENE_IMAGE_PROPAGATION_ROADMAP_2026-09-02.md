@@ -107,13 +107,25 @@ Authored the replacement Route gameplay geometry directly against the approved R
 
 Output: `docs/RSP4_AUTHORED_ROUTE_COLLISION_EXITS_2026-09-02.md`.
 
-Production rendering and story/runtime consumers remain deliberately unchanged until the integration packages below.
+Production rendering and story/runtime consumers remained deliberately unchanged until RSP-5.
 
-## RSP-5 — Route Story / Interaction / Debt Encounter Integration — NEXT
+## RSP-5 — Route Story / Interaction / Debt Encounter Integration — COMPLETE ✓
 
-Reconnect all route-specific objective, dialogue, encounter and semantic anchors to visible authored locations.
+Reconnected Route gameplay meaning to the authored scene geometry without activating the new renderer early:
 
-## RSP-6 — Route Foreground Depth / Character Grounding
+- versioned the semantic scene contract as `opening-route-bright-rsp5-v1` while preserving RSP-4 collision;
+- mapped `find-master` to the authored `master-lab-entrance` anchor;
+- defined shared ACTION/interact semantics for Yard return, Master Lab entry and Local Pit entry;
+- bound Master Lab and Local Pit safe returns to `master-lab-return` and `local-pit-return` rather than public raw coordinates;
+- moved the authored creditor staging contract from the retired Old Toll to the decommissioned biosecurity weighbridge at `debt-encounter`;
+- preserved automatic armed-state triggering, retry-safe cutscene lifecycle and normal Bright-world presentation;
+- migrated the creditor runtime away from a direct `OPENING_ROUTE_LANDMARKS` dependency;
+- retained one central procedural-route compatibility fallback until RSP-7 activates the scene-image Route;
+- replaced the Old Toll unit assertion with semantic weighbridge coverage and added dedicated Route objective/interaction/debt tests.
+
+Output: `docs/RSP5_ROUTE_STORY_INTERACTION_DEBT_INTEGRATION_2026-09-02.md`.
+
+## RSP-6 — Route Foreground Depth / Character Grounding — NEXT
 
 Add only meaningful occlusion regions and contact grounding. Avoid broad foreground masks over ordinary traversable ground.
 
@@ -171,8 +183,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 NEXT → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 NEXT → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-5 — Route Story / Interaction / Debt Encounter Integration.**
+**Start RSP-6 — Route Foreground Depth / Character Grounding.**
