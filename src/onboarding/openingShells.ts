@@ -48,8 +48,8 @@ export const OPENING_OBJECTIVES: readonly OpeningObjectiveDefinition[] = [
   {
     id: 'find-master',
     title: 'Find your Master',
-    detail: 'Your Master is waiting for you. The splice fight of his life is about to start, and he owes some very bad people a great deal of money. Follow the marked LAB route and get to him before this gets worse.',
-    trackerText: 'His make-or-break fight is starting. Follow the LAB route.',
+    detail: 'Your Master is waiting for you. The splice fight of his life is about to start, and he owes some very bad people a great deal of money. Head SOUTH down the main dirt path at the bottom of the Yard, then follow the LAB route before this gets worse.',
+    trackerText: 'Head south down the main dirt path. Follow the LAB route.',
   },
 ] as const;
 
