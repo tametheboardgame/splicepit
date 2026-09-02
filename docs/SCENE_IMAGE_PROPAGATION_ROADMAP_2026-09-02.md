@@ -143,9 +143,26 @@ The Yard-side chain-link gate remains deliberately outside the exact-base foregr
 
 Output: `docs/RSP6_ROUTE_FOREGROUND_DEPTH_GROUNDING_2026-09-02.md`.
 
-## RSP-7 — Authored Dark Route + Production Replacement — NEXT
+## RSP-7 — Authored Dark Route + Production Replacement — IN PROGRESS
 
-Create the matching corrupted route state and move the normal production route to the scene-image path with atomic fallback behaviour.
+Draft PR: #92.
+
+Current staging:
+
+- locked RSP-3 Bright Route asset has a memoised decode/lifecycle contract;
+- Bright scene-image base rendering is implemented against the 3072 × 2049 RSP-6 world;
+- RSP-6 contact grounding and exact-base foreground occluders are reusable by the new renderer;
+- one semantic interior-return bridge is reserved for Master Lab and Local Pit returns;
+- `productionCutoverReady` remains false until an authored Dark Route dependency is packaged and decoded;
+- staging tests enforce that Bright-only readiness cannot activate the production replacement.
+
+Current blocker:
+
+- image-generation attempts have repeatedly ignored the repository-derived Bright Route source and generated unrelated status/GitHub images;
+- those outputs are discarded and are not repository assets;
+- a valid source-bound Dark Route edit is still required before production cutover work can complete.
+
+Output/in-progress implementation record: `docs/RSP7_DARK_ROUTE_PRODUCTION_REPLACEMENT_PLAN_2026-09-02.md`.
 
 ## RSP-8 — Route Mobile / Regression / Visual Acceptance
 
@@ -197,8 +214,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 NEXT → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 IN PROGRESS → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-7 — Authored Dark Route + Production Replacement.**
+**Obtain a valid source-bound Dark Route edit, then complete RSP-7 atomic Bright/Dark packaging and production cutover.**
