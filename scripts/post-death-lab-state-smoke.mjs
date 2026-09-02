@@ -123,8 +123,18 @@ try {
   }
 
   async function moveToSpliceBench() {
-    await moveLabAxis('y', 745, { key: 's', code: 'KeyS', vk: 83 }, { key: 'w', code: 'KeyW', vk: 87 }, 8);
-    await moveLabAxis('x', 650, { key: 'd', code: 'KeyD', vk: 68 }, { key: 'a', code: 'KeyA', vk: 65 }, 8);
+    const down = { key: 's', code: 'KeyS', vk: 83 };
+    const up = { key: 'w', code: 'KeyW', vk: 87 };
+    const right = { key: 'd', code: 'KeyD', vk: 68 };
+    const left = { key: 'a', code: 'KeyA', vk: 65 };
+
+    // Cross below the demonstration-floor console before travelling west. At
+    // y≈745 the player's feet hitbox can still clip its lower edge on a hosted
+    // runner and stall around x≈962. y=760 clears that collider, then the route
+    // can move west safely and approach the bench vertically at x=650.
+    await moveLabAxis('y', 760, down, up, 8);
+    await moveLabAxis('x', 650, right, left, 8);
+    await moveLabAxis('y', 745, down, up, 8);
     return waitFor(async () => {
       const current = await state();
       return current.lab?.nearSpliceBench ? current : null;

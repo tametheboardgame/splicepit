@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { traverseAuthoredYardToMasterLabTunnel } from './yard-scene-navigation.mjs';
 
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
 const chromePort = 9264;
@@ -161,7 +162,10 @@ try {
   }
 
   await waitForPrompt('movement');
-  await holdKey('d', 'KeyD', 68, 180);
+  // Give the movement tutorial comfortable timing margin without reaching the
+  // west pit collider. The previous 180 ms sat too close to the completion
+  // threshold and could miss on a busy hosted runner.
+  await holdKey('d', 'KeyD', 68, 280);
   await waitForPrompt('interact');
   await key('e', 'KeyE', 69);
   await waitForPrompt('bag');
@@ -206,15 +210,18 @@ try {
     throw new Error(`YSP-10 foreground container depth did not activate: ${JSON.stringify(behindCrates)}`);
   }
 
-  // The human review also found that the Yard appeared to link nowhere. Approach
-  // the visible Lab tunnel through its carved doorway. Reaching the threshold on
-  // Find your Master must enter the existing Master Lab route world.
-  await moveAxis('y', 380);
-  for (let step = 0; step < 30; step += 1) {
-    const current = (await snapshot()).yard;
-    if (current.sceneMode === 'master-lab-route') break;
-    await holdKey('d', 'KeyD', 68, 90);
-  }
+  // The human review also found that the Yard appeared to link nowhere. Follow
+  // the same visible, collision-aware route used by the production desktop and
+  // touch regressions: under the pit, through the foreground band, then north
+  // through the actual Master Lab doorway.
+  await traverseAuthoredYardToMasterLabTunnel({
+    readState: async () => (await snapshot()).yard,
+    moveLeft: () => holdKey('a', 'KeyA', 65, 90),
+    moveRight: () => holdKey('d', 'KeyD', 68, 90),
+    moveUp: () => holdKey('w', 'KeyW', 87, 90),
+    moveDown: () => holdKey('s', 'KeyS', 83, 90),
+    label: 'YSP-10 human-gate visible tunnel navigation',
+  });
   const linked = await waitFor(async () => {
     const value = (await snapshot()).yard;
     return value?.sceneMode === 'master-lab-route' ? value : null;
