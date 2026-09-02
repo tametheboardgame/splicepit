@@ -60,13 +60,28 @@ Locked:
 
 Output: `docs/RSP1_HOLISTIC_OPENING_ROUTE_ART_BRIEF_2026-09-02.md`.
 
-## RSP-2 — Generate and Select Bright Opening Route Master — NEXT
+## RSP-2 — Generate and Select Bright Opening Route Master — COMPLETE ✓
 
-Produce candidate authored route scenes and select the strongest composition against the locked RSP-1 brief.
+Generated and evaluated multiple complete authored Bright route scenes against the locked RSP-1 selection order.
 
-## RSP-3 — Game-Ready Route Asset Preparation
+Selected:
 
-Prepare exact production assets, deterministic hashes, decode validation and aligned foreground staging data.
+- generation ID `36419539-1a20-4646-b1be-d92b04955e40`;
+- `1536 × 1024` RGB PNG source;
+- integrated hooked-service-route composition;
+- lower-left Yard-side arrival language;
+- dominant upper-right Viktor Lab mass;
+- offset livestock/biosecurity weighbridge hardstanding suitable for the debt encounter;
+- lower-right continuation towards the Local Pit;
+- no protagonist, critical NPC, UI or required gameplay text baked into the selected master.
+
+Output: `docs/RSP2_BRIGHT_OPENING_ROUTE_MASTER_2026-09-02.md`.
+
+Exact production scale, raster preparation, deterministic packaging and camera/world dimensions remain deliberately owned by RSP-3.
+
+## RSP-3 — Game-Ready Route Asset Preparation — NEXT
+
+Prepare exact production assets, deterministic hashes, decode validation and aligned foreground staging data. Preserve the selected RSP-2 composition while establishing a world footprint that supports at least three distinct 1280 × 720 camera-scale traversal beats.
 
 ## RSP-4 — Re-author Route Walkability / Collision / Exits
 
@@ -134,8 +149,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 NEXT → RSP-3 → RSP-4 → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 NEXT → RSP-4 → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-2 — Generate and Select Bright Opening Route Master.**
+**Start RSP-3 — Game-Ready Route Asset Preparation.**
