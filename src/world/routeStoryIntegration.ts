@@ -6,6 +6,7 @@ import {
   type RouteSceneExit,
   type RouteScenePoint,
 } from './routeScenePack.js';
+import { OPENING_ROUTE_LANDMARKS } from './yard.js';
 
 export type RouteInteractionTarget = 'apprentice-yard' | 'master-lab' | 'local-pit';
 
@@ -118,6 +119,31 @@ export function routeDebtEncounterPlacement(): RouteDebtEncounterPlacement {
     requiresPostDeathLab: true,
     requiresSpliceBenchHandoff: true,
   };
+}
+
+function legacyDebtEncounterPlacement(): RouteDebtEncounterPlacement {
+  const landmark = OPENING_ROUTE_LANDMARKS.find((entry) => entry.id === 'debt-encounter');
+  if (!landmark) throw new Error('Legacy Route compatibility requires the debt-encounter landmark until RSP-7 production replacement.');
+  return {
+    anchorId: 'debt-encounter',
+    label: landmark.label,
+    triggerPosition: { x: landmark.x, y: landmark.y },
+    representativePosition: { x: landmark.x, y: landmark.y },
+    triggerRadius: Math.min(150, landmark.radius),
+    autoTrigger: true,
+    normalWorldOnly: true,
+    requiresPostDeathLab: true,
+    requiresSpliceBenchHandoff: true,
+  };
+}
+
+/**
+ * Temporary bridge for the live procedural Route. RSP-7 flips the runtime to
+ * scene-image and can then delete the legacy fallback without changing the
+ * creditor encounter consumer again.
+ */
+export function routeDebtEncounterPlacementForRuntime(useAuthoredScene: boolean): RouteDebtEncounterPlacement {
+  return useAuthoredScene ? routeDebtEncounterPlacement() : legacyDebtEncounterPlacement();
 }
 
 export function routeDebtEncounterDistance(playerX: number, playerY: number): number {
