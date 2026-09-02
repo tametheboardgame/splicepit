@@ -187,15 +187,14 @@ try {
   }
 
   // Phone review found that the character could stand directly on the tall
-  // DON'T LOOK DOWN sign above the pit. Approach it from below; collision must
-  // stop the feet below the sign face rather than allowing the sprite onto it.
+  // DON'T LOOK DOWN sign above the pit. Approach its west edge from open ground;
+  // collision must stop before the player's feet enter the sign/wall surface.
   await moveAxis('x', 650);
-  await moveAxis('y', 390);
-  await moveAxis('x', 805);
+  await moveAxis('y', 270);
   const beforeSign = (await snapshot()).yard;
-  await holdKey('w', 'KeyW', 87, 900);
+  await holdKey('d', 'KeyD', 68, 900);
   const afterSign = (await snapshot()).yard;
-  if (afterSign.playerY < 370 || afterSign.collisionCount <= beforeSign.collisionCount) {
+  if (afterSign.playerX > 750 || afterSign.collisionCount <= beforeSign.collisionCount) {
     throw new Error(`YSP-10B warning sign is still standable: ${JSON.stringify({ beforeSign, afterSign })}`);
   }
 
@@ -245,7 +244,7 @@ try {
   console.log(`YSP-10B spatial/depth human-gate smoke passed: ${JSON.stringify({
     selectionUniqueColours: selection.uniqueColours,
     spawn: { x: entered.yard.playerX, y: entered.yard.playerY },
-    signBlockedAtY: afterSign.playerY,
+    signBlockedAtX: afterSign.playerX,
     clearGround: { x: clearGround.yard.playerX, y: clearGround.yard.playerY },
     cratePosition: { x: behindCrates.yard.playerX, y: behindCrates.yard.playerY },
     locatorColour: behindCrates.image.locatorColour,
