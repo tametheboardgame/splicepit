@@ -25,11 +25,11 @@ Do not force new art to preserve obsolete map geometry. Preserve gameplay meanin
 
 # Phase 1 — Opening Route Scene Propagation
 
-## RSP-0 — Opening Route Scene Contract / Existing Semantics Audit — NEXT
+## RSP-0 — Opening Route Scene Contract / Existing Semantics Audit — COMPLETE ✓
 
 Purpose: inventory exactly what the current opening route must preserve before replacing its environment presentation.
 
-Lock:
+Locked:
 
 - Yard ↔ Master Lab connectivity;
 - Master Lab ↔ Local Pit progression path;
@@ -40,9 +40,11 @@ Lock:
 - camera and save/checkpoint semantics;
 - Bright/Dark corruption behaviour.
 
-Output: a clean route scene contract and art brief input, with obsolete legacy geometry explicitly marked disposable.
+Output: `docs/work-packages/RSP-0_OPENING_ROUTE_SCENE_CONTRACT.md`.
 
-## RSP-1 — Holistic Opening Route Art Brief / Composition Lock
+The audit explicitly separates semantic requirements from disposable `opening-world-v1` geometry, raw landmark coordinates, legacy waypoints, Old Toll geometry and the old collision-topology constraint.
+
+## RSP-1 — Holistic Opening Route Art Brief / Composition Lock — NEXT
 
 Design the opening route as one believable authored place rather than a connector strip between game rooms.
 
@@ -122,8 +124,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 NEXT → RSP-1 → RSP-2 → RSP-3 → RSP-4 → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 NEXT → RSP-2 → RSP-3 → RSP-4 → RSP-5 → RSP-6 → RSP-7 → RSP-8 → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Start RSP-0 — Opening Route Scene Contract / Existing Semantics Audit.**
+**Start RSP-1 — Holistic Opening Route Art Brief / Composition Lock.**
