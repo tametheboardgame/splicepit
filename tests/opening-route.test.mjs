@@ -108,10 +108,10 @@ test('RSP-4 preserves continuous authored traversal from Yard to Lab to debt sta
   const pitEntrance = routeSceneAnchor(RSP4_ROUTE_SCENE_PACK, 'local-pit-entrance');
   const pitReturn = routeSceneAnchor(RSP4_ROUTE_SCENE_PACK, 'local-pit-return');
 
-  assert.equal(canReach(yard.position, labEntrance), true, 'Yard arrival must reach the Master Lab entrance.');
-  assert.equal(canReach(labReturn.position, debt), true, 'Lab return must reach the debt encounter staging area.');
-  assert.equal(canReach(debt.position, pitEntrance), true, 'Debt staging must reach the Local Pit entrance.');
-  assert.equal(canReach(pitReturn.position, yard), true, 'Pit return must remain connected to the wider Route.');
+  assert.equal(canReach(yard.position, labEntrance.position), true, 'Yard arrival must reach the Master Lab entrance.');
+  assert.equal(canReach(labReturn.position, debt.position), true, 'Lab return must reach the debt encounter staging area.');
+  assert.equal(canReach(debt.position, pitEntrance.position), true, 'Debt staging must reach the Local Pit entrance.');
+  assert.equal(canReach(pitReturn.position, yard.position), true, 'Pit return must remain connected to the wider Route.');
 });
 
 test('RSP-4 semantic exits are explicit interactions with safe route-side return anchors', () => {
