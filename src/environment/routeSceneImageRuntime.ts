@@ -8,11 +8,15 @@ import {
 } from './routeSceneAssetPack.js';
 import { RSP6_ROUTE_SCENE_PACK } from '../world/routeDepthGrounding.js';
 
+export type RouteSceneCutoverBlocker = 'bright-route' | 'dark-route' | 'semantic-interior-bridge';
+
 export interface RouteSceneImageRuntimeDebug {
   readonly ready: boolean;
   readonly brightReady: boolean;
   readonly darkReady: boolean;
+  readonly semanticInteriorBridgeReady: boolean;
   readonly productionCutoverReady: boolean;
+  readonly cutoverBlockers: readonly RouteSceneCutoverBlocker[];
   readonly fallback: boolean;
   readonly scenePackId: string;
   readonly baseRenderCount: number;
@@ -31,13 +35,30 @@ let baseRenderCount = 0;
 let foregroundRenderCount = 0;
 let activeOccluderIds: readonly string[] = [];
 
+// RSP-7 must not cut over merely because art becomes available. The existing
+// Master Lab and Local Pit overlays still need to consume the semantic Route
+// entry/return bridge before the authored Route can become production-active.
+const semanticInteriorBridgeReady = false;
+
+function cutoverBlockers(brightReady: boolean, darkReady: boolean): RouteSceneCutoverBlocker[] {
+  const blockers: RouteSceneCutoverBlocker[] = [];
+  if (!brightReady) blockers.push('bright-route');
+  if (!darkReady) blockers.push('dark-route');
+  if (!semanticInteriorBridgeReady) blockers.push('semantic-interior-bridge');
+  return blockers;
+}
+
 function snapshot(): RouteSceneImageRuntimeDebug {
   const lifecycle = rsp7RouteAssetLifecycleDebug();
+  const brightReady = Boolean(brightBaseImage);
+  const blockers = cutoverBlockers(brightReady, lifecycle.darkReady);
   return {
-    ready: Boolean(brightBaseImage),
-    brightReady: Boolean(brightBaseImage),
+    ready: brightReady,
+    brightReady,
     darkReady: lifecycle.darkReady,
-    productionCutoverReady: Boolean(brightBaseImage) && lifecycle.darkReady,
+    semanticInteriorBridgeReady,
+    productionCutoverReady: blockers.length === 0,
+    cutoverBlockers: blockers,
     fallback,
     scenePackId: RSP6_ROUTE_SCENE_PACK.id,
     baseRenderCount,
@@ -53,7 +74,8 @@ function syncDebug(): void {
 /**
  * Bright-only staging preparation for RSP-7. This deliberately returns true as
  * soon as the approved Bright raster is decoded, but productionCutoverReady
- * remains false until the authored Dark counterpart is packaged and decoded.
+ * remains false until the complete Dark asset and semantic interior bridge are
+ * both ready as part of the same production replacement.
  */
 export function prepareRouteSceneImageRuntime(): Promise<boolean> {
   if (preparePromise) return preparePromise;
@@ -76,6 +98,10 @@ export function prepareRouteSceneImageRuntime(): Promise<boolean> {
 
 export function routeSceneProductionCutoverReady(): boolean {
   return snapshot().productionCutoverReady;
+}
+
+export function routeSceneProductionCutoverBlockers(): readonly RouteSceneCutoverBlocker[] {
+  return snapshot().cutoverBlockers;
 }
 
 export function markRouteSceneImageFallback(): void {
