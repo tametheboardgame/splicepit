@@ -12,6 +12,7 @@
     "validate:ysp3": "node scripts/materialize-ysp3-yard-recovered.mjs",
     "validate:ysp8": "node scripts/materialize-ysp8-yard.mjs",
     "validate:rsp3": "node scripts/materialize-rsp3-route.mjs",
+    "package:rsp7-dark": "node scripts/package-rsp7-route-dark.mjs",
     "test": "node scripts/run-tests.mjs",
     "build": "node scripts/materialize-ysp3-yard-recovered.mjs --write && node scripts/materialize-ysp8-yard.mjs --write && node scripts/materialize-rsp3-route.mjs --write && node scripts/materialize-title-splash.mjs && vite build && node scripts/verify-ysp3-dist.mjs && node scripts/verify-ysp8-dist.mjs && node scripts/verify-rsp3-dist.mjs",
     "smoke:ysp0": "node scripts/yard-scene-image-smoke.mjs",
