@@ -202,9 +202,11 @@ try {
   await tapControl('back');
 
   // Prove separate touch pointers can hold movement while ACTION is tapped.
+  // Move left across clear ground so this input-isolation check cannot be
+  // conflated with the deliberately separate west-pit collision assertion.
   const multiStart = (await state()).playerX;
   await evaluate(`(() => {
-    const move = document.querySelector('[data-control="move-right"]');
+    const move = document.querySelector('[data-control="move-left"]');
     const action = document.querySelector('[data-control="action"]');
     move?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 71, pointerType: 'touch', isPrimary: true }));
     action?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 72, pointerType: 'touch', isPrimary: false }));
@@ -212,17 +214,17 @@ try {
   await sleep(300);
   await evaluate(`(() => {
     const action = document.querySelector('[data-control="action"]');
-    const move = document.querySelector('[data-control="move-right"]');
+    const move = document.querySelector('[data-control="move-left"]');
     action?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 72, pointerType: 'touch' }));
     move?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 71, pointerType: 'touch' }));
   })()`);
   await sleep(120);
   current = await state();
-  if (current.playerX <= multiStart + 20) {
+  if (current.playerX >= multiStart - 20) {
     throw new Error(`Simultaneous movement + ACTION touch did not preserve movement: ${JSON.stringify(current)}`);
   }
 
-  // From the raised YSP-10 spawn, Right meets the west pit machinery first.
+  // From the raised YSP-10 spawn corridor, Right meets the west pit machinery.
   // Prove touch collision against that reviewed geometry, then navigate the
   // authored Yard through the same safe corridor used by desktop regressions.
   await holdControl('move-right', 900, 20);
