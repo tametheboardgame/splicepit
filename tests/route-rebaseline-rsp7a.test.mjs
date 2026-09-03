@@ -148,7 +148,7 @@ test('RSP-7A collision follows the approved master instead of the superseded ras
 
   const open = [
     [369, 1662, 'Yard arrival'],
-    [1590, 990, 'main hooked service road'],
+    [1200, 1020, 'main hooked service road'],
     [1860, 1122, 'debt/weighbridge staging'],
     [2121, 1671, 'Pit entrance approach'],
   ];
@@ -172,7 +172,7 @@ test('RSP-7A foreground depth stays sparse and never masks ordinary road', () =>
   const worldArea = RSP7A_ROUTE_SCENE_PACK.world.width * RSP7A_ROUTE_SCENE_PACK.world.height;
   assert.ok(maskedArea / worldArea < 0.05, 'foreground crops must remain below 5% of the world');
 
-  const roadProbe = { x: 1520, y: 1040, width: 16, height: 16 };
+  const roadProbe = { x: 1200, y: 1020, width: 16, height: 16 };
   assert.equal(foreground.occluders.some((item) => overlaps(item.bounds, roadProbe)), false, 'ordinary road must not be foreground-masked');
   assert.equal(rsp7aRouteForegroundOccluders(0).length, foreground.occluders.length);
   assert.equal(rsp7aRouteForegroundOccluders(RSP7A_ROUTE_SCENE_PACK.world.height + 1).length, 0);
