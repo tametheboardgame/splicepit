@@ -63,14 +63,11 @@ test('RSP-7 resolves interior returns through semantic authored anchors', () => 
   }
 });
 
-test('RSP-7 exposes authored interaction targets at the three Route exits', () => {
-  for (const [anchorId, target] of [
-    ['yard-arrival', 'apprentice-yard'],
-    ['master-lab-entrance', 'master-lab'],
-    ['local-pit-entrance', 'local-pit'],
-  ]) {
-    const point = routeSceneAnchor(RSP6_ROUTE_SCENE_PACK, anchorId).position;
-    assert.equal(routeProductionInteractionAt(point.x, point.y)?.target, target);
+test('RSP-7 exposes authored interaction targets inside the three Route exit bounds', () => {
+  for (const exit of RSP6_ROUTE_SCENE_PACK.exits) {
+    const x = exit.bounds.x + exit.bounds.width / 2;
+    const y = exit.bounds.y + exit.bounds.height / 2;
+    assert.equal(routeProductionInteractionAt(x, y)?.target, exit.target);
   }
 });
 

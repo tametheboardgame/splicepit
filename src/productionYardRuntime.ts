@@ -3,6 +3,13 @@ import {
   type EnvironmentVisualSample,
 } from './environment/environmentVisualContract.js';
 import {
+  drawRouteBrightSceneImageBase,
+  drawRouteBrightSceneImagePlayerLayer,
+  markRouteSceneImageFallback,
+  prepareRouteSceneImageRuntime,
+  routeSceneProductionCutoverReady,
+} from './environment/routeSceneImageRuntime.js';
+import {
   drawYardSceneImageBase,
   drawYardSceneImageForeground,
   markYardSceneImageFallback,
@@ -26,6 +33,21 @@ import {
 } from './tutorial/tutorialFramework.js';
 import { drawOpeningObjectiveTracker, drawOpeningShell } from './ui/openingShells.js';
 import { drawTutorialPrompt } from './ui/tutorialPrompt.js';
+import { RSP6_ROUTE_SCENE_PACK } from './world/routeDepthGrounding.js';
+import {
+  RSP7_ROUTE_PRODUCTION_CUTOVER_CONTRACT,
+  isRouteProductionPositionBlocked,
+  routeProductionCameraLimits,
+  routeProductionEntryFromYard,
+  routeProductionInteractionAt,
+  routeProductionReturnFromInterior,
+  yardProductionReturnFromRoute,
+} from './world/routeProductionCutover.js';
+import {
+  ROUTE_INTERIOR_RETURN_EVENT,
+  routeInteriorReturnDetail,
+} from './world/routeRuntimeBridge.js';
+import type { RouteInteractionTarget } from './world/routeStoryIntegration.js';
 import {
   drawRouteBrightProductionArt,
   drawRouteBrightProductionArtForeground,
@@ -107,6 +129,11 @@ type ProductionYardDebug = {
   yardRenderer: 'scene-image';
   scenePackId: string;
   sceneMode: YardSceneMode;
+  routeRenderer: 'legacy' | 'scene-image';
+  routeScenePackId: string | null;
+  routeProductionCutoverReady: boolean;
+  routeInteractionTarget: RouteInteractionTarget | null;
+  routeInteractionPrompt: string | null;
   interactionCount: number;
   lastInteractionAnchor: string | null;
   routeHandoffCount: number;
@@ -224,6 +251,10 @@ export async function startProductionYardRuntime(
     return null;
   }
 
+  const routeScenePrepared = await prepareRouteSceneImageRuntime();
+  const useAuthoredRoute = routeScenePrepared && routeSceneProductionCutoverReady();
+  if (!useAuthoredRoute) markRouteSceneImageFallback();
+
   const stageContext = options.context;
   const stageCanvas = options.canvas;
   stageCanvas.width = VIEW_WIDTH;
@@ -290,6 +321,11 @@ export async function startProductionYardRuntime(
     yardRenderer: 'scene-image',
     scenePackId: YSP6_YARD_SCENE_PACK.id,
     sceneMode,
+    routeRenderer: useAuthoredRoute ? 'scene-image' : 'legacy',
+    routeScenePackId: useAuthoredRoute ? RSP7_ROUTE_PRODUCTION_CUTOVER_CONTRACT.scenePackId : null,
+    routeProductionCutoverReady: useAuthoredRoute,
+    routeInteractionTarget: null,
+    routeInteractionPrompt: null,
     interactionCount: 0,
     lastInteractionAnchor: null,
     routeHandoffCount: 0,
@@ -320,10 +356,59 @@ export async function startProductionYardRuntime(
   };
   (globalThis as ProductionYardGlobal).__SPLICEPIT_VISUAL_RESET__ = debug;
 
+  function syncRouteInteractionDebug(): void {
+    if (!useAuthoredRoute || sceneMode !== 'master-lab-route') {
+      debug.routeInteractionTarget = null;
+      debug.routeInteractionPrompt = null;
+      return;
+    }
+    const interaction = routeProductionInteractionAt(player.x, player.y);
+    debug.routeInteractionTarget = interaction?.target ?? null;
+    debug.routeInteractionPrompt = interaction?.prompt ?? null;
+  }
+
+  function currentCameraLimits(): { x: number; y: number; width: number; height: number } {
+    if (sceneMode === 'yard') return yardSceneCameraLimits(YSP6_YARD_SCENE_PACK, VIEW_WIDTH, VIEW_HEIGHT);
+    if (useAuthoredRoute) return routeProductionCameraLimits(VIEW_WIDTH, VIEW_HEIGHT);
+    return {
+      x: 0,
+      y: 0,
+      width: Math.max(0, YARD_WORLD_WIDTH - VIEW_WIDTH),
+      height: Math.max(0, YARD_WORLD_HEIGHT - VIEW_HEIGHT),
+    };
+  }
+
+  function snapCameraToPlayer(): void {
+    const limits = currentCameraLimits();
+    camera.x = clamp(player.x - VIEW_WIDTH / 2, limits.x, limits.x + limits.width);
+    camera.y = clamp(player.y - VIEW_HEIGHT / 2, limits.y, limits.y + limits.height);
+  }
+
+  function syncSceneDebug(): void {
+    debug.sceneMode = sceneMode;
+    debug.scenePackId = sceneMode === 'yard' ? YSP6_YARD_SCENE_PACK.id : useAuthoredRoute ? RSP6_ROUTE_SCENE_PACK.id : YSP6_YARD_SCENE_PACK.id;
+    debug.worldWidth = sceneMode === 'yard'
+      ? YSP6_YARD_SCENE_PACK.world.width
+      : useAuthoredRoute
+        ? RSP6_ROUTE_SCENE_PACK.world.width
+        : YARD_WORLD_WIDTH;
+    debug.worldHeight = sceneMode === 'yard'
+      ? YSP6_YARD_SCENE_PACK.world.height
+      : useAuthoredRoute
+        ? RSP6_ROUTE_SCENE_PACK.world.height
+        : YARD_WORLD_HEIGHT;
+    debug.playerX = Math.round(player.x * 10) / 10;
+    debug.playerY = Math.round(player.y * 10) / 10;
+    debug.cameraX = Math.round(camera.x * 10) / 10;
+    debug.cameraY = Math.round(camera.y * 10) / 10;
+    syncRouteInteractionDebug();
+  }
+
   function stop(): void {
     if (!active) return;
     active = false;
     input.setEnabled(false);
+    window.removeEventListener(ROUTE_INTERIOR_RETURN_EVENT, onRouteInteriorReturn);
     cancelAnimationFrame(frameHandle);
   }
 
@@ -379,39 +464,48 @@ export async function startProductionYardRuntime(
     return prompt;
   }
 
-  function currentCameraLimits(): { x: number; y: number; width: number; height: number } {
-    if (sceneMode === 'yard') return yardSceneCameraLimits(YSP6_YARD_SCENE_PACK, VIEW_WIDTH, VIEW_HEIGHT);
-    return {
-      x: 0,
-      y: 0,
-      width: Math.max(0, YARD_WORLD_WIDTH - VIEW_WIDTH),
-      height: Math.max(0, YARD_WORLD_HEIGHT - VIEW_HEIGHT),
-    };
-  }
-
   function enterMasterLabRoute(exit: YardSceneExit): void {
-    if (sceneMode !== 'yard' || !exit.targetEntry) return;
+    if (sceneMode !== 'yard') return;
+    const targetEntry = useAuthoredRoute ? routeProductionEntryFromYard() : exit.targetEntry;
+    if (!targetEntry) return;
     sceneMode = 'master-lab-route';
     routeHandoffCount += 1;
     routeHandoffExitId = exit.id;
     routeHandoffTarget = exit.target;
-    player.x = exit.targetEntry.x;
-    player.y = exit.targetEntry.y;
+    player.x = targetEntry.x;
+    player.y = targetEntry.y;
     player.facing = 'right';
     player.moving = false;
-    const limits = currentCameraLimits();
-    camera.x = clamp(player.x - VIEW_WIDTH / 2, limits.x, limits.x + limits.width);
-    camera.y = clamp(player.y - VIEW_HEIGHT / 2, limits.y, limits.y + limits.height);
-    debug.sceneMode = sceneMode;
+    snapCameraToPlayer();
     debug.routeHandoffCount = routeHandoffCount;
     debug.routeHandoffExitId = routeHandoffExitId;
     debug.routeHandoffTarget = routeHandoffTarget;
-    debug.worldWidth = YARD_WORLD_WIDTH;
-    debug.worldHeight = YARD_WORLD_HEIGHT;
-    debug.playerX = player.x;
-    debug.playerY = player.y;
-    debug.cameraX = camera.x;
-    debug.cameraY = camera.y;
+    syncSceneDebug();
+  }
+
+  function returnToYardFromRoute(): void {
+    if (sceneMode !== 'master-lab-route') return;
+    const returnPosition = yardProductionReturnFromRoute();
+    sceneMode = 'yard';
+    player.x = returnPosition.x;
+    player.y = returnPosition.y;
+    player.facing = 'up';
+    player.moving = false;
+    snapCameraToPlayer();
+    syncSceneDebug();
+  }
+
+  function onRouteInteriorReturn(event: Event): void {
+    if (!active || !useAuthoredRoute || sceneMode !== 'master-lab-route') return;
+    const detail = routeInteriorReturnDetail(event);
+    if (!detail) return;
+    const returnPosition = routeProductionReturnFromInterior(detail.target);
+    player.x = returnPosition.x;
+    player.y = returnPosition.y;
+    player.facing = detail.target === 'master-lab' ? 'down' : 'up';
+    player.moving = false;
+    snapCameraToPlayer();
+    syncSceneDebug();
   }
 
   function update(now: number): void {
@@ -421,12 +515,21 @@ export async function startProductionYardRuntime(
     if (input.justDown(ACTIONS.INTERACT)) {
       tutorial.observeAction(ACTIONS.INTERACT, now);
       interactionCount += 1;
-      lastInteractionAnchor = sceneMode === 'yard' ? nearestAnchor(player.x, player.y)?.id ?? null : null;
+      const routeInteraction = useAuthoredRoute && sceneMode === 'master-lab-route'
+        ? routeProductionInteractionAt(player.x, player.y)
+        : null;
+      lastInteractionAnchor = sceneMode === 'yard'
+        ? nearestAnchor(player.x, player.y)?.id ?? null
+        : routeInteraction?.id ?? null;
       debug.interactionCount = interactionCount;
       debug.lastInteractionAnchor = lastInteractionAnchor;
       if (openingSequence.currentPromptId() === 'interact') {
         player.moving = false;
         debug.moving = false;
+        return;
+      }
+      if (routeInteraction?.target === 'apprentice-yard') {
+        returnToYardFromRoute();
         return;
       }
     }
@@ -501,7 +604,9 @@ export async function startProductionYardRuntime(
       const nextX = player.x + dx * distance;
       const xBlocked = sceneMode === 'yard'
         ? isYardScenePositionBlocked(YSP6_YARD_SCENE_PACK, nextX, player.y)
-        : isYardPositionBlocked(nextX, player.y);
+        : useAuthoredRoute
+          ? isRouteProductionPositionBlocked(nextX, player.y)
+          : isYardPositionBlocked(nextX, player.y);
       if (!xBlocked) player.x = nextX;
       else {
         collisionCount += 1;
@@ -511,7 +616,9 @@ export async function startProductionYardRuntime(
       const nextY = player.y + dy * distance;
       const yBlocked = sceneMode === 'yard'
         ? isYardScenePositionBlocked(YSP6_YARD_SCENE_PACK, player.x, nextY)
-        : isYardPositionBlocked(player.x, nextY);
+        : useAuthoredRoute
+          ? isRouteProductionPositionBlocked(player.x, nextY)
+          : isYardPositionBlocked(player.x, nextY);
       if (!yBlocked) player.y = nextY;
       else {
         collisionCount += 1;
@@ -521,7 +628,7 @@ export async function startProductionYardRuntime(
 
     if (sceneMode === 'yard' && openingShells.currentObjective().id === 'find-master') {
       const exit = yardSceneExitAt(YSP6_YARD_SCENE_PACK, player.x, player.y);
-      if (exit?.targetEntry) enterMasterLabRoute(exit);
+      if (exit && (useAuthoredRoute || exit.targetEntry)) enterMasterLabRoute(exit);
     }
 
     const limits = currentCameraLimits();
@@ -540,24 +647,27 @@ export async function startProductionYardRuntime(
     debug.collisionCount = collisionCount;
     debug.lastCollision = lastCollision;
     debug.sceneMode = sceneMode;
+    syncRouteInteractionDebug();
   }
 
-  function drawPlayer(now: number): void {
-    const shadow = sceneMode === 'yard'
-      ? yardShadow
-      : { offsetY: -4, radiusX: 22, radiusY: 7, alpha: 0.28 };
-    stageContext.fillStyle = `rgba(31, 42, 36, ${shadow.alpha})`;
-    stageContext.beginPath();
-    stageContext.ellipse(
-      Math.round(player.x),
-      Math.round(player.y + shadow.offsetY),
-      shadow.radiusX,
-      shadow.radiusY,
-      0,
-      0,
-      Math.PI * 2,
-    );
-    stageContext.fill();
+  function drawPlayer(now: number, includeGroundShadow = true): void {
+    if (includeGroundShadow) {
+      const shadow = sceneMode === 'yard'
+        ? yardShadow
+        : { offsetY: -4, radiusX: 22, radiusY: 7, alpha: 0.28 };
+      stageContext.fillStyle = `rgba(31, 42, 36, ${shadow.alpha})`;
+      stageContext.beginPath();
+      stageContext.ellipse(
+        Math.round(player.x),
+        Math.round(player.y + shadow.offsetY),
+        shadow.radiusX,
+        shadow.radiusY,
+        0,
+        0,
+        Math.PI * 2,
+      );
+      stageContext.fill();
+    }
 
     const animationFrame = player.moving
       ? WALK_SEQUENCE[Math.floor(now / WALK_FRAME_MS) % WALK_SEQUENCE.length]
@@ -604,6 +714,16 @@ export async function startProductionYardRuntime(
     }
 
     const routeSample = environmentVisualController.sample('route', now);
+    if (useAuthoredRoute) {
+      drawRouteBrightSceneImageBase(stageContext);
+      drawRouteBrightSceneImagePlayerLayer(stageContext, player.x, player.y, () => drawPlayer(now, false));
+      syncYardProductionArtDebug(environmentVisualController.sample('yard', now), false);
+      syncRouteProductionArtDebug(routeSample, false);
+      debug.yardRendered = false;
+      debug.routeRendered = true;
+      return;
+    }
+
     drawApprenticeSplicerYardBase(stageContext, now, player.y);
     drawRouteProductionBase(now, routeSample);
     drawPlayer(now);
@@ -647,14 +767,23 @@ export async function startProductionYardRuntime(
       objectiveCount: openingShells.objectiveCount(),
       playerX: player.x,
       playerY: player.y,
-      worldWidth: sceneMode === 'yard' ? YSP6_YARD_SCENE_PACK.world.width : YARD_WORLD_WIDTH,
-      worldHeight: sceneMode === 'yard' ? YSP6_YARD_SCENE_PACK.world.height : YARD_WORLD_HEIGHT,
+      worldWidth: sceneMode === 'yard'
+        ? YSP6_YARD_SCENE_PACK.world.width
+        : useAuthoredRoute
+          ? RSP6_ROUTE_SCENE_PACK.world.width
+          : YARD_WORLD_WIDTH,
+      worldHeight: sceneMode === 'yard'
+        ? YSP6_YARD_SCENE_PACK.world.height
+        : useAuthoredRoute
+          ? RSP6_ROUTE_SCENE_PACK.world.height
+          : YARD_WORLD_HEIGHT,
     }, VIEW_WIDTH, VIEW_HEIGHT);
     syncTutorialDebug(tutorialPrompt);
     syncOpeningDebug();
     frameHandle = requestAnimationFrame(render);
   }
 
+  window.addEventListener(ROUTE_INTERIOR_RETURN_EVENT, onRouteInteriorReturn);
   const now = performance.now();
   tutorial.resetProgress();
   openingShells.reset();
