@@ -3,7 +3,19 @@ import assert from 'node:assert/strict';
 import { RSP3_BRIGHT_ROUTE_ASSET_PACK, rsp7RouteAssetLifecycleDebug } from '../src/environment/routeSceneAssetPack.js';
 import { routeSceneProductionCutoverReady } from '../src/environment/routeSceneImageRuntime.js';
 import { RSP6_ROUTE_SCENE_PACK } from '../src/world/routeDepthGrounding.js';
+import {
+  RSP7_ROUTE_PRODUCTION_CUTOVER_CONTRACT,
+  isRouteProductionPositionBlocked,
+  routeProductionCameraLimits,
+  routeProductionEntryFromYard,
+  routeProductionInteractionAt,
+  routeProductionReturnFromInterior,
+  yardProductionReturnFromRoute,
+} from '../src/world/routeProductionCutover.js';
 import { ROUTE_INTERIOR_RETURN_EVENT } from '../src/world/routeRuntimeBridge.js';
+import { routeSceneAnchor, routeSceneCameraLimits } from '../src/world/routeScenePack.js';
+import { routeSafeReturnPosition } from '../src/world/routeStoryIntegration.js';
+import { isYardScenePositionBlocked, YSP6_YARD_SCENE_PACK } from '../src/world/yardScenePack.js';
 
 test('RSP-7 stages the exact locked RSP-3 Bright Route asset against the RSP-6 world', () => {
   assert.equal(RSP3_BRIGHT_ROUTE_ASSET_PACK.source.width, RSP6_ROUTE_SCENE_PACK.source.width);
@@ -24,4 +36,46 @@ test('RSP-7 refuses production scene-image cutover before authored Dark readines
 
 test('RSP-7 reserves one semantic interior-return bridge rather than exposing raw coordinates', () => {
   assert.equal(ROUTE_INTERIOR_RETURN_EVENT, 'splicepit:route-interior-return');
+});
+
+test('RSP-7 production cutover contract is authored-scene only', () => {
+  assert.equal(RSP7_ROUTE_PRODUCTION_CUTOVER_CONTRACT.scenePackId, RSP6_ROUTE_SCENE_PACK.id);
+  assert.equal(RSP7_ROUTE_PRODUCTION_CUTOVER_CONTRACT.renderer, 'scene-image');
+  assert.equal(RSP7_ROUTE_PRODUCTION_CUTOVER_CONTRACT.legacyCoordinatesAllowed, false);
+
+  const entry = routeProductionEntryFromYard();
+  assert.deepEqual(entry, routeSceneAnchor(RSP6_ROUTE_SCENE_PACK, 'yard-arrival').position);
+  assert.notDeepEqual(entry, { x: 1760, y: 655 });
+
+  assert.deepEqual(
+    routeProductionCameraLimits(1280, 720),
+    routeSceneCameraLimits(RSP6_ROUTE_SCENE_PACK, 1280, 720),
+  );
+  assert.equal(
+    isRouteProductionPositionBlocked(RSP6_ROUTE_SCENE_PACK.world.width + 10, RSP6_ROUTE_SCENE_PACK.world.height + 10),
+    true,
+  );
+});
+
+test('RSP-7 resolves interior returns through semantic authored anchors', () => {
+  for (const target of ['master-lab', 'local-pit']) {
+    assert.deepEqual(routeProductionReturnFromInterior(target), routeSafeReturnPosition(target));
+  }
+});
+
+test('RSP-7 exposes authored interaction targets at the three Route exits', () => {
+  for (const [anchorId, target] of [
+    ['yard-arrival', 'apprentice-yard'],
+    ['master-lab-entrance', 'master-lab'],
+    ['local-pit-entrance', 'local-pit'],
+  ]) {
+    const point = routeSceneAnchor(RSP6_ROUTE_SCENE_PACK, anchorId).position;
+    assert.equal(routeProductionInteractionAt(point.x, point.y)?.target, target);
+  }
+});
+
+test('RSP-7 derives a safe Yard-side return from current Yard scene geometry', () => {
+  const returnPoint = yardProductionReturnFromRoute();
+  assert.equal(isYardScenePositionBlocked(YSP6_YARD_SCENE_PACK, returnPoint.x, returnPoint.y), false);
+  assert.notDeepEqual(returnPoint, YSP6_YARD_SCENE_PACK.exits[0]?.targetEntry);
 });
