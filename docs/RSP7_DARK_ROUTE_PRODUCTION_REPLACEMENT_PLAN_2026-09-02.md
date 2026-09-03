@@ -10,7 +10,7 @@ Draft PR: #92
 
 Complete the Opening Route scene-image propagation by adding an authored Dark counterpart to the approved Bright Route and replacing the live procedural Route with the RSP-4/RSP-5/RSP-6 scene-owned world.
 
-RSP-7 must not activate a Bright-only Route. Bright and Dark authored dependencies must be prepared atomically so an ambient or story corruption transition cannot snap back to the obsolete procedural world.
+RSP-7 must not activate a Bright-only or partially integrated Route. Bright and Dark authored dependencies must be prepared atomically, and the semantic Lab/Pit bridge must be complete, before production cutover can become ready.
 
 ## Already locked
 
@@ -56,7 +56,7 @@ Do not substitute any of those images, a generated dashboard, a generic dark fil
 
 If the image service cannot bind the repository-derived source image, the correct recovery is to supply the Bright Route raster as an explicit user image attachment and retry as an image edit.
 
-## Staged implementation already on PR #92
+## Staged implementation on PR #92
 
 ### Bright asset lifecycle
 
@@ -75,8 +75,19 @@ If the image service cannot bind the repository-derived source image, the correc
 - renders the approved Bright raster into the 3072 × 2049 world;
 - reuses RSP-6 feet-based contact shadow;
 - reuses RSP-6 exact-base foreground occluders;
-- exposes `productionCutoverReady`;
-- refuses to report cutover readiness while `darkReady` is false.
+- exposes explicit production cutover blockers;
+- refuses production cutover while either the authored Dark dependency or semantic interior bridge is incomplete.
+
+### Production cutover contract
+
+`src/world/routeProductionCutover.ts`
+
+- owns the authored Yard-to-Route entry;
+- wraps RSP-6 collision and camera ownership;
+- resolves Route interactions semantically;
+- resolves Lab/Pit returns through authored safe-return anchors;
+- derives a safe Yard-side return from the current approved Yard geometry;
+- explicitly disallows legacy Route coordinates in the authored cutover contract.
 
 ### Interior return bridge
 
@@ -88,6 +99,27 @@ If the image service cannot bind the repository-derived source image, the correc
 
 `routeSafeReturnPosition()` remains the owner of the authored Route-side return coordinates.
 
+### Production runtime staging
+
+`src/productionYardRuntime.ts`
+
+- preloads the Route staging dependency after the approved Yard dependency;
+- keeps the live procedural Route as the atomic fallback while cutover readiness is false;
+- switches Yard-to-Route entry, Route camera, collision and world dimensions together when readiness becomes true;
+- stages authored Route rendering behind that same gate;
+- handles the authored `yard-return` interaction without carrying the old Yard target-entry coordinates into the new scene;
+- exposes Route renderer/readiness/interaction state for debugging and downstream story consumers.
+
+The gate is intentionally still false. This is staging, not a production activation.
+
+## 3 September continuation and CI
+
+Continuation commits added the authored production contract and gated runtime wiring. The first new unit assertion incorrectly tested the `yard-arrival` entry anchor as though it were itself an exit trigger; CI correctly rejected that assumption. The test now validates the centre of each authored exit bound instead.
+
+After that correction, the verify job passed typecheck, all unit/domain/save tests, content/RNG/YSP/RSP validation and production build. Browser smoke remains part of the merge gate.
+
+A second readiness guard now prevents Dark-art availability alone from enabling cutover. `semantic-interior-bridge` is an explicit blocker until both existing interior runtimes consume the semantic Route integration.
+
 ## Remaining implementation sequence
 
 1. Generate and approve a valid Dark counterpart from the Bright Route source.
@@ -96,17 +128,23 @@ If the image service cannot bind the repository-derived source image, the correc
 4. Add deterministic Dark byte/hash/dimension validation and dist materialisation.
 5. Extend `routeSceneAssetPack.ts` so Bright + Dark decode as one atomic dependency.
 6. Extend `routeSceneImageRuntime.ts` to cross-fade Bright/Dark bases and matching RSP-6 foreground crops with the same `darkMix`.
-7. Update `productionYardRuntime.ts` so Yard exits enter the authored Route at `yard-arrival` rather than the legacy target entry.
-8. Switch authored Route camera/collision to `RSP6_ROUTE_SCENE_PACK` when the complete asset set is ready.
-9. Update Master Lab entry detection to use the semantic `master-lab` Route interaction when the authored Route is active, retaining legacy detection only for fallback.
-10. Update Local Pit entry detection in the same way.
-11. On interior exit, dispatch the semantic return event; the Route runtime resolves `master-lab-return` or `local-pit-return` via `routeSafeReturnPosition()`.
-12. Handle authored `yard-return` interaction without carrying legacy Route coordinates back into the new scene.
-13. Remove `routeDebtEncounterPlacementForRuntime(false)` from the normal production path; the creditor encounter must use the authored weighbridge placement after cutover.
-14. Update Route debug contracts so active geometry/renderer no longer claim `opening-world-v1` / Pass D.
-15. Replace legacy Route browser assertions with scene-image traversal, Lab entry/return, debt staging, Pit entry/return and Bright/Dark transition coverage.
-16. Run full typecheck, unit/domain/save tests, production build and player-facing browser smoke.
-17. Human visual acceptance remains RSP-8, not RSP-7.
+7. Update Master Lab entry detection to use the semantic `master-lab` Route interaction when the authored Route is active, retaining legacy detection only for fallback.
+8. Update Local Pit entry detection in the same way.
+9. On interior exit, dispatch the semantic return event; the Route runtime resolves `master-lab-return` or `local-pit-return` via `routeSafeReturnPosition()`.
+10. Flip `semantic-interior-bridge` readiness only after both interior paths are covered by tests.
+11. Remove `routeDebtEncounterPlacementForRuntime(false)` from the normal production path; the creditor encounter must use the authored weighbridge placement after cutover.
+12. Replace legacy Route browser assertions with scene-image traversal, Lab entry/return, debt staging, Pit entry/return and Bright/Dark transition coverage.
+13. Run full typecheck, unit/domain/save tests, production build and player-facing browser smoke.
+14. Human visual acceptance remains RSP-8, not RSP-7.
+
+Already staged behind the inactive gate:
+
+- authored Yard-to-Route entry;
+- authored Route camera/collision/world dimensions;
+- authored Route Bright scene-image renderer path;
+- authored Yard return interaction;
+- semantic safe-return resolver;
+- debug renderer/readiness/interaction contract.
 
 ## Merge gate
 
@@ -115,11 +153,11 @@ PR #92 must remain draft and unmerged while any of the following are true:
 - authored Dark Route missing;
 - Dark hash/dimension validation missing;
 - Bright + Dark atomic preload missing;
-- normal production Route still uses legacy collision/camera;
-- Lab/Pit returns still rely on raw legacy Route coordinates;
-- creditor encounter uses Old Toll placement on the normal production path;
+- semantic Lab/Pit entry/return integration incomplete;
+- normal production Route cutover readiness remains false;
+- creditor encounter still has a legacy normal-production fallback after authored cutover;
 - full CI/browser suite is not green.
 
 ## Next action
 
-Obtain a valid source-bound Dark Route edit, then continue the deterministic asset and production cutover steps above.
+Complete the semantic Master Lab and Local Pit bridge where possible, but do not activate production cutover. A valid source-bound Dark Route edit remains the external art dependency required to finish RSP-7.
