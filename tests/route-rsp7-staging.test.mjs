@@ -1,10 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  RSP7_ROUTE_INTERIOR_BRIDGE_CONTRACT,
+  routeInteriorAuthoredEntryBounds,
+  setRouteInteriorAuthoredEntryMode,
+} from '../src/environment/routeInteriorBridgeRuntime.js';
 import { RSP3_BRIGHT_ROUTE_ASSET_PACK, rsp7RouteAssetLifecycleDebug } from '../src/environment/routeSceneAssetPack.js';
 import {
   routeSceneProductionCutoverBlockers,
   routeSceneProductionCutoverReady,
 } from '../src/environment/routeSceneImageRuntime.js';
+import { MASTER_LAB_EXTERIOR_ENTRY_ZONE } from '../src/world/masterLab.js';
+import { LOCAL_PIT_YARD_ENTRY_ZONE } from '../src/world/localPit.js';
 import { RSP6_ROUTE_SCENE_PACK } from '../src/world/routeDepthGrounding.js';
 import {
   RSP7_ROUTE_PRODUCTION_CUTOVER_CONTRACT,
@@ -30,20 +37,33 @@ test('RSP-7 stages the exact locked RSP-3 Bright Route asset against the RSP-6 w
   assert.equal(RSP3_BRIGHT_ROUTE_ASSET_PACK.source.sha256, 'b1a1a0bb2553eb674a3043a9a1e5a19be7f2c7b09bf52956124503c13eec482c');
 });
 
-test('RSP-7 refuses production scene-image cutover until Dark art and semantic interiors are both ready', () => {
+test('RSP-7 refuses production scene-image cutover until Bright staging and authored Dark art are both ready', () => {
   const lifecycle = rsp7RouteAssetLifecycleDebug();
   assert.equal(lifecycle.ready, false);
   assert.equal(lifecycle.darkReady, false);
   assert.equal(routeSceneProductionCutoverReady(), false);
-  assert.deepEqual(routeSceneProductionCutoverBlockers(), [
-    'bright-route',
-    'dark-route',
-    'semantic-interior-bridge',
-  ]);
+  assert.deepEqual(routeSceneProductionCutoverBlockers(), ['bright-route', 'dark-route']);
 });
 
 test('RSP-7 reserves one semantic interior-return bridge rather than exposing raw coordinates', () => {
   assert.equal(ROUTE_INTERIOR_RETURN_EVENT, 'splicepit:route-interior-return');
+  assert.equal(RSP7_ROUTE_INTERIOR_BRIDGE_CONTRACT.returnTransport, ROUTE_INTERIOR_RETURN_EVENT);
+  assert.deepEqual(RSP7_ROUTE_INTERIOR_BRIDGE_CONTRACT.targets, ['master-lab', 'local-pit']);
+});
+
+test('RSP-7 binds legacy interior entry consumers to authored semantic exit bounds only when requested', () => {
+  const legacyMaster = { ...MASTER_LAB_EXTERIOR_ENTRY_ZONE };
+  const legacyPit = { ...LOCAL_PIT_YARD_ENTRY_ZONE };
+  const authoredMaster = routeInteriorAuthoredEntryBounds('master-lab');
+  const authoredPit = routeInteriorAuthoredEntryBounds('local-pit');
+
+  setRouteInteriorAuthoredEntryMode(true);
+  assert.deepEqual(MASTER_LAB_EXTERIOR_ENTRY_ZONE, authoredMaster);
+  assert.deepEqual(LOCAL_PIT_YARD_ENTRY_ZONE, authoredPit);
+
+  setRouteInteriorAuthoredEntryMode(false);
+  assert.deepEqual(MASTER_LAB_EXTERIOR_ENTRY_ZONE, legacyMaster);
+  assert.deepEqual(LOCAL_PIT_YARD_ENTRY_ZONE, legacyPit);
 });
 
 test('RSP-7 production cutover contract is authored-scene only', () => {

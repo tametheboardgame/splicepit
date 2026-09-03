@@ -2,6 +2,7 @@ import {
   drawRouteBrightForegroundDepth,
   drawRouteGroundingShadow,
 } from './routeDepthGroundingRuntime.js';
+import { installRouteInteriorBridgeRuntime } from './routeInteriorBridgeRuntime.js';
 import {
   preloadRsp3BrightRouteAsset,
   rsp7RouteAssetLifecycleDebug,
@@ -35,10 +36,10 @@ let baseRenderCount = 0;
 let foregroundRenderCount = 0;
 let activeOccluderIds: readonly string[] = [];
 
-// RSP-7 must not cut over merely because art becomes available. The existing
-// Master Lab and Local Pit overlays still need to consume the semantic Route
-// entry/return bridge before the authored Route can become production-active.
-const semanticInteriorBridgeReady = false;
+// The RSP-7 compatibility adapter binds the existing Master Lab and Local Pit
+// overlay entry zones to semantic authored exits only while scene-image Route is
+// active, then dispatches semantic safe-return events when either overlay closes.
+const semanticInteriorBridgeReady = true;
 
 function cutoverBlockers(brightReady: boolean, darkReady: boolean): RouteSceneCutoverBlocker[] {
   const blockers: RouteSceneCutoverBlocker[] = [];
@@ -74,8 +75,8 @@ function syncDebug(): void {
 /**
  * Bright-only staging preparation for RSP-7. This deliberately returns true as
  * soon as the approved Bright raster is decoded, but productionCutoverReady
- * remains false until the complete Dark asset and semantic interior bridge are
- * both ready as part of the same production replacement.
+ * remains false until the complete authored Dark asset is ready as part of the
+ * same production replacement.
  */
 export function prepareRouteSceneImageRuntime(): Promise<boolean> {
   if (preparePromise) return preparePromise;
@@ -145,4 +146,5 @@ export function drawRouteBrightSceneImagePlayerLayer(
   return true;
 }
 
+installRouteInteriorBridgeRuntime();
 syncDebug();
