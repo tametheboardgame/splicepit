@@ -34,6 +34,13 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
+      - name: Export validated RSP-3 Bright Route for RSP-7 Dark authoring recovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsp7-bright-route-authoring-source
+          path: public/generated/rsp3/route-bright-base.jpg
+          if-no-files-found: error
+          retention-days: 1
   browser-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
