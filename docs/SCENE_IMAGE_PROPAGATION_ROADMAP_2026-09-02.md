@@ -152,15 +152,18 @@ Current staging:
 - locked RSP-3 Bright Route asset has a memoised decode/lifecycle contract;
 - Bright scene-image base rendering is implemented against the 3072 × 2049 RSP-6 world;
 - RSP-6 contact grounding and exact-base foreground occluders are reusable by the new renderer;
-- one semantic interior-return bridge is reserved for Master Lab and Local Pit returns;
+- semantic Master Lab and Local Pit entry/return integration is complete behind the authored Route gate;
+- authored safe-return anchors own Route-side interior return coordinates;
 - `productionCutoverReady` remains false until an authored Dark Route dependency is packaged and decoded;
-- staging tests enforce that Bright-only readiness cannot activate the production replacement.
+- staging tests enforce that Bright-only readiness cannot activate the production replacement;
+- the repaired 3 September engineering commit passes the full verify and player-facing browser-smoke workflow.
 
 Current blocker:
 
-- image-generation attempts have repeatedly ignored the repository-derived Bright Route source and generated unrelated status/GitHub images;
-- those outputs are discarded and are not repository assets;
-- a valid source-bound Dark Route edit is still required before production cutover work can complete.
+- early image-generation attempts ignored the repository-derived Bright Route source and generated unrelated status/GitHub images; those outputs are discarded;
+- a later source-bound Dark candidate was selected and reduced to 1024 × 683 in the failed working conversation, but it was not canonicalised in Git before that conversation ended;
+- because its exact bytes are not repository-owned, the Dark dependency is not reproducible and cannot be treated as complete;
+- a usable source-bound Dark Route image must be re-established and immediately canonicalised before production cutover can continue.
 
 Output/in-progress implementation record: `docs/RSP7_DARK_ROUTE_PRODUCTION_REPLACEMENT_PLAN_2026-09-02.md`.
 
@@ -218,4 +221,4 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 ## Immediate next action
 
-**Obtain a valid source-bound Dark Route edit, then complete RSP-7 atomic Bright/Dark packaging and production cutover.**
+**Re-establish and canonicalise the source-bound Dark Route image, then complete RSP-7 atomic Bright/Dark packaging and production cutover.**
