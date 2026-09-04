@@ -151,6 +151,65 @@ try {
     })()`), 12000);
   }
 
+  async function verifyAuthoredRouteLocation() {
+    await waitFor(async () => evaluate(`(() => {
+      const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
+      const corruption = globalThis.__SPLICEPIT_CORRUPTION__;
+      const scene = globalThis.__SPLICEPIT_ROUTE_SCENE_IMAGE__;
+      const yard = globalThis.__SPLICEPIT_VISUAL_RESET__;
+      return env?.state?.locationId === 'route'
+        && corruption?.state?.exploring === true
+        && scene?.ready === true
+        && scene.productionCutoverReady === true
+        && yard?.routeRendered === true
+        && yard.routeRenderer === 'scene-image';
+    })()`));
+
+    const before = await evaluate(`(() => {
+      const state = globalThis.__SPLICEPIT_VISUAL_RESET__;
+      return state ? { playerX: state.playerX ?? null, playerY: state.playerY ?? null, sceneMode: state.sceneMode ?? null } : null;
+    })()`);
+
+    await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.forceAmbient('route', 'linger')`);
+    const ruptured = await waitFor(async () => evaluate(`(() => {
+      const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
+      const corruption = globalThis.__SPLICEPIT_CORRUPTION__;
+      const scene = globalThis.__SPLICEPIT_ROUTE_SCENE_IMAGE__;
+      const overlay = document.querySelector('#ambient-world-corruption');
+      if (!env || !corruption || !scene || !overlay) return null;
+      if (corruption.state.activeEventId === null || env.state.locationId !== 'route') return null;
+      if (env.state.darkMix < 0.25 || scene.darkMix < 0.25 || !scene.darkBaseRendered) return null;
+      if (overlay.getAttribute('aria-hidden') !== 'false') return null;
+      return { environment: { ...env.state }, corruption: { ...corruption.state }, scene: { ...scene } };
+    })()`));
+
+    if (ruptured.corruption.activeSource !== 'debug' || ruptured.corruption.intensity !== 'linger') {
+      throw new Error(`RSP-7 deterministic corruption hook failed in authored Route: ${JSON.stringify(ruptured)}`);
+    }
+
+    const after = await evaluate(`(() => {
+      const state = globalThis.__SPLICEPIT_VISUAL_RESET__;
+      return state ? { playerX: state.playerX ?? null, playerY: state.playerY ?? null, sceneMode: state.sceneMode ?? null } : null;
+    })()`);
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      throw new Error(`RSP-7 corruption changed authored Route gameplay state: ${JSON.stringify({ before, after })}`);
+    }
+
+    await waitFor(async () => evaluate(`(() => {
+      const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
+      const corruption = globalThis.__SPLICEPIT_CORRUPTION__;
+      const scene = globalThis.__SPLICEPIT_ROUTE_SCENE_IMAGE__;
+      const overlay = document.querySelector('#ambient-world-corruption');
+      return env?.state?.locationId === 'route'
+        && env.state.phase === 'steady'
+        && env.state.darkMix === 0
+        && scene?.darkMix === 0
+        && scene.darkBaseRendered === false
+        && corruption?.state?.activeEventId === null
+        && overlay?.getAttribute('aria-hidden') === 'true';
+    })()`), 12000);
+  }
+
   await openScenario();
   const productionYard = await yardState();
   if (productionYard.yardRenderer !== 'scene-image' || productionYard.worldWidth !== 1280 || productionYard.worldHeight !== 720) {
@@ -171,7 +230,7 @@ try {
   })()`));
   await key('b', 'KeyB', 66);
 
-  // Complete onboarding and enter the existing route through the reviewed
+  // Complete onboarding and enter the authored Route through the reviewed
   // YSP-10 tunnel path. Keep this smoke focused on corruption semantics rather
   // than duplicating obsolete timed movement coordinates.
   await waitForPrompt('movement');
@@ -202,7 +261,7 @@ try {
     const value = await yardState();
     return value?.sceneMode === 'master-lab-route' && value?.routeRendered && value?.routeHandoffTarget === 'master-lab-route' ? value : null;
   });
-  await verifyCurrentLocation('route', '__SPLICEPIT_ROUTE_ART__', '__SPLICEPIT_VISUAL_RESET__');
+  await verifyAuthoredRouteLocation();
 
   await openScenario('&labTest=1');
   await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_MASTER_LAB__?.active === true`));
@@ -226,7 +285,7 @@ try {
   }
   await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.resume('story-test')`);
 
-  console.log('YSP-10 ambient world corruption smoke passed across scene Yard, tunnel route, Master Lab and Local Pit.');
+  console.log('YSP-10/RSP-7 ambient world corruption smoke passed across scene Yard, authored Route, Master Lab and Local Pit.');
   ws.close();
   cleanup();
 } catch (error) {
