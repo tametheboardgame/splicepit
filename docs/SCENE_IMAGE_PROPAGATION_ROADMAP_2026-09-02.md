@@ -1,5 +1,7 @@
 # SplicePit Scene-Image Propagation Roadmap — 2 September 2026
 
+Last updated: 4 September 2026
+
 ## Authority
 
 YSP-10 is human approved. The authored Apprentice Splicer Yard is now the production reference for environment rendering architecture.
@@ -143,39 +145,47 @@ The Yard-side chain-link gate remains deliberately outside the exact-base foregr
 
 Output: `docs/RSP6_ROUTE_FOREGROUND_DEPTH_GROUNDING_2026-09-02.md`.
 
-## RSP-7 — Authored Dark Route + Production Replacement — IN PROGRESS
+## RSP-7 — Authored Dark Route + Production Replacement — COMPLETE ✓
 
-Draft PR: #92.
+PR: #92.
 
-Current staging:
+Completed production contract:
 
-- locked RSP-3 Bright Route asset has a memoised decode/lifecycle contract;
-- Bright scene-image base rendering is implemented against the 3072 × 2049 RSP-6 world;
-- RSP-6 contact grounding and exact-base foreground occluders are reusable by the new renderer;
-- semantic Master Lab and Local Pit entry/return integration is complete behind the authored Route gate;
-- authored safe-return anchors own Route-side interior return coordinates;
-- `productionCutoverReady` remains false until an authored Dark Route dependency is packaged and decoded;
-- staging tests enforce that Bright-only readiness cannot activate the production replacement;
-- the repaired 3 September engineering commit passes the full verify and player-facing browser-smoke workflow.
+- RSP-3 Bright Route remains locked at `1024 × 683`, `120,561` bytes, SHA-256 `b1a1a0bb2553eb674a3043a9a1e5a19be7f2c7b09bf52956124503c13eec482c`;
+- authoritative Dark Route is repository-owned at `1024 × 683`, `138,388` bytes, SHA-256 `5bff87c2bfe36bfb60bf6562afd8f66bfd3405a8ce85a6ef87bf92ba54d85be6`;
+- Bright + Dark preload/decode is atomic and production cutover cannot activate partially;
+- the scene-image renderer owns the `3072 × 2049` Route world, camera and RSP-4 collision;
+- the exact-aligned Dark raster cross-fades through the existing Route `darkMix` contract;
+- RSP-6 foreground occluders redraw matching Bright/Dark source crops and preserve character grounding;
+- Yard, Master Lab and Local Pit transitions use semantic interactions and authored safe-return anchors;
+- the creditor encounter resolves to the authored decommissioned biosecurity weighbridge rather than retired procedural/Old Toll coordinates;
+- ambient environment ownership now follows semantic production `sceneMode`, with the old X-threshold retained only as legacy fallback;
+- desktop and mobile authored Route traversal is covered by browser regression;
+- final opening visual integration verifies Bright/Dark pixel change, UI suppression compatibility and unchanged gameplay state across Yard, Route, Master Lab and Local Pit.
 
-Current blocker:
+The complete verify/build/player-facing browser suite passed on engineering head `c4fa360e68df0114a2cc6170e5212f65e566bcc2` in GitHub Actions run #1336 before documentation closure.
 
-- early image-generation attempts ignored the repository-derived Bright Route source and generated unrelated status/GitHub images; those outputs are discarded;
-- a later source-bound Dark candidate was selected and reduced to 1024 × 683 in the failed working conversation, but it was not canonicalised in Git before that conversation ended;
-- because its exact bytes are not repository-owned, the Dark dependency is not reproducible and cannot be treated as complete;
-- a usable source-bound Dark Route image must be re-established and immediately canonicalised before production cutover can continue.
+Implementation record: `docs/RSP7_DARK_ROUTE_PRODUCTION_REPLACEMENT_PLAN_2026-09-02.md`.
 
-Output/in-progress implementation record: `docs/RSP7_DARK_ROUTE_PRODUCTION_REPLACEMENT_PLAN_2026-09-02.md`.
+## RSP-8 — Route Mobile / Regression / Visual Acceptance — NEXT
 
-## RSP-8 — Route Mobile / Regression / Visual Acceptance
+Run the human-facing acceptance pass on the production-authored Route.
 
-Run full automated regression and human visual check. The route must read as the same game as the approved Yard and Master Lab.
+Required review:
+
+- Bright Route visual quality and continuity with the approved Yard/Master Lab;
+- Dark Route alignment, corruption readability and absence of geometry drift;
+- protagonist grounding and foreground occlusion at representative traversal points;
+- Master Lab, weighbridge and Local Pit approach readability;
+- mobile portrait/landscape navigation and HUD coexistence;
+- no residual procedural-board presentation visible in normal production;
+- record visual-only revisions without reopening RSP-7 architecture unless a genuine integration defect is found.
 
 ---
 
 # Phase 2 — Local Pit Scene Propagation
 
-Begins after the Route scene is production-stable. The architecture itself does not require re-approval.
+Begins after the Route scene is production-stable and visually accepted. The architecture itself does not require re-approval.
 
 ## LPSP-0 — Local Pit Scene Contract / Fight-Space Audit
 
@@ -217,8 +227,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 IN PROGRESS → RSP-8 → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 COMPLETE ✓ → RSP-8 NEXT → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Re-establish and canonicalise the source-bound Dark Route image, then complete RSP-7 atomic Bright/Dark packaging and production cutover.**
+**Finish the RSP-7 documentation-only CI/merge gate, then start RSP-8 Route Mobile / Regression / Visual Acceptance.**
