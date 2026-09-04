@@ -10,7 +10,9 @@ const OUTPUT_MANIFEST = resolve(OUTPUT_DIR, 'route-dark-scene.json');
 const WRITE = process.argv.includes('--write');
 const EXPECTED_WIDTH = 1024;
 const EXPECTED_HEIGHT = 683;
-const EXPECTED_BASE64_CHARACTERS = 124000;
+const EXPECTED_BASE64_CHARACTERS = 184520;
+const EXPECTED_BYTES = 138388;
+const EXPECTED_SHA256 = '5bff87c2bfe36bfb60bf6562afd8f66bfd3405a8ce85a6ef87bf92ba54d85be6';
 const BRIGHT_SHA256 = 'b1a1a0bb2553eb674a3043a9a1e5a19be7f2c7b09bf52956124503c13eec482c';
 
 const fragments = [
@@ -42,6 +44,23 @@ const fragments = [
   'route-dark-base.tail13.txt',
   'route-dark-base.tail14.txt',
   'route-dark-base.tail15.txt',
+  'route-dark-base.tail16.txt',
+  'route-dark-base.tail17.txt',
+  'route-dark-base.tail18.txt',
+  'route-dark-base.tail19.txt',
+  'route-dark-base.tail20.txt',
+  'route-dark-base.tail21.txt',
+  'route-dark-base.tail22.txt',
+  'route-dark-base.tail23a.txt',
+  'route-dark-base.tail23b.txt',
+  'route-dark-base.tail24.txt',
+  'route-dark-base.tail25.txt',
+  'route-dark-base.tail26.txt',
+  'route-dark-base.tail27.txt',
+  'route-dark-base.tail28.txt',
+  'route-dark-base.tail29.txt',
+  'route-dark-base.tail30.txt',
+  'route-dark-base.tail31.txt',
 ];
 
 function readFragment(name) {
@@ -95,11 +114,17 @@ if (!/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
 const bytes = Buffer.from(base64, 'base64');
 const dimensions = jpegDimensions(bytes);
 const sha256 = createHash('sha256').update(bytes).digest('hex');
+if (bytes.length !== EXPECTED_BYTES) {
+  throw new Error(`RSP-7 Dark Route source is ${bytes.length} bytes; expected ${EXPECTED_BYTES}.`);
+}
 if (dimensions.width !== EXPECTED_WIDTH || dimensions.height !== EXPECTED_HEIGHT) {
   throw new Error(`RSP-7 Dark Route source is ${dimensions.width}x${dimensions.height}; expected ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT}.`);
 }
 if (sha256 === BRIGHT_SHA256) {
   throw new Error('RSP-7 Dark Route source is byte-identical to the Bright Route source.');
+}
+if (sha256 !== EXPECTED_SHA256) {
+  throw new Error(`RSP-7 Dark Route source SHA-256 ${sha256} does not match locked identity ${EXPECTED_SHA256}.`);
 }
 
 const manifest = {
