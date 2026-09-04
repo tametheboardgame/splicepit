@@ -145,12 +145,12 @@ try {
 
   const completed = await waitFor(async () => {
     const value = await state();
-    return value?.cutscene?.status === 'completed' ? value : null;
+    if (value?.cutscene?.status !== 'completed') return null;
+    if (value.cutscene.controlLocked || value.cutscene.ambientSuppressed) return null;
+    if (value.corruption.suppressionReasons.includes('corruption:cutscene-runtime')) return null;
+    return value;
   });
   const authoredBefore = await evaluate(`globalThis.__WP07A_AUTHORED_BEFORE__`);
-  if (completed.cutscene.controlLocked || completed.cutscene.ambientSuppressed) {
-    throw new Error(`WP0.7A cleanup did not restore runtime state: ${JSON.stringify(completed.cutscene)}`);
-  }
   if (completed.cutscene.completedSceneId !== 'wp0.7a-browser-contract') {
     throw new Error(`WP0.7A completion id missing: ${JSON.stringify(completed.cutscene)}`);
   }

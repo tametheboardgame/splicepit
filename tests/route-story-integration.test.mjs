@@ -5,6 +5,7 @@ import {
   RSP5_ROUTE_SCENE_PACK,
   RSP5_ROUTE_STORY_CONTRACT,
   routeDebtEncounterPlacement,
+  routeDebtEncounterPlacementForRuntime,
   routeObjectiveAnchor,
   routeSafeReturnPosition,
   routeStoryInteractionAt,
@@ -72,6 +73,12 @@ test('RSP-5 debt encounter is staged at the authored weighbridge in the normal B
   assert.equal(placement.requiresPostDeathLab, true);
   assert.equal(placement.requiresSpliceBenchHandoff, true);
   assert.equal(isRouteScenePositionBlocked(RSP5_ROUTE_SCENE_PACK, placement.representativePosition.x, placement.representativePosition.y), false);
+});
+
+test('RSP-7 creditor runtime has no legacy normal-production placement fallback', () => {
+  const authored = routeDebtEncounterPlacement();
+  assert.deepEqual(routeDebtEncounterPlacementForRuntime(true), authored);
+  assert.deepEqual(routeDebtEncounterPlacementForRuntime(false), authored);
 });
 
 test('RSP-5 debt trigger preserves armed, route-visible and cutscene-control gates', () => {
