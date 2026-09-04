@@ -163,23 +163,37 @@ Completed production contract:
 - desktop and mobile authored Route traversal is covered by browser regression;
 - final opening visual integration verifies Bright/Dark pixel change, UI suppression compatibility and unchanged gameplay state across Yard, Route, Master Lab and Local Pit.
 
-The complete verify/build/player-facing browser suite passed on engineering head `c4fa360e68df0114a2cc6170e5212f65e566bcc2` in GitHub Actions run #1336 before documentation closure.
+The complete verify/build/player-facing browser suite passed on engineering head `c4fa360e68df0114a2cc6170e5212f65e566bcc2` in GitHub Actions run #1336 before documentation closure. PR #92 then merged to main as `6930a403368ab15d6b0a416e6968f14f43d9a217` after the final documentation-head run #1338 also passed.
 
 Implementation record: `docs/RSP7_DARK_ROUTE_PRODUCTION_REPLACEMENT_PLAN_2026-09-02.md`.
 
-## RSP-8 — Route Mobile / Regression / Visual Acceptance — NEXT
+## RSP-8 — Route Mobile / Regression / Visual Acceptance — IN PROGRESS
 
-Run the human-facing acceptance pass on the production-authored Route.
+PR: #93.
 
-Required review:
+RSP-8 is the acceptance/closure package for the production-authored Route. It does not redesign the RSP-7 architecture.
 
-- Bright Route visual quality and continuity with the approved Yard/Master Lab;
-- Dark Route alignment, corruption readability and absence of geometry drift;
-- protagonist grounding and foreground occlusion at representative traversal points;
-- Master Lab, weighbridge and Local Pit approach readability;
-- mobile portrait/landscape navigation and HUD coexistence;
-- no residual procedural-board presentation visible in normal production;
-- record visual-only revisions without reopening RSP-7 architecture unless a genuine integration defect is found.
+Automated acceptance now owns:
+
+- desktop Route entry, Master Lab approach, decommissioned weighbridge and Local Pit approach review points;
+- portrait and landscape mobile review points;
+- authored `scene-image` production ownership and zero cutover blockers;
+- Bright/Dark rendered-pixel delta;
+- player visibility inside the rendered viewport;
+- mobile canvas containment and horizontal-overflow protection;
+- minimum 44 × 44 CSS-pixel visible touch targets;
+- rejection when visible touch controls obscure the protagonist;
+- CI-produced PNG review frames plus a machine-readable manifest.
+
+Human review still owns:
+
+- continuity with the approved Yard and Master Lab;
+- Dark-state storytelling quality and perceived geometry stability;
+- protagonist grounding/foreground depth quality;
+- approach readability and environmental composition;
+- final visual ACCEPT/REVISE decision.
+
+Output/in-progress acceptance record: `docs/RSP8_ROUTE_MOBILE_REGRESSION_VISUAL_ACCEPTANCE_2026-09-04.md`.
 
 ---
 
@@ -227,8 +241,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 COMPLETE ✓ → RSP-8 NEXT → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 COMPLETE ✓ → RSP-8 IN PROGRESS → LPSP-0 → ... → LPSP-8`
 
 ## Immediate next action
 
-**Finish the RSP-7 documentation-only CI/merge gate, then start RSP-8 Route Mobile / Regression / Visual Acceptance.**
+**Run PR #93 through the automated RSP-8 acceptance gate, inspect the generated desktop/portrait/landscape visual artifact, then record ACCEPT or make only the visual revisions justified by that review.**
