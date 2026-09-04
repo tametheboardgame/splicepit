@@ -221,12 +221,11 @@ try {
     throw new Error(`RSP-7 Bright recovery lost authored cutover readiness: ${JSON.stringify(recovered)}`);
   }
 
-  // Follow broad authored road geometry to the Master Lab entrance.
+  // Follow broad authored road until the semantic Master Lab interaction zone
+  // becomes available. Do not force the player into the visible Lab structure.
   await moveRouteAxis('y', 768, 's', 'w');
   await moveRouteAxis('x', 1728, 'd', 'a');
-  await moveRouteAxis('y', 684, 's', 'w');
-  let route = await moveRouteAxis('x', 1788, 'd', 'a');
-  route = await waitFor(async () => {
+  let route = await waitFor(async () => {
     const current = await state();
     return current?.routeInteractionTarget === 'master-lab' ? current : null;
   });
