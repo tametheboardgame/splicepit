@@ -5,7 +5,11 @@ import {
   routeInteriorAuthoredEntryBounds,
   setRouteInteriorAuthoredEntryMode,
 } from '../src/environment/routeInteriorBridgeRuntime.js';
-import { RSP3_BRIGHT_ROUTE_ASSET_PACK, rsp7RouteAssetLifecycleDebug } from '../src/environment/routeSceneAssetPack.js';
+import {
+  RSP3_BRIGHT_ROUTE_ASSET_PACK,
+  RSP7_DARK_ROUTE_ASSET_PACK,
+  rsp7RouteAssetLifecycleDebug,
+} from '../src/environment/routeSceneAssetPack.js';
 import {
   routeSceneProductionCutoverBlockers,
   routeSceneProductionCutoverReady,
@@ -37,7 +41,15 @@ test('RSP-7 stages the exact locked RSP-3 Bright Route asset against the RSP-6 w
   assert.equal(RSP3_BRIGHT_ROUTE_ASSET_PACK.source.sha256, 'b1a1a0bb2553eb674a3043a9a1e5a19be7f2c7b09bf52956124503c13eec482c');
 });
 
-test('RSP-7 refuses production scene-image cutover until Bright staging and authored Dark art are both ready', () => {
+test('RSP-7 Dark Route is exactly aligned to the approved Bright Route source grid', () => {
+  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.width, RSP3_BRIGHT_ROUTE_ASSET_PACK.source.width);
+  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.height, RSP3_BRIGHT_ROUTE_ASSET_PACK.source.height);
+  assert.deepEqual(RSP7_DARK_ROUTE_ASSET_PACK.world, RSP3_BRIGHT_ROUTE_ASSET_PACK.world);
+  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.base64Characters, 124000);
+  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.rendering.exactBrightAlignmentRequired, true);
+});
+
+test('RSP-7 refuses production scene-image cutover until Bright and Dark assets are both decoded', () => {
   const lifecycle = rsp7RouteAssetLifecycleDebug();
   assert.equal(lifecycle.ready, false);
   assert.equal(lifecycle.darkReady, false);
