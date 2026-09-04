@@ -1,3 +1,4 @@
+import { environmentVisualController } from './environmentVisualContract.js';
 import {
   drawRouteForegroundDepth,
   drawRouteGroundingShadow,
@@ -45,6 +46,11 @@ const semanticInteriorBridgeReady = true;
 
 function clampMix(value: number): number {
   return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+}
+
+function currentRouteDarkMix(): number {
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  return clampMix(environmentVisualController.sample('route', now).darkMix);
 }
 
 function cutoverBlockers(brightReady: boolean, darkReady: boolean): RouteSceneCutoverBlocker[] {
@@ -118,10 +124,10 @@ export function markRouteSceneImageFallback(): void {
 
 export function drawRouteBrightSceneImageBase(
   ctx: CanvasRenderingContext2D,
-  nextDarkMix = 0,
+  nextDarkMix?: number,
 ): boolean {
   if (!brightBaseImage || !darkBaseImage) return false;
-  const mix = clampMix(nextDarkMix);
+  const mix = nextDarkMix === undefined ? currentRouteDarkMix() : clampMix(nextDarkMix);
   darkMix = mix;
   darkBaseRendered = mix > 0;
   ctx.save();
