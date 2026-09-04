@@ -201,9 +201,6 @@ try {
   });
   await tapControl('back');
 
-  // Prove separate touch pointers can hold movement while ACTION is tapped.
-  // Move left across clear ground so this input-isolation check cannot be
-  // conflated with the deliberately separate west-pit collision assertion.
   const multiStart = (await state()).playerX;
   await evaluate(`(() => {
     const move = document.querySelector('[data-control="move-left"]');
@@ -224,9 +221,6 @@ try {
     throw new Error(`Simultaneous movement + ACTION touch did not preserve movement: ${JSON.stringify(current)}`);
   }
 
-  // From the raised YSP-10 spawn corridor, Right meets the west pit machinery.
-  // Prove touch collision against that reviewed geometry, then navigate the
-  // authored Yard through the same safe corridor used by desktop regressions.
   await holdControl('move-right', 900, 20);
   current = await state();
   if (current.playerX < 650 || current.playerX > 700 || current.collisionCount < 1) {
@@ -249,28 +243,26 @@ try {
     throw new Error(`Touch-only authored tunnel handoff failed: ${JSON.stringify(current)}`);
   }
 
-  // Follow the authored RSP-4 dirt-road corridor to the Master Lab entrance.
-  // These waypoints are intentionally on broad traversable ground between the
-  // south Yard gate, weighbridge machinery and Viktor Lab entrance notch.
+  // Follow broad authored road until the semantic Master Lab interaction zone
+  // becomes available. Do not force the player into the visible Lab structure.
   await moveAxis('y', 768, 'move-down', 'move-up');
   await moveAxis('x', 1728, 'move-right', 'move-left');
-  await moveAxis('y', 684, 'move-down', 'move-up');
-  current = await moveAxis('x', 1788, 'move-right', 'move-left');
+  current = await waitFor(async () => {
+    const value = await state();
+    return value?.routeInteractionTarget === 'master-lab' ? value : null;
+  });
   if (
-    Math.abs(current.playerX - 1788) > 40
-    || Math.abs(current.playerY - 684) > 40
-    || current.routeRenderer !== 'scene-image'
+    current.routeRenderer !== 'scene-image'
     || current.routeProductionCutoverReady !== true
-    || current.routeInteractionTarget !== 'master-lab'
     || current.objectiveId !== 'find-master'
   ) {
-    throw new Error(`Touch-only authored Route did not reach the Master Lab entrance: ${JSON.stringify(current)}`);
+    throw new Error(`Touch-only authored Route did not reach the Master Lab interaction zone: ${JSON.stringify(current)}`);
   }
 
   const overflow = await evaluate(`({ width: innerWidth, bodyWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight, height: innerHeight })`);
   if (overflow.bodyWidth > overflow.width + 1) throw new Error(`Mobile gameplay controls introduced horizontal overflow: ${JSON.stringify(overflow)}`);
 
-  console.log('RSP-7 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the authored Master Lab entrance.');
+  console.log('RSP-7 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the semantic Master Lab entrance.');
   ws.close();
   cleanup();
 } catch (error) {
