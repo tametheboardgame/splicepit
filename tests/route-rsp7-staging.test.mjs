@@ -45,7 +45,9 @@ test('RSP-7 Dark Route is exactly aligned to the approved Bright Route source gr
   assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.width, RSP3_BRIGHT_ROUTE_ASSET_PACK.source.width);
   assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.height, RSP3_BRIGHT_ROUTE_ASSET_PACK.source.height);
   assert.deepEqual(RSP7_DARK_ROUTE_ASSET_PACK.world, RSP3_BRIGHT_ROUTE_ASSET_PACK.world);
-  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.base64Characters, 124000);
+  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.base64Characters, 184520);
+  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.bytes, 138388);
+  assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.source.sha256, '5bff87c2bfe36bfb60bf6562afd8f66bfd3405a8ce85a6ef87bf92ba54d85be6');
   assert.equal(RSP7_DARK_ROUTE_ASSET_PACK.rendering.exactBrightAlignmentRequired, true);
 });
 
