@@ -34,6 +34,8 @@ jobs:
         run: npm run validate:rsp7-dark
       - name: Validate RSP-7 tooling
         run: npm run validate:rsp7-tools
+      - name: Validate RSP-8 tooling
+        run: npm run validate:rsp8-tools
       - name: Unit, domain and save tests
         run: npm test
       - name: Production build
@@ -58,3 +60,11 @@ jobs:
         run: npm run smoke
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload RSP-8 visual review artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsp8-route-visual-acceptance-${{ github.sha }}
+          path: artifacts/rsp8-route-visual-acceptance/
+          if-no-files-found: warn
+          retention-days: 14
