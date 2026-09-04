@@ -1,10 +1,10 @@
 import {
-  drawRouteBrightForegroundDepth,
+  drawRouteForegroundDepth,
   drawRouteGroundingShadow,
 } from './routeDepthGroundingRuntime.js';
 import { installRouteInteriorBridgeRuntime } from './routeInteriorBridgeRuntime.js';
 import {
-  preloadRsp3BrightRouteAsset,
+  preloadRsp7RouteAssets,
   rsp7RouteAssetLifecycleDebug,
 } from './routeSceneAssetPack.js';
 import { RSP6_ROUTE_SCENE_PACK } from '../world/routeDepthGrounding.js';
@@ -20,6 +20,8 @@ export interface RouteSceneImageRuntimeDebug {
   readonly cutoverBlockers: readonly RouteSceneCutoverBlocker[];
   readonly fallback: boolean;
   readonly scenePackId: string;
+  readonly darkMix: number;
+  readonly darkBaseRendered: boolean;
   readonly baseRenderCount: number;
   readonly foregroundRenderCount: number;
   readonly activeOccluderIds: readonly string[];
@@ -30,16 +32,20 @@ type RouteSceneImageGlobal = typeof globalThis & {
 };
 
 let brightBaseImage: HTMLImageElement | null = null;
+let darkBaseImage: HTMLImageElement | null = null;
 let preparePromise: Promise<boolean> | null = null;
 let fallback = false;
+let darkMix = 0;
+let darkBaseRendered = false;
 let baseRenderCount = 0;
 let foregroundRenderCount = 0;
 let activeOccluderIds: readonly string[] = [];
 
-// The RSP-7 compatibility adapter binds the existing Master Lab and Local Pit
-// overlay entry zones to semantic authored exits only while scene-image Route is
-// active, then dispatches semantic safe-return events when either overlay closes.
 const semanticInteriorBridgeReady = true;
+
+function clampMix(value: number): number {
+  return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+}
 
 function cutoverBlockers(brightReady: boolean, darkReady: boolean): RouteSceneCutoverBlocker[] {
   const blockers: RouteSceneCutoverBlocker[] = [];
@@ -52,16 +58,19 @@ function cutoverBlockers(brightReady: boolean, darkReady: boolean): RouteSceneCu
 function snapshot(): RouteSceneImageRuntimeDebug {
   const lifecycle = rsp7RouteAssetLifecycleDebug();
   const brightReady = Boolean(brightBaseImage);
-  const blockers = cutoverBlockers(brightReady, lifecycle.darkReady);
+  const darkReady = Boolean(darkBaseImage) && lifecycle.darkReady;
+  const blockers = cutoverBlockers(brightReady, darkReady);
   return {
-    ready: brightReady,
+    ready: brightReady && darkReady,
     brightReady,
-    darkReady: lifecycle.darkReady,
+    darkReady,
     semanticInteriorBridgeReady,
     productionCutoverReady: blockers.length === 0,
     cutoverBlockers: blockers,
     fallback,
     scenePackId: RSP6_ROUTE_SCENE_PACK.id,
+    darkMix,
+    darkBaseRendered,
     baseRenderCount,
     foregroundRenderCount,
     activeOccluderIds,
@@ -72,23 +81,20 @@ function syncDebug(): void {
   (globalThis as RouteSceneImageGlobal).__SPLICEPIT_ROUTE_SCENE_IMAGE__ = snapshot();
 }
 
-/**
- * Bright-only staging preparation for RSP-7. This deliberately returns true as
- * soon as the approved Bright raster is decoded, but productionCutoverReady
- * remains false until the complete authored Dark asset is ready as part of the
- * same production replacement.
- */
+/** RSP-7 production preparation is atomic: both aligned bases decode or neither activates. */
 export function prepareRouteSceneImageRuntime(): Promise<boolean> {
   if (preparePromise) return preparePromise;
-  preparePromise = preloadRsp3BrightRouteAsset()
-    .then(({ base }) => {
+  preparePromise = preloadRsp7RouteAssets()
+    .then(({ base, darkBase }) => {
       brightBaseImage = base;
+      darkBaseImage = darkBase;
       fallback = false;
       syncDebug();
       return true;
     })
     .catch(() => {
       brightBaseImage = null;
+      darkBaseImage = null;
       fallback = true;
       preparePromise = null;
       syncDebug();
@@ -110,8 +116,14 @@ export function markRouteSceneImageFallback(): void {
   syncDebug();
 }
 
-export function drawRouteBrightSceneImageBase(ctx: CanvasRenderingContext2D): boolean {
-  if (!brightBaseImage) return false;
+export function drawRouteBrightSceneImageBase(
+  ctx: CanvasRenderingContext2D,
+  nextDarkMix = 0,
+): boolean {
+  if (!brightBaseImage || !darkBaseImage) return false;
+  const mix = clampMix(nextDarkMix);
+  darkMix = mix;
+  darkBaseRendered = mix > 0;
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
@@ -125,6 +137,20 @@ export function drawRouteBrightSceneImageBase(ctx: CanvasRenderingContext2D): bo
     RSP6_ROUTE_SCENE_PACK.world.width,
     RSP6_ROUTE_SCENE_PACK.world.height,
   );
+  if (mix > 0) {
+    ctx.globalAlpha = mix;
+    ctx.drawImage(
+      darkBaseImage,
+      0,
+      0,
+      RSP6_ROUTE_SCENE_PACK.source.width,
+      RSP6_ROUTE_SCENE_PACK.source.height,
+      0,
+      0,
+      RSP6_ROUTE_SCENE_PACK.world.width,
+      RSP6_ROUTE_SCENE_PACK.world.height,
+    );
+  }
   ctx.restore();
   baseRenderCount += 1;
   syncDebug();
@@ -136,11 +162,14 @@ export function drawRouteBrightSceneImagePlayerLayer(
   playerFeetX: number,
   playerFeetY: number,
   drawPlayer: () => void,
+  nextDarkMix = darkMix,
 ): boolean {
-  if (!brightBaseImage) return false;
+  if (!brightBaseImage || !darkBaseImage) return false;
+  const mix = clampMix(nextDarkMix);
+  darkMix = mix;
   drawRouteGroundingShadow(ctx, playerFeetX, playerFeetY);
   drawPlayer();
-  activeOccluderIds = drawRouteBrightForegroundDepth(ctx, brightBaseImage, playerFeetY);
+  activeOccluderIds = drawRouteForegroundDepth(ctx, brightBaseImage, darkBaseImage, playerFeetY, mix);
   foregroundRenderCount += 1;
   syncDebug();
   return true;
