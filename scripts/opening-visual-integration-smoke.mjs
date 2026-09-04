@@ -103,11 +103,14 @@ try {
     await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__?.phase === 'confirmed'`));
   }
 
-  async function verifyLocation(locationId, artGlobalName, playerGlobalName, canvasId, shellProperty, expectDarkPixels = true) {
+  async function verifyLocation(locationId, artGlobalName, playerGlobalName, canvasId, shellProperty, expectDarkPixels = true, artMode = 'production-art') {
+    const readiness = artMode === 'scene-image'
+      ? `art?.ready === true && art?.productionCutoverReady === true && art?.baseRenderCount > 0`
+      : `art?.active === true && art?.brightRendered === true`;
     await waitFor(async () => evaluate(`(() => {
       const env = globalThis.__SPLICEPIT_ENVIRONMENT__;
       const art = globalThis['${artGlobalName}'];
-      return env?.state?.locationId === '${locationId}' && art?.active === true && art?.brightRendered === true;
+      return env?.state?.locationId === '${locationId}' && ${readiness};
     })()`));
 
     await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.forceBright()`);
@@ -139,7 +142,10 @@ try {
 
     await evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__.clearForce(); globalThis.__SPLICEPIT_CORRUPTION__.reschedule()`);
     await evaluate(`globalThis.__SPLICEPIT_CORRUPTION__.triggerAuthored('${locationId}', 'linger')`);
-    await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.darkMix > 0.95 && globalThis['${artGlobalName}']?.darkMix > 0.95`));
+    const darkReadiness = artMode === 'scene-image'
+      ? `globalThis['${artGlobalName}']?.darkMix > 0.95 && globalThis['${artGlobalName}']?.darkBaseRendered === true`
+      : `globalThis['${artGlobalName}']?.darkMix > 0.95`;
+    await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_ENVIRONMENT__?.state?.darkMix > 0.95 && ${darkReadiness}`));
 
     const dark = await evaluate(`(() => {
       const canvas = document.querySelector('#${canvasId}');
@@ -220,7 +226,7 @@ try {
     const value = await yardState();
     return value?.sceneMode === 'master-lab-route' && value?.routeRendered && value?.routeHandoffTarget === 'master-lab-route' ? value : null;
   });
-  results.push(await verifyLocation('route', '__SPLICEPIT_ROUTE_ART__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell'));
+  results.push(await verifyLocation('route', '__SPLICEPIT_ROUTE_SCENE_IMAGE__', '__SPLICEPIT_VISUAL_RESET__', 'visual-reset-stage', 'activeOpeningShell', true, 'scene-image'));
 
   await openScenario('&labTest=1');
   await waitFor(async () => evaluate(`globalThis.__SPLICEPIT_MASTER_LAB__?.active === true && globalThis.__SPLICEPIT_MASTER_LAB__?.rendered === true`));
@@ -254,7 +260,7 @@ try {
     throw new Error(`Opening visual mobile stack integration failed: ${JSON.stringify(mobile)}`);
   }
 
-  console.log(`YSP-10 final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
+  console.log(`YSP-10/RSP-7 final opening visual integration smoke passed: ${JSON.stringify({ results, mobile })}`);
   ws.close();
   cleanup();
 } catch (error) {
