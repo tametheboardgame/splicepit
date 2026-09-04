@@ -6,7 +6,6 @@ import {
   type RouteSceneExit,
   type RouteScenePoint,
 } from './routeScenePack.js';
-import { OPENING_ROUTE_LANDMARKS } from './yard.js';
 
 export type RouteInteractionTarget = 'apprentice-yard' | 'master-lab' | 'local-pit';
 
@@ -32,7 +31,7 @@ export interface RouteDebtEncounterPlacement {
 
 /**
  * RSP-5 adds story and interaction meaning without changing RSP-4 geometry.
- * RSP-7 can make this pack production-active without re-authoring coordinates.
+ * RSP-7 makes this pack production-active without re-authoring coordinates.
  */
 export const RSP5_ROUTE_SCENE_PACK = {
   ...RSP4_ROUTE_SCENE_PACK,
@@ -121,29 +120,14 @@ export function routeDebtEncounterPlacement(): RouteDebtEncounterPlacement {
   };
 }
 
-function legacyDebtEncounterPlacement(): RouteDebtEncounterPlacement {
-  const landmark = OPENING_ROUTE_LANDMARKS.find((entry) => entry.id === 'debt-encounter');
-  if (!landmark) throw new Error('Legacy Route compatibility requires the debt-encounter landmark until RSP-7 production replacement.');
-  return {
-    anchorId: 'debt-encounter',
-    label: landmark.label,
-    triggerPosition: { x: landmark.x, y: landmark.y },
-    representativePosition: { x: landmark.x, y: landmark.y },
-    triggerRadius: Math.min(150, landmark.radius),
-    autoTrigger: true,
-    normalWorldOnly: true,
-    requiresPostDeathLab: true,
-    requiresSpliceBenchHandoff: true,
-  };
-}
-
 /**
- * Temporary bridge for the live procedural Route. RSP-7 flips the runtime to
- * scene-image and can then delete the legacy fallback without changing the
- * creditor encounter consumer again.
+ * RSP-7 retires the procedural Route's creditor coordinates. The boolean is
+ * retained temporarily for source compatibility with the encounter runtime,
+ * but production placement is now always owned by the authored weighbridge
+ * anchor. No normal-production legacy coordinate fallback remains.
  */
-export function routeDebtEncounterPlacementForRuntime(useAuthoredScene: boolean): RouteDebtEncounterPlacement {
-  return useAuthoredScene ? routeDebtEncounterPlacement() : legacyDebtEncounterPlacement();
+export function routeDebtEncounterPlacementForRuntime(_useAuthoredScene: boolean): RouteDebtEncounterPlacement {
+  return routeDebtEncounterPlacement();
 }
 
 export function routeDebtEncounterDistance(playerX: number, playerY: number): number {
