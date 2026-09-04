@@ -84,11 +84,43 @@ try {
   async function state() {
     return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
+  async function labState() {
+    return evaluate(`globalThis.__SPLICEPIT_MASTER_LAB__ ? ({ ...globalThis.__SPLICEPIT_MASTER_LAB__ }) : null`);
+  }
+  async function pitState() {
+    return evaluate(`globalThis.__SPLICEPIT_LOCAL_PIT__ ? ({ ...globalThis.__SPLICEPIT_LOCAL_PIT__ }) : null`);
+  }
+  async function debtState() {
+    return evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__ ? ({ ...globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.state }) : null`);
+  }
   async function waitForPrompt(id) {
     return waitFor(async () => {
       const current = await state();
       return current?.tutorialPromptId === id && current?.tutorialPromptVisible && !current?.tutorialPromptCompleting ? current : null;
     }, 10000);
+  }
+  async function moveRouteAxis(axis, target, positiveKey, negativeKey, tolerance = 18) {
+    const keys = {
+      w: ['w', 'KeyW', 87],
+      a: ['a', 'KeyA', 65],
+      s: ['s', 'KeyS', 83],
+      d: ['d', 'KeyD', 68],
+    };
+    let previous = null;
+    let stalled = 0;
+    for (let attempt = 0; attempt < 180; attempt += 1) {
+      const current = await state();
+      const value = axis === 'x' ? current.playerX : current.playerY;
+      const delta = target - value;
+      if (Math.abs(delta) <= tolerance) return current;
+      if (previous !== null && Math.abs(value - previous) < 1) stalled += 1;
+      else stalled = 0;
+      if (stalled >= 8) throw new Error(`RSP-7 Route movement stalled on ${axis} towards ${target}: ${JSON.stringify(current)}`);
+      previous = value;
+      const [keyName, code, vk] = keys[delta > 0 ? positiveKey : negativeKey];
+      await nudge(keyName, code, vk);
+    }
+    throw new Error(`RSP-7 Route movement did not reach ${axis}=${target}: ${JSON.stringify(await state())}`);
   }
 
   await cdp('Page.enable');
@@ -189,12 +221,98 @@ try {
     throw new Error(`RSP-7 Bright recovery lost authored cutover readiness: ${JSON.stringify(recovered)}`);
   }
 
+  // Follow broad authored road geometry to the Master Lab entrance.
+  await moveRouteAxis('y', 768, 's', 'w');
+  await moveRouteAxis('x', 1728, 'd', 'a');
+  await moveRouteAxis('y', 684, 's', 'w');
+  let route = await moveRouteAxis('x', 1788, 'd', 'a');
+  route = await waitFor(async () => {
+    const current = await state();
+    return current?.routeInteractionTarget === 'master-lab' ? current : null;
+  });
+  await key('e', 'KeyE', 69);
+
+  const labEntered = await waitFor(async () => {
+    const current = await labState();
+    return current?.active && current?.rendered ? current : null;
+  }, 20000);
+  if (labEntered.stageId !== 'entry') {
+    throw new Error(`RSP-7 authored Master Lab entry failed: ${JSON.stringify(labEntered)}`);
+  }
+
+  // Exercise the existing authored lab traversal to its real exit.
+  await holdKey('w', 'KeyW', 87, 1750);
+  await holdKey('d', 'KeyD', 68, 2800);
+  await holdKey('a', 'KeyA', 65, 2800);
+  await holdKey('s', 'KeyS', 83, 1900);
+  const labExit = await labState();
+  if (!labExit?.nearExit) throw new Error(`RSP-7 did not reach the Master Lab exit: ${JSON.stringify(labExit)}`);
+  await key('e', 'KeyE', 69);
+
+  const labReturned = await waitFor(async () => {
+    const lab = await labState();
+    const yard = await state();
+    if (lab?.active || !yard?.routeRendered || yard.routeRenderer !== 'scene-image') return null;
+    if (Math.abs(yard.playerX - 1725) > 30 || Math.abs(yard.playerY - 825) > 30) return null;
+    return yard;
+  }, 15000);
+
+  // The creditor runtime must resolve the authored weighbridge anchor, not the
+  // retired procedural landmark. It updates distance even while still locked.
+  await moveRouteAxis('y', 1260, 's', 'w');
+  await moveRouteAxis('x', 1944, 'd', 'a');
+  const debtAtWeighbridge = await waitFor(async () => {
+    const debt = await debtState();
+    return debt?.landmarkLabel === 'Decommissioned Biosecurity Weighbridge'
+      && typeof debt.distanceToPlayer === 'number'
+      && debt.distanceToPlayer <= 30
+      ? debt
+      : null;
+  });
+
+  // Continue on clear authored road to the Local Pit entrance.
+  await moveRouteAxis('y', 1980, 's', 'w');
+  route = await moveRouteAxis('x', 2256, 'd', 'a');
+  route = await waitFor(async () => {
+    const current = await state();
+    return current?.routeInteractionTarget === 'local-pit' ? current : null;
+  });
+  await key('e', 'KeyE', 69);
+
+  const pitEntered = await waitFor(async () => {
+    const current = await pitState();
+    return current?.active && current?.rendered ? current : null;
+  }, 20000);
+  if (pitEntered.stageId !== 'arrival-gate') {
+    throw new Error(`RSP-7 authored Local Pit entry failed: ${JSON.stringify(pitEntered)}`);
+  }
+
+  // Exercise the real Local Pit path back to its authored exit.
+  await holdKey('w', 'KeyW', 87, 2850);
+  await holdKey('s', 'KeyS', 83, 3300);
+  const pitExit = await pitState();
+  if (!pitExit?.nearExit || pitExit.zone !== 'exterior') {
+    throw new Error(`RSP-7 did not reach the Local Pit exit: ${JSON.stringify(pitExit)}`);
+  }
+  await key('e', 'KeyE', 69);
+
+  const pitReturned = await waitFor(async () => {
+    const pit = await pitState();
+    const yard = await state();
+    if (pit?.active || !yard?.routeRendered || yard.routeRenderer !== 'scene-image') return null;
+    if (Math.abs(yard.playerX - 2247) > 30 || Math.abs(yard.playerY - 1824) > 30) return null;
+    return yard;
+  }, 15000);
+
   console.log(`RSP-7 authored Route scene smoke passed: ${JSON.stringify({
     handoff: arrival.routeHandoffTarget,
     world: [arrival.worldWidth, arrival.worldHeight],
     darkSha256: '5bff87c2bfe36bfb60bf6562afd8f66bfd3405a8ce85a6ef87bf92ba54d85be6',
     baseRenderCount: recovered.baseRenderCount,
     foregroundRenderCount: recovered.foregroundRenderCount,
+    labReturn: [labReturned.playerX, labReturned.playerY],
+    debtDistance: debtAtWeighbridge.distanceToPlayer,
+    pitReturn: [pitReturned.playerX, pitReturned.playerY],
   })}`);
   ws.close();
   cleanup();
