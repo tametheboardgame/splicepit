@@ -150,11 +150,13 @@ try {
   await cdp('Page.enable');
   await cdp('Runtime.enable');
   await cdp('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
-  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1` });
+  await cdp('Page.navigate', { url: `http://127.0.0.1:${gamePort}/?skipTitle=1&debtTest=1` });
   await waitFor(async () => (await state())?.ready === true);
+  await waitFor(async () => (await debtState())?.ready === true);
   await evaluate(`localStorage.clear()`);
   await cdp('Page.reload', { ignoreCache: true });
   await waitFor(async () => (await state())?.ready === true);
+  await waitFor(async () => (await debtState())?.ready === true);
   await cdp('Page.bringToFront');
   await key('Enter', 'Enter', 13);
 
@@ -277,6 +279,8 @@ try {
   const debtAtWeighbridge = await waitFor(async () => {
     const debt = await debtState();
     return debt?.landmarkLabel === 'Decommissioned Biosecurity Weighbridge'
+      && debt.status === 'locked'
+      && debt.representativeVisible === false
       && typeof debt.distanceToPlayer === 'number'
       && debt.distanceToPlayer <= 12
       ? debt
