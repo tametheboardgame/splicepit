@@ -1,17 +1,21 @@
 @media (orientation: portrait) and (pointer: coarse) {
   body.mobile-gameplay-active.route-presentation-active #visual-reset-stage {
-    width: 81.7778vh;
-    height: 46vh;
+    width: 100vw;
+    height: 50vh;
     max-height: none;
-    transform: translateY(-4vh);
+    object-fit: cover;
+    object-position: center;
+    transform: translateY(-3vh);
   }
 
   body.mobile-gameplay-active.route-presentation-active #ambient-world-corruption,
   body.mobile-gameplay-active.route-presentation-active #debt-collector-stage,
   body.mobile-gameplay-active.route-presentation-active #graphics-tightening-pass-c-stage {
-    width: 81.7778vh !important;
-    height: 46vh !important;
+    width: 100vw !important;
+    height: 50vh !important;
     max-height: none !important;
-    transform: translate(-50%, -50%) translateY(-4vh) !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    transform: translate(-50%, -50%) translateY(-3vh) !important;
   }
 }
