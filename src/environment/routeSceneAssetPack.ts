@@ -26,8 +26,35 @@ export const RSP3_BRIGHT_ROUTE_ASSET_PACK = {
   },
 } as const;
 
+export const RSP7_DARK_ROUTE_ASSET_PACK = {
+  id: 'opening-route-dark-scene-rsp7-v1',
+  workPackage: 'RSP-7',
+  sourceDirection: 'authored Dark counterpart aligned exactly to the approved Bright Route raster',
+  source: {
+    width: 1024,
+    height: 683,
+    format: 'image/jpeg',
+    base64Characters: 124000,
+  },
+  assets: {
+    base: '/generated/rsp7/route-dark-base.jpg',
+    manifest: '/generated/rsp7/route-dark-scene.json',
+  },
+  world: RSP3_BRIGHT_ROUTE_ASSET_PACK.world,
+  rendering: {
+    imageSmoothingEnabled: false,
+    preloadRequired: true,
+    exactBrightAlignmentRequired: true,
+  },
+} as const;
+
 export interface Rsp7RoutePreparedBrightAsset {
   readonly base: HTMLImageElement;
+}
+
+export interface Rsp7RoutePreparedAssets {
+  readonly base: HTMLImageElement;
+  readonly darkBase: HTMLImageElement;
 }
 
 export interface Rsp7RouteAssetLifecycleDebug {
@@ -53,6 +80,7 @@ const lifecycle = {
 };
 
 let brightAssetPromise: Promise<Rsp7RoutePreparedBrightAsset> | null = null;
+let routeAssetsPromise: Promise<Rsp7RoutePreparedAssets> | null = null;
 
 function nowMs(): number {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -75,12 +103,6 @@ async function decodeRouteAsset(url: string, label: string): Promise<HTMLImageEl
   return image;
 }
 
-/**
- * RSP-7 prepares the already-approved Bright Route independently from the Dark
- * dependency. Production cutover must still require a complete atomic Bright +
- * Dark set, so callers must not treat this Bright-only readiness as permission
- * to replace the live Route.
- */
 export function preloadRsp3BrightRouteAsset(): Promise<Rsp7RoutePreparedBrightAsset> {
   lifecycle.preloadRequests += 1;
   if (brightAssetPromise) {
@@ -103,8 +125,41 @@ export function preloadRsp3BrightRouteAsset(): Promise<Rsp7RoutePreparedBrightAs
       brightAssetPromise = null;
       throw error;
     });
-
   return brightAssetPromise;
+}
+
+/** Atomic RSP-7 production dependency: Bright and Dark must decode together. */
+export function preloadRsp7RouteAssets(): Promise<Rsp7RoutePreparedAssets> {
+  lifecycle.preloadRequests += 1;
+  if (routeAssetsPromise) {
+    lifecycle.cacheHits += 1;
+    return routeAssetsPromise;
+  }
+
+  const startedAt = nowMs();
+  const brightPromise = brightAssetPromise
+    ? brightAssetPromise.then(({ base }) => base)
+    : decodeRouteAsset(RSP3_BRIGHT_ROUTE_ASSET_PACK.assets.base, 'RSP-3 Bright Route base');
+  const darkPromise = decodeRouteAsset(RSP7_DARK_ROUTE_ASSET_PACK.assets.base, 'RSP-7 Dark Route base');
+
+  routeAssetsPromise = Promise.all([brightPromise, darkPromise])
+    .then(([base, darkBase]) => {
+      lifecycle.successfulLoads += brightAssetPromise ? 1 : 2;
+      lifecycle.ready = true;
+      lifecycle.darkReady = true;
+      lifecycle.lastLoadDurationMs = Math.max(0, nowMs() - startedAt);
+      brightAssetPromise ??= Promise.resolve({ base });
+      return { base, darkBase };
+    })
+    .catch((error: unknown) => {
+      lifecycle.failedLoads += 1;
+      lifecycle.ready = false;
+      lifecycle.darkReady = false;
+      lifecycle.lastLoadDurationMs = Math.max(0, nowMs() - startedAt);
+      routeAssetsPromise = null;
+      throw error;
+    });
+  return routeAssetsPromise;
 }
 
 export function rsp7RouteAssetLifecycleDebug(): Rsp7RouteAssetLifecycleDebug {
