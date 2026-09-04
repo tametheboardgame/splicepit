@@ -2,7 +2,9 @@
 
 Date: 2 September 2026
 
-Status: in progress
+Last updated: 4 September 2026
+
+Status: blocked on exact Dark Route source completion
 
 Draft PR: #92
 
@@ -46,37 +48,77 @@ Required physical Dark storytelling:
 - Pit-bound residue/drag language on the lower-right approach;
 - localised wrongness that can cross-fade against Bright without making traversal unreadable.
 
-## Art-generation recovery state
+## Dark source recovery audit — 4 September 2026
 
-Four image-generation attempts on 2 September ignored the supplied/redisplayed Bright Route raster and generated unrelated project-status or GitHub screenshots instead. Those outputs are discarded and are not repository assets.
+The previous working conversation produced a source-bound Dark candidate derived from the locked Bright composition. Before that conversation failed, portions of its 1024 × 683 JPEG transport were copied into the RSP-7 branch as repository-owned Base64 fragments.
 
-A later source-bound Bright-preserving Dark candidate was selected in the previous working conversation and reduced to the required 1024 × 683 dimensions. However, that candidate was not committed into repository-owned canonical chunks before the conversation failed. Its exact bytes are therefore not a reproducible project dependency and it must not be treated as complete RSP-7 art.
+The branch now contains one continuous accepted transport assembled from:
 
-Do not substitute the discarded images, a generated dashboard, a generic dark filter, procedural Pass D art, or an untracked local candidate as the authored Dark Route.
+- `route-dark-base.part00.txt` through `part04.txt`;
+- accepted `tail00` through `tail15` fragments, including the deliberately split 05, 06, 07, 08 and 09 sections.
 
-The locked Bright source remains fully recoverable from the repository-owned RSP-3 canonical chunks. To finish the authored Dark dependency, the source-bound image edit must be available as a usable image input again, then its accepted production derivative must immediately be canonicalised in Git so the asset cannot be lost between chats.
+The accepted transport is exactly 124,000 Base64 characters and decodes to exactly 93,000 bytes. New deterministic validation proves that it begins as a JPEG but is incomplete: the byte stream has no JPEG EOI (`FF D9`) marker and `tail15` ends without Base64 padding. The candidate therefore remains truncated and cannot be treated as an image asset.
 
-## Staged implementation on PR #92
+An exhaustive repository audit found no valid continuation:
 
-### Bright asset lifecycle
+- no `tail16` or later fragment;
+- no alternate RSP-7 Dark JPEG/WebP;
+- no hidden Dark manifest containing a complete payload;
+- no second complete source under another RSP-7 path;
+- no usable continuation in the deliberately removed mismatched chunk/tail commits.
+
+The earlier removed fragments were overlapping or mismatched transfers and are not the missing continuation of the accepted stream. Appending an artificial JPEG EOI marker, guessing bytes, or approving the partial file would corrupt the deterministic asset contract and is explicitly prohibited.
+
+The exact missing tail must therefore be recovered from the original Dark candidate, or the source-bound Dark edit must be recreated from the locked Bright source and immediately canonicalised in Git.
+
+## Engineering completed on PR #92
+
+### Atomic Bright + Dark lifecycle
 
 `src/environment/routeSceneAssetPack.ts`
 
-- declares the exact RSP-3 Bright asset identity;
+- declares the exact RSP-3 Bright identity;
+- declares the RSP-7 Dark source-grid contract;
 - validates expected 1024 × 683 decode dimensions;
-- memoises the decoded Bright image;
-- tracks lifecycle/debug state;
-- exposes `darkReady`, initially false.
+- provides atomic Bright + Dark preload semantics;
+- exposes independent Bright/Dark readiness and lifecycle debug state;
+- refuses production readiness when either authored base is unavailable.
 
-### Scene-image staging renderer
+### Deterministic Dark materialisation and integrity gates
+
+New RSP-7 tooling now:
+
+- reconstructs the accepted Dark transport in one deterministic order;
+- rejects malformed Base64;
+- validates JPEG SOI, EOI and SOF structure;
+- validates 1024 × 683 dimensions;
+- rejects accidental Bright-as-Dark input;
+- calculates the exact Dark SHA-256 only after a complete valid image exists;
+- materialises the accepted source to `public/generated/rsp7/route-dark-base.jpg`;
+- emits a deterministic Dark scene manifest;
+- verifies emitted `dist` bytes and SHA against that manifest;
+- independently decodes the emitted JPEG in Chromium.
+
+These checks are part of normal `verify`, build and browser-smoke gates. The current branch intentionally fails Dark validation at the missing-EOI check rather than silently shipping corrupt art.
+
+### Scene-image Bright/Dark renderer
 
 `src/environment/routeSceneImageRuntime.ts`
 
+- prepares Bright + Dark atomically;
 - renders the approved Bright raster into the 3072 × 2049 world;
-- reuses RSP-6 feet-based contact shadow;
-- reuses RSP-6 exact-base foreground occluders;
-- exposes explicit production cutover blockers;
-- refuses production cutover while the authored Dark dependency is incomplete.
+- cross-fades the exact-aligned Dark base using the existing Route corruption `darkMix`;
+- reuses the RSP-6 feet-based contact shadow;
+- exposes Dark mix/render state for regression/debugging;
+- refuses production cutover until both authored bases decode successfully.
+
+### Foreground depth parity
+
+`src/environment/routeDepthGroundingRuntime.ts`
+
+- preserves the exact RSP-6 foreground occluder geometry;
+- redraws the matching Bright/Dark source crops with the same `darkMix` as the base scene;
+- prevents Bright halos or seams around the protagonist while they pass behind authored foreground objects during corruption transitions.
 
 ### Production cutover contract
 
@@ -99,68 +141,49 @@ The locked Bright source remains fully recoverable from the repository-owned RSP
 - observe interior closure and dispatch the semantic return event;
 - restore legacy entry behaviour whenever the authored Route is inactive.
 
-`routeSafeReturnPosition()` remains the owner of the authored Route-side return coordinates.
-
-This bridge is complete and covered by RSP-7 tests. It is no longer a cutover blocker.
+`routeSafeReturnPosition()` remains the owner of authored Route-side return coordinates. The semantic bridge is complete and is no longer a cutover blocker.
 
 ### Production runtime staging
 
 `src/productionYardRuntime.ts`
 
-- preloads the Route staging dependency after the approved Yard dependency;
 - keeps the live procedural Route as the atomic fallback while cutover readiness is false;
 - switches Yard-to-Route entry, Route camera, collision and world dimensions together when readiness becomes true;
 - stages authored Route rendering behind that same gate;
-- handles the authored `yard-return` interaction without carrying the old Yard target-entry coordinates into the new scene;
+- handles the authored `yard-return` interaction without carrying old Yard target-entry coordinates into the new scene;
 - handles semantic Master Lab/Local Pit returns through authored safe-return anchors;
 - exposes Route renderer/readiness/interaction state for debugging and downstream story consumers.
 
-The gate is intentionally still false because the Dark raster is missing. This is staging, not a production activation.
+### Regression hardening
 
-## 3 September continuation and CI
+The WP0.7A browser cutscene smoke exposed a completion/cleanup observation race. The regression now waits for the actual released state: completed cutscene, controls unlocked, ambient suppression false and the cutscene corruption suppression reason removed. Runtime behaviour itself was not changed.
 
-Continuation commits added the authored production contract, semantic Master Lab/Local Pit bridge and gated runtime wiring. The first new unit assertion incorrectly tested the `yard-arrival` entry anchor as though it were itself an exit trigger; CI correctly rejected that assumption. The test now validates the centre of each authored exit bound instead.
+Before Dark integrity became the blocking gate, the current engineering path passed TypeScript and all unit/domain/save tests, including 207 tests in the observed CI run. Dark materialisation then correctly failed on the missing JPEG EOI marker.
 
-The semantic bridge is now installed and covered without exposing legacy coordinates to the authored Route. `semanticInteriorBridgeReady` is true; the remaining production-cutover blocker is the missing Dark scene image.
+## Remaining sequence
 
-The subsequent player-facing browser smoke exposed a separate brittle mobile test. Its simultaneous movement + ACTION assertion moved right from a position already adjacent to the approved Yard west-pit collision and could legitimately hit that collision before its arbitrary movement threshold. Commit `faca754dc83450fa8de20d1ea5d5a6b50eb0d8b2` isolates that input test by moving left across clear ground, while retaining the following dedicated rightward west-pit collision assertion.
-
-After that fix, the verify job again passes typecheck, all unit/domain/save tests, content/RNG/YSP/RSP validation and production build. The player-facing browser suite is rerunning as the final non-art validation gate.
-
-## Remaining implementation sequence
-
-1. Re-establish a usable source-bound Dark counterpart from the locked Bright Route source.
-2. Approve and preserve the deterministic production derivative at exactly 1024 × 683.
-3. Store the Dark image as repository-owned canonical chunks, following the RSP-3/YSP-8 materialisation model.
-4. Add deterministic Dark byte/hash/dimension validation and dist materialisation.
-5. Extend `routeSceneAssetPack.ts` so Bright + Dark decode as one atomic dependency.
-6. Extend `routeSceneImageRuntime.ts` to cross-fade Bright/Dark bases and matching RSP-6 foreground crops with the same `darkMix`.
-7. Remove the legacy debt-placement path from normal authored production use; the creditor encounter must use the authored weighbridge placement after cutover.
-8. Replace legacy Route browser assertions with scene-image traversal, Lab entry/return, debt staging, Pit entry/return and Bright/Dark transition coverage.
-9. Run full typecheck, unit/domain/save tests, production build and player-facing browser smoke.
-10. Human visual acceptance remains RSP-8, not RSP-7.
-
-Already staged behind the inactive gate:
-
-- authored Yard-to-Route entry;
-- authored Route camera/collision/world dimensions;
-- authored Route Bright scene-image renderer path;
-- authored Yard return interaction;
-- semantic Master Lab/Local Pit entry and safe-return bridge;
-- debug renderer/readiness/interaction contract.
+1. Recover the exact remaining bytes of the accepted Dark candidate, or recreate the source-bound Dark edit from the locked Bright source.
+2. Canonicalise the complete accepted Dark image immediately using `npm run package:rsp7-dark -- <path>`.
+3. Lock its exact byte length and SHA-256 once deterministic validation succeeds.
+4. Run the complete verify/build/browser suite with the now-complete Dark asset.
+5. Migrate any remaining normal-production Route/debt assertions to the authored path and remove the legacy normal-production fallback only after cutover readiness is true.
+6. Close RSP-7 documentation and merge PR #92 only with full automated gates green.
+7. Human visual acceptance remains the following gate, not a reason to weaken RSP-7 asset integrity.
 
 ## Merge gate
 
 PR #92 must remain draft and unmerged while any of the following are true:
 
-- authored Dark Route missing;
-- Dark hash/dimension validation missing;
-- Bright + Dark atomic preload missing;
+- authored Dark Route bytes are incomplete;
+- Dark JPEG/hash/dimension validation is not green;
+- Bright + Dark atomic preload cannot complete;
 - normal production Route cutover readiness remains false;
-- creditor encounter still has a legacy normal-production fallback after authored cutover;
+- creditor encounter still requires a legacy normal-production fallback after authored cutover;
 - authored Route browser coverage is incomplete;
 - full CI/browser suite is not green.
 
-## Next action
+## Current blocker
 
-Finish the authored Dark Route dependency first, canonicalise its exact accepted bytes immediately, then complete Bright/Dark atomic preload and production cutover. Do not activate or merge RSP-7 with a Bright-only Route.
+The only irreducible external dependency is the missing exact tail of the accepted Dark Route JPEG. The repository contains 124,000 Base64 characters / 93,000 decoded bytes but the stream ends before JPEG EOI. Repository history, current trees and superseded fragments contain no valid continuation.
+
+Do not merge, fabricate, patch or silently replace those bytes. Resume from the exact candidate if it can be recovered; otherwise recreate the Dark edit from the locked Bright raster and canonicalise it immediately.
