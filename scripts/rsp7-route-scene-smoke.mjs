@@ -269,13 +269,16 @@ try {
     return yard;
   }, 15000);
 
-  await moveRouteAxis('y', 1260, 's', 'w');
-  await moveRouteAxis('x', 1944, 'd', 'a');
+  // RSP-5 owns the debt anchor at source pixel (651,424), mapped 3x to
+  // production world coordinate (1953,1272). Hit that exact authored point so
+  // this regression fails if procedural creditor coordinates ever return.
+  await moveRouteAxis('y', 1272, 's', 'w', 6);
+  await moveRouteAxis('x', 1953, 'd', 'a', 6);
   const debtAtWeighbridge = await waitFor(async () => {
     const debt = await debtState();
     return debt?.landmarkLabel === 'Decommissioned Biosecurity Weighbridge'
       && typeof debt.distanceToPlayer === 'number'
-      && debt.distanceToPlayer <= 30
+      && debt.distanceToPlayer <= 12
       ? debt
       : null;
   });
