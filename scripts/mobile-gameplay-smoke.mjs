@@ -249,18 +249,28 @@ try {
     throw new Error(`Touch-only authored tunnel handoff failed: ${JSON.stringify(current)}`);
   }
 
-  // Continue through the existing route from its real handoff entry.
-  await moveAxis('x', 2140, 'move-right', 'move-left');
-  await moveAxis('y', 566, 'move-down', 'move-up');
-  current = await moveAxis('x', 2460, 'move-right', 'move-left');
-  if (Math.abs(current.playerX - 2460) > 40 || Math.abs(current.playerY - 566) > 40 || current.objectiveId !== 'find-master') {
-    throw new Error(`Touch-only route did not reach the Master's Lab staging area: ${JSON.stringify(current)}`);
+  // Follow the authored RSP-4 dirt-road corridor to the Master Lab entrance.
+  // These waypoints are intentionally on broad traversable ground between the
+  // south Yard gate, weighbridge machinery and Viktor Lab entrance notch.
+  await moveAxis('y', 768, 'move-down', 'move-up');
+  await moveAxis('x', 1728, 'move-right', 'move-left');
+  await moveAxis('y', 684, 'move-down', 'move-up');
+  current = await moveAxis('x', 1788, 'move-right', 'move-left');
+  if (
+    Math.abs(current.playerX - 1788) > 40
+    || Math.abs(current.playerY - 684) > 40
+    || current.routeRenderer !== 'scene-image'
+    || current.routeProductionCutoverReady !== true
+    || current.routeInteractionTarget !== 'master-lab'
+    || current.objectiveId !== 'find-master'
+  ) {
+    throw new Error(`Touch-only authored Route did not reach the Master Lab entrance: ${JSON.stringify(current)}`);
   }
 
   const overflow = await evaluate(`({ width: innerWidth, bodyWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight, height: innerHeight })`);
   if (overflow.bodyWidth > overflow.width + 1) throw new Error(`Mobile gameplay controls introduced horizontal overflow: ${JSON.stringify(overflow)}`);
 
-  console.log('YSP-10 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the Master Lab route staging area.');
+  console.log('RSP-7 mobile touch controls complete onboarding, traverse the authored Yard tunnel and reach the authored Master Lab entrance.');
   ws.close();
   cleanup();
 } catch (error) {
