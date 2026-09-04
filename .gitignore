@@ -5,4 +5,5 @@ dist/
 .test-dist/
 .content-dist/
 public/generated/ysp3/
+artifacts/
 *.log
