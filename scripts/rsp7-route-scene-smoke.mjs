@@ -43,6 +43,7 @@ try {
     const list = await response.json();
     return list.length ? list : null;
   });
+
   const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     ws.addEventListener('open', resolve, { once: true });
@@ -64,23 +65,28 @@ try {
       ws.send(JSON.stringify({ id, method, params }));
     });
   }
+
   async function evaluate(expression) {
     const response = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
     if (response.exceptionDetails) throw new Error(response.exceptionDetails.text || 'Browser evaluation failed');
     return response.result?.value;
   }
+
   async function holdKey(keyName, code, vk, durationMs) {
     await cdp('Input.dispatchKeyEvent', { type: 'keyDown', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await sleep(durationMs);
     await cdp('Input.dispatchKeyEvent', { type: 'keyUp', key: keyName, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
     await sleep(90);
   }
+
   async function key(keyName, code, vk) {
     await holdKey(keyName, code, vk, 35);
   }
+
   async function nudge(keyName, code, vk) {
     await holdKey(keyName, code, vk, 70);
   }
+
   async function state() {
     return evaluate(`globalThis.__SPLICEPIT_VISUAL_RESET__ ? ({ ...globalThis.__SPLICEPIT_VISUAL_RESET__ }) : null`);
   }
@@ -93,12 +99,14 @@ try {
   async function debtState() {
     return evaluate(`globalThis.__SPLICEPIT_DEBT_ENCOUNTER__ ? ({ ...globalThis.__SPLICEPIT_DEBT_ENCOUNTER__.state }) : null`);
   }
+
   async function waitForPrompt(id) {
     return waitFor(async () => {
       const current = await state();
       return current?.tutorialPromptId === id && current?.tutorialPromptVisible && !current?.tutorialPromptCompleting ? current : null;
     }, 10000);
   }
+
   async function moveRouteAxis(axis, target, positiveKey, negativeKey, tolerance = 18) {
     const keys = {
       w: ['w', 'KeyW', 87],
@@ -121,6 +129,22 @@ try {
       await nudge(keyName, code, vk);
     }
     throw new Error(`RSP-7 Route movement did not reach ${axis}=${target}: ${JSON.stringify(await state())}`);
+  }
+
+  async function moveOverlayToExit(readState, label) {
+    let previousY = null;
+    let stalled = 0;
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const current = await readState();
+      if (current?.nearExit) return current;
+      if (!current?.active) throw new Error(`${label} became inactive before reaching its exit: ${JSON.stringify(current)}`);
+      if (previousY !== null && Math.abs(current.playerY - previousY) < 1) stalled += 1;
+      else stalled = 0;
+      if (stalled >= 8) throw new Error(`${label} movement stalled before its authored exit: ${JSON.stringify(current)}`);
+      previousY = current.playerY;
+      await nudge('s', 'KeyS', 83);
+    }
+    throw new Error(`${label} did not reach its authored exit: ${JSON.stringify(await readState())}`);
   }
 
   await cdp('Page.enable');
@@ -221,11 +245,9 @@ try {
     throw new Error(`RSP-7 Bright recovery lost authored cutover readiness: ${JSON.stringify(recovered)}`);
   }
 
-  // Follow broad authored road until the semantic Master Lab interaction zone
-  // becomes available. Do not force the player into the visible Lab structure.
   await moveRouteAxis('y', 768, 's', 'w');
   await moveRouteAxis('x', 1728, 'd', 'a');
-  let route = await waitFor(async () => {
+  await waitFor(async () => {
     const current = await state();
     return current?.routeInteractionTarget === 'master-lab' ? current : null;
   });
@@ -235,19 +257,10 @@ try {
     const current = await labState();
     return current?.active && current?.rendered ? current : null;
   }, 20000);
-  if (labEntered.stageId !== 'entry') {
-    throw new Error(`RSP-7 authored Master Lab entry failed: ${JSON.stringify(labEntered)}`);
-  }
+  if (labEntered.stageId !== 'entry') throw new Error(`RSP-7 authored Master Lab entry failed: ${JSON.stringify(labEntered)}`);
 
-  // Exercise the existing authored lab traversal to its real exit.
-  await holdKey('w', 'KeyW', 87, 1750);
-  await holdKey('d', 'KeyD', 68, 2800);
-  await holdKey('a', 'KeyA', 65, 2800);
-  await holdKey('s', 'KeyS', 83, 1900);
-  const labExit = await labState();
-  if (!labExit?.nearExit) throw new Error(`RSP-7 did not reach the Master Lab exit: ${JSON.stringify(labExit)}`);
+  const labExit = await moveOverlayToExit(labState, 'RSP-7 Master Lab');
   await key('e', 'KeyE', 69);
-
   const labReturned = await waitFor(async () => {
     const lab = await labState();
     const yard = await state();
@@ -256,8 +269,6 @@ try {
     return yard;
   }, 15000);
 
-  // The creditor runtime must resolve the authored weighbridge anchor, not the
-  // retired procedural landmark. It updates distance even while still locked.
   await moveRouteAxis('y', 1260, 's', 'w');
   await moveRouteAxis('x', 1944, 'd', 'a');
   const debtAtWeighbridge = await waitFor(async () => {
@@ -269,10 +280,9 @@ try {
       : null;
   });
 
-  // Continue on clear authored road to the Local Pit entrance.
   await moveRouteAxis('y', 1980, 's', 'w');
-  route = await moveRouteAxis('x', 2256, 'd', 'a');
-  route = await waitFor(async () => {
+  await moveRouteAxis('x', 2256, 'd', 'a');
+  await waitFor(async () => {
     const current = await state();
     return current?.routeInteractionTarget === 'local-pit' ? current : null;
   });
@@ -282,19 +292,11 @@ try {
     const current = await pitState();
     return current?.active && current?.rendered ? current : null;
   }, 20000);
-  if (pitEntered.stageId !== 'arrival-gate') {
-    throw new Error(`RSP-7 authored Local Pit entry failed: ${JSON.stringify(pitEntered)}`);
-  }
+  if (pitEntered.stageId !== 'arrival-gate') throw new Error(`RSP-7 authored Local Pit entry failed: ${JSON.stringify(pitEntered)}`);
 
-  // Exercise the real Local Pit path back to its authored exit.
-  await holdKey('w', 'KeyW', 87, 2850);
-  await holdKey('s', 'KeyS', 83, 3300);
-  const pitExit = await pitState();
-  if (!pitExit?.nearExit || pitExit.zone !== 'exterior') {
-    throw new Error(`RSP-7 did not reach the Local Pit exit: ${JSON.stringify(pitExit)}`);
-  }
+  const pitExit = await moveOverlayToExit(pitState, 'RSP-7 Local Pit');
+  if (pitExit.zone !== 'exterior') throw new Error(`RSP-7 Local Pit exit was not exterior: ${JSON.stringify(pitExit)}`);
   await key('e', 'KeyE', 69);
-
   const pitReturned = await waitFor(async () => {
     const pit = await pitState();
     const yard = await state();
@@ -309,8 +311,10 @@ try {
     darkSha256: '5bff87c2bfe36bfb60bf6562afd8f66bfd3405a8ce85a6ef87bf92ba54d85be6',
     baseRenderCount: recovered.baseRenderCount,
     foregroundRenderCount: recovered.foregroundRenderCount,
+    labExit: [labExit.playerX, labExit.playerY],
     labReturn: [labReturned.playerX, labReturned.playerY],
     debtDistance: debtAtWeighbridge.distanceToPlayer,
+    pitExit: [pitExit.playerX, pitExit.playerY],
     pitReturn: [pitReturned.playerX, pitReturned.playerY],
   })}`);
   ws.close();
