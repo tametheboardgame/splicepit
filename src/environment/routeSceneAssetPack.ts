@@ -33,8 +33,10 @@ export const RSP7_DARK_ROUTE_ASSET_PACK = {
   source: {
     width: 1024,
     height: 683,
+    bytes: 138388,
+    sha256: '5bff87c2bfe36bfb60bf6562afd8f66bfd3405a8ce85a6ef87bf92ba54d85be6',
     format: 'image/jpeg',
-    base64Characters: 124000,
+    base64Characters: 184520,
   },
   assets: {
     base: '/generated/rsp7/route-dark-base.jpg',
