@@ -21,6 +21,7 @@ type YardDebug = {
   ready?: boolean;
   phase?: string;
   playerX?: number;
+  sceneMode?: 'yard' | 'master-lab-route';
   activeOpeningShell?: string | null;
 };
 
@@ -105,8 +106,14 @@ function activeLocation(): EnvironmentLocationId {
   if (globals.__SPLICEPIT_MASTER_LAB__?.active) return 'master-lab';
 
   const yard = globals.__SPLICEPIT_VISUAL_RESET__;
-  if (yard?.phase === 'confirmed' && typeof yard.playerX === 'number') {
-    return openingWorldEnvironmentAt(yard.playerX);
+  if (yard?.phase === 'confirmed') {
+    // RSP-7 authored Route ownership is semantic rather than tied to the
+    // retired opening-world X split. Prefer the production scene mode when it
+    // is available, while preserving the old coordinate resolver for legacy
+    // runtimes that do not expose sceneMode.
+    if (yard.sceneMode === 'master-lab-route') return 'route';
+    if (yard.sceneMode === 'yard') return 'yard';
+    if (typeof yard.playerX === 'number') return openingWorldEnvironmentAt(yard.playerX);
   }
   return 'yard';
 }
