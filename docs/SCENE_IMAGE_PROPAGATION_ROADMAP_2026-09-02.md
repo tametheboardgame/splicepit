@@ -1,6 +1,6 @@
 # SplicePit Scene-Image Propagation Roadmap — 2 September 2026
 
-Last updated: 4 September 2026
+Last updated: 5 September 2026
 
 ## Authority
 
@@ -25,7 +25,7 @@ Do not force new art to preserve obsolete map geometry. Preserve gameplay meanin
 
 ---
 
-# Phase 1 — Opening Route Scene Propagation
+# Phase 1 — Opening Route Scene Propagation — COMPLETE ✓
 
 ## RSP-0 — Opening Route Scene Contract / Existing Semantics Audit — COMPLETE ✓
 
@@ -167,47 +167,60 @@ The complete verify/build/player-facing browser suite passed on engineering head
 
 Implementation record: `docs/RSP7_DARK_ROUTE_PRODUCTION_REPLACEMENT_PLAN_2026-09-02.md`.
 
-## RSP-8 — Route Mobile / Regression / Visual Acceptance — IN PROGRESS
+## RSP-8 — Route Mobile / Regression / Visual Acceptance — COMPLETE ✓
 
-PR: #93.
+PR: #93. Merged to main as `3bd76f7bf347015ae7b311393521a0f2963bc20c`.
 
-RSP-8 is the acceptance/closure package for the production-authored Route. It does not redesign the RSP-7 architecture.
-
-Automated acceptance now owns:
+RSP-8 closed the production-authored Route with:
 
 - desktop Route entry, Master Lab approach, decommissioned weighbridge and Local Pit approach review points;
 - portrait and landscape mobile review points;
 - authored `scene-image` production ownership and zero cutover blockers;
-- Bright/Dark rendered-pixel delta;
-- player visibility inside the rendered viewport;
-- mobile canvas containment and horizontal-overflow protection;
+- 87.86% sampled Bright/Dark rendered-pixel delta on final accepted evidence;
+- player visibility and touch-control clearance;
 - minimum 44 × 44 CSS-pixel visible touch targets;
-- rejection when visible touch controls obscure the protagonist;
-- CI-produced PNG review frames plus a machine-readable manifest.
+- a Route-only portrait cover presentation after the first visual review found the original 16:9 strip too small on portrait mobile;
+- final portrait reference viewport of 412 × 457.5 CSS px on a 412 × 915 device;
+- 9-frame CI review artifact and machine-readable manifest;
+- complete verify/build/player-facing browser regression on closure head `4cf30198aaeb0543783a89c27c0c3dbee3130cb0` in run #1351.
 
-Human review still owns:
+Human visual review: **ACCEPT — 5 September 2026**.
 
-- continuity with the approved Yard and Master Lab;
-- Dark-state storytelling quality and perceived geometry stability;
-- protagonist grounding/foreground depth quality;
-- approach readability and environmental composition;
-- final visual ACCEPT/REVISE decision.
-
-Output/in-progress acceptance record: `docs/RSP8_ROUTE_MOBILE_REGRESSION_VISUAL_ACCEPTANCE_2026-09-04.md`.
+Acceptance record: `docs/RSP8_ROUTE_MOBILE_REGRESSION_VISUAL_ACCEPTANCE_2026-09-04.md`.
 
 ---
 
 # Phase 2 — Local Pit Scene Propagation
 
-Begins after the Route scene is production-stable and visually accepted. The architecture itself does not require re-approval.
+The architecture remains the approved scene-image model. Local Pit work begins by separating semantic/fight-space requirements from the current `local-pit-v1` geometry.
 
-## LPSP-0 — Local Pit Scene Contract / Fight-Space Audit
+## LPSP-0 — Local Pit Scene Contract / Fight-Space Audit — COMPLETE ✓
 
-Inventory exterior/interior, arrival, battle entry, result flow, crowd/background requirements, story anchors, camera behaviour and existing first-fight contracts.
+The existing Local Pit runtime, Pass-D art, exploration path, entry corruption hook and opening first-fight requirements have been audited.
 
-## LPSP-1 — Holistic Local Pit Art Brief / Composition Lock
+Locked semantic spaces:
+
+- `pit-arrival`;
+- `pit-registration`;
+- `pit-prep`;
+- `pit-arena-threshold`;
+- `pit-battle-floor`;
+- `pit-results`;
+- `pit-route-exit`.
+
+The current `2360 × 1480` world, raw stage centres, rectangular collision topology, exterior/interior split line and Pass-D drawing coordinates are explicitly disposable. LPSP-4 will author collision against selected scene art.
+
+The first fight remains turn-based/capability-driven at the broad design level and must progress after either win or loss, but LPSP-0 does not freeze the rejected historical WP0.4B prototype or pre-empt WP0.9A’s battle-mechanics lock.
+
+Output: `docs/work-packages/LPSP-0_LOCAL_PIT_SCENE_CONTRACT.md`.
+
+## LPSP-1 — Holistic Local Pit Art Brief / Composition Lock — NEXT
 
 Design a distinctive local gene-splicing fight venue that supports both traversal and battle presentation without reading as a board or generic arena.
+
+The composition may be one holistic scene or a small coherent scene set if that materially improves exterior/circulation/battle readability. It must make the opening loop physically legible:
+
+`Route arrival → Pit exterior/entrance → registration/prep → arena threshold → fight space → results → progression/return`.
 
 ## LPSP-2 — Generate and Select Bright Local Pit Master
 
@@ -241,8 +254,8 @@ Validate traversal, fight readability, touch controls, story progression and fin
 
 # Current execution position
 
-`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 COMPLETE ✓ → RSP-8 IN PROGRESS → LPSP-0 → ... → LPSP-8`
+`YSP-10 APPROVED ✓ → RSP-0 COMPLETE ✓ → RSP-1 COMPLETE ✓ → RSP-2 COMPLETE ✓ → RSP-3 COMPLETE ✓ → RSP-4 COMPLETE ✓ → RSP-5 COMPLETE ✓ → RSP-6 COMPLETE ✓ → RSP-7 COMPLETE ✓ → RSP-8 COMPLETE ✓ → LPSP-0 COMPLETE ✓ → LPSP-1 NEXT → ... → LPSP-8`
 
 ## Immediate next action
 
-**Run PR #93 through the automated RSP-8 acceptance gate, inspect the generated desktop/portrait/landscape visual artifact, then record ACCEPT or make only the visual revisions justified by that review.**
+**Start LPSP-1 — Holistic Local Pit Art Brief / Composition Lock, using the LPSP-0 semantic contract and treating current `local-pit-v1` geometry as reference only.**
