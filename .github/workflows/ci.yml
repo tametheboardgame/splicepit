@@ -36,6 +36,10 @@ jobs:
         run: npm run validate:rsp7-tools
       - name: Validate RSP-8 tooling
         run: npm run validate:rsp8-tools
+      - name: Validate LPSP-3 Pit source
+        run: npm run validate:lpsp3
+      - name: Validate LPSP-3 tooling
+        run: npm run validate:lpsp3-tools
       - name: Unit, domain and save tests
         run: npm test
       - name: Production build
