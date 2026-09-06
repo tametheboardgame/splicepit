@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { deflateSync } from 'node:zlib';
 
 const ROOT = process.cwd();
-const SOURCE_PATH = path.join(ROOT, 'src', 'assets', 'lpsp3', 'local-pit-bright-base64.txt');
+const SOURCE_DIR = path.join(ROOT, 'src', 'assets', 'lpsp3', 'parts');
+const SOURCE_PART_PATTERN = /^local-pit-bright-base\.part\d+\.txt$/;
 const OUTPUT_DIR = path.join(ROOT, 'public', 'generated', 'lpsp3');
 const WRITE_OUTPUTS = process.argv.includes('--write');
 
@@ -87,23 +88,40 @@ function transparentPng(width, height) {
   return Buffer.concat([signature, pngChunk('IHDR', ihdr), pngChunk('IDAT', idat), pngChunk('IEND', Buffer.alloc(0))]);
 }
 
+async function loadEncodedSource() {
+  const fileNames = (await readdir(SOURCE_DIR))
+    .filter((name) => SOURCE_PART_PATTERN.test(name))
+    .sort((a, b) => a.localeCompare(b));
+  invariant(fileNames.length > 0, 'LPSP-3 Pit source has no canonical parts');
+
+  const parts = [];
+  for (const fileName of fileNames) {
+    const part = (await readFile(path.join(SOURCE_DIR, fileName), 'utf8')).trim();
+    invariant(part.length > 0, `LPSP-3 Pit source part ${fileName} is empty`);
+    invariant(/^[A-Za-z0-9+/=]+$/.test(part), `LPSP-3 Pit source part ${fileName} contains invalid base64 characters`);
+    parts.push(part);
+  }
+
+  return { encoded: parts.join(''), fileNames };
+}
+
 async function loadBase() {
-  const encoded = (await readFile(SOURCE_PATH, 'utf8')).trim();
+  const { encoded, fileNames } = await loadEncodedSource();
   invariant(/^[A-Za-z0-9+/=]+$/.test(encoded), 'LPSP-3 Pit base contains invalid base64 characters');
   const base = Buffer.from(encoded, 'base64');
   invariant(base.length === EXPECTED_BASE_BYTES,
-    `LPSP-3 Pit base byte length is ${base.length}; expected ${EXPECTED_BASE_BYTES}`);
+    `LPSP-3 Pit base byte length is ${base.length}; expected ${EXPECTED_BASE_BYTES} from ${fileNames.length} parts`);
   const actualSha256 = sha256(base);
   invariant(actualSha256 === EXPECTED_BASE_SHA256,
     `LPSP-3 Pit base sha256 is ${actualSha256}; expected ${EXPECTED_BASE_SHA256}`);
   const dimensions = readJpegDimensions(base);
   invariant(dimensions.width === WIDTH && dimensions.height === HEIGHT,
     `LPSP-3 Pit base dimensions are ${dimensions.width}x${dimensions.height}; expected ${WIDTH}x${HEIGHT}`);
-  return base;
+  return { base, fileNames };
 }
 
 async function main() {
-  const base = await loadBase();
+  const { base, fileNames } = await loadBase();
   const foreground = transparentPng(WIDTH, HEIGHT);
   const manifest = {
     id: 'local-pit-bright-scene-v1',
@@ -126,7 +144,8 @@ async function main() {
       progressive: false,
     },
     base: {
-      sourcePath: 'src/assets/lpsp3/local-pit-bright-base64.txt',
+      sourcePath: 'src/assets/lpsp3/parts/local-pit-bright-base.part*.txt',
+      sourceParts: fileNames,
       path: '/generated/lpsp3/local-pit-bright-base.jpg',
       format: 'image/jpeg',
       bytes: base.length,
@@ -160,9 +179,9 @@ async function main() {
     await writeFile(path.join(OUTPUT_DIR, 'local-pit-bright-base.jpg'), base);
     await writeFile(path.join(OUTPUT_DIR, 'local-pit-bright-foreground.png'), foreground);
     await writeFile(path.join(OUTPUT_DIR, 'local-pit-bright-scene.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-    console.log(`LPSP-3 Pit assets materialised: ${WIDTH}x${HEIGHT}, ${base.length} bytes, base sha256 ${manifest.base.sha256}, world ${WORLD_WIDTH}x${WORLD_HEIGHT}`);
+    console.log(`LPSP-3 Pit assets materialised: ${WIDTH}x${HEIGHT}, ${base.length} bytes, base sha256 ${manifest.base.sha256}, world ${WORLD_WIDTH}x${WORLD_HEIGHT}, ${fileNames.length} source parts`);
   } else {
-    console.log(`LPSP-3 Pit source validated: ${WIDTH}x${HEIGHT}, ${base.length} bytes, base sha256 ${manifest.base.sha256}, world ${WORLD_WIDTH}x${WORLD_HEIGHT}`);
+    console.log(`LPSP-3 Pit source validated: ${WIDTH}x${HEIGHT}, ${base.length} bytes, base sha256 ${manifest.base.sha256}, world ${WORLD_WIDTH}x${WORLD_HEIGHT}, ${fileNames.length} source parts`);
   }
 }
 
