@@ -1,6 +1,6 @@
 # LPSP-3 — Game-Ready Pit Asset Preparation
 
-Status: **IMPLEMENTED / VALIDATION PENDING**
+Status: **RECOVERY ACTIVE / SOURCE ASSET INCOMPLETE**
 
 Date: 5 September 2026
 
@@ -26,7 +26,7 @@ The selected deterministic derivative is:
 - `1024 × 683` RGB JPEG;
 - `250,783` bytes;
 - SHA-256 `ee9fe9b78c0165131abb3e014177e39cc52d7c5595266fefb10f3ee9092d8b81`;
-- repository canonical source: `src/assets/lpsp3/local-pit-bright-base64.txt` (Base64 encoding of the exact production JPEG).
+- repository canonical source: ordered Base64 fragments under `src/assets/lpsp3/parts/local-pit-bright-base.part*.txt`.
 
 Exact derivation recipe used for the canonical production JPEG:
 
@@ -43,22 +43,29 @@ The 1024 × 683 derivative was visually checked against the approved source befo
 
 ## Canonical storage decision
 
-The connector does not accept a local binary file directly, so LPSP-3 stores the exact production JPEG bytes as one canonical Base64 text source at `src/assets/lpsp3/local-pit-bright-base64.txt`.
+The connector does not accept a local binary file directly, and the first attempt to store the complete Base64 payload in one connector write was truncated. LPSP-3 therefore stores the exact production JPEG bytes as ordered Base64 text fragments under `src/assets/lpsp3/parts/`.
 
-This remains an exact-byte contract rather than a loose image reference:
+This remains one exact-byte contract rather than a loose or approximate image reference:
 
-- the Base64 source decodes to exactly `250,783` bytes;
+- fragments are read in deterministic filename order and concatenated before decode;
+- the concatenated Base64 source must decode to exactly `250,783` bytes;
 - decoded SHA-256 must equal `ee9fe9b78c0165131abb3e014177e39cc52d7c5595266fefb10f3ee9092d8b81`;
 - decoded dimensions must equal `1024 × 683`;
-- materialisation fails before build if any byte changes;
+- materialisation fails before build if any fragment is missing, duplicated, reordered or changed;
 - CI verifies the built JPEG independently after Vite output;
 - Chromium then fetches and decodes the production web asset independently.
 
-Unlike the older RSP-3 transport, this uses one canonical Base64 file rather than many ordered fragments, eliminating fragment-order bookkeeping while retaining connector-safe text storage.
+The ordered-fragment transport follows the proven connector-safe pattern already used by other scene assets in the repository. It is a storage transport only and does not change the approved image bytes.
+
+## Recovery state
+
+The currently committed fragments are incomplete and intentionally fail the exact-byte gate. `docs/LPSP3_EXECUTION_RECOVERY_PLAN_2026-09-06.md` is authoritative for recovery execution.
+
+The missing bytes must come from the exact approved Bramble Pit source. The asset must not be regenerated, repainted, cropped or substituted merely to satisfy validation.
 
 ## Generated production outputs
 
-`scripts/materialize-lpsp3-pit.mjs` validates and decodes the canonical Base64 source and, with `--write`, produces:
+`scripts/materialize-lpsp3-pit.mjs` validates and decodes the ordered canonical Base64 source and, with `--write`, produces:
 
 - `/generated/lpsp3/local-pit-bright-base.jpg`;
 - `/generated/lpsp3/local-pit-bright-foreground.png`;
@@ -123,4 +130,4 @@ Unchanged until later packages:
 
 ## Next
 
-**LPSP-4 — Re-author Pit Walkability / Collision / Battle Boundaries** against the exact `3072 × 2049` authored world derived here.
+Complete the exact source-asset recovery and all LPSP-3 validation gates. Only after LPSP-3 is green may work proceed to **LPSP-4 — Re-author Pit Walkability / Collision / Battle Boundaries** against the exact `3072 × 2049` authored world derived here.
