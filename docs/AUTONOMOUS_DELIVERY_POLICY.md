@@ -21,6 +21,12 @@ The purpose is to make the completed work available on the normal live Cloudflar
 7. Merge the completed green work to `main` automatically.
 8. Treat human review on the live build as feedback for a follow-up remediation package if changes are required.
 
+## Binary / generated asset delivery
+
+Any work involving generated images, approved visual masters or other binary production assets must also follow `docs/BINARY_ASSET_DELIVERY_POLICY.md`.
+
+The default is deliberately bounded: **one asset, one transfer, one verification, one commit/checkpoint**. Large Base64-fragment assembly jobs are not the normal delivery mechanism and repeated failures must trigger a change of transport strategy rather than another larger retry.
+
 ## Exceptions
 
 Do not merge automatically only when one of the following applies:
@@ -37,4 +43,4 @@ A roadmap phrase such as "human visual gate", "review before merge", or equivale
 
 Human visual/playtest review remains important, but by default it occurs after merge on the live deployment. Negative review feedback should produce a targeted fix/remediation package rather than requiring completed work to remain on a branch.
 
-Locked by user instruction on 25 August 2026.
+Locked by user instruction on 25 August 2026. Binary-asset delivery rule added by user instruction on 7 September 2026.
