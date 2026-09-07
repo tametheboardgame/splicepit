@@ -51,6 +51,8 @@ A new implementation session should read these in order:
 
 - `docs/OPENING_VERTICAL_SLICE_ROADMAP_2026-08-25.md` — **current authoritative execution override from the accepted graphics-first foundation through the first Pit fight**.
 - `docs/ROADMAP.md` — long-range master plan; older R0.4I/J–R0.8 sequencing is overridden where the dated opening-slice roadmap conflicts.
+- `docs/AUTONOMOUS_DELIVERY_POLICY.md` — locked default implementation, validation and merge-to-live workflow.
+- `docs/BINARY_ASSET_DELIVERY_POLICY.md` — **locked rule for generated images and binary assets: one asset, one transfer, one verification, one commit/checkpoint; avoid large fragment-assembly workflows**.
 - `docs/VISUAL_DIRECTION_2026-08-23.md` — locked player/environment visual direction.
 - `docs/VISUAL_RESET_CORRECTION_2026-08-24.md` — explicit rejection of the old visible WP0.4E form and rules for what survives.
 - `docs/work-packages/R0_VISUAL_FIRST_REBASE_CORRECTION_2026-08-24.md` — graphics-first correction history and accepted foundation.
